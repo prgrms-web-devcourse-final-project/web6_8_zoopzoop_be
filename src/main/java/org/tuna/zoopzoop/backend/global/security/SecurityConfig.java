@@ -25,7 +25,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                "/api/v1/**" // API 테스트용으로 모두 허용.
+                                "/api/v1/**" // API 테스트용으로 모두 허용. 차후 필수로 변경 필요.
                         ).permitAll()
                         .anyRequest().denyAll()
                 )
