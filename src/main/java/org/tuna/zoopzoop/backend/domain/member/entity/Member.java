@@ -1,12 +1,18 @@
 package org.tuna.zoopzoop.backend.domain.member.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tuna.zoopzoop.backend.domain.space.entity.Invitation;
+import org.tuna.zoopzoop.backend.domain.space.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
+
+import java.util.List;
 
 @Setter
 @Getter
@@ -16,7 +22,7 @@ public class Member extends BaseEntity {
     //사용자 이름
     //UNIQUE 해야 하나?
     @Column(unique = true, nullable = false)
-    private String username;
+    private String name;
 
     //사용자 이메일
     //검색 조건으로 사용할 것이므로, UNIQUE 해야함.
@@ -27,10 +33,25 @@ public class Member extends BaseEntity {
     @Column
     private String profileImageUrl;
 
+    //soft-delete 용 status
+    //default = true;
+    @Column
+    private Boolean active;
+
+    //연결된 MemberShip
+    //Space 삭제시 cascade.all
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MemberShip> memberShips;
+
+    //연결된 Invitation
+    //Space 삭제시 cascade.all
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Invitation> invitations;
+
     /**
      * Member 엔티티 빌더
      *
-     * @param username 사용자 이름
+     * @param name 사용자 이름
      * @param email 사용자 이메일
      * @param profileImageUrl 사용자 프로필 이미지 URL
      */
@@ -39,8 +60,8 @@ public class Member extends BaseEntity {
     //해당 방식으로 작성하실 경우, 도구 -> javadoc 생성을 통해 자동 문서화가 가능합니다.
     //추가로 @return과 같은 어노테이션도 사용이 가능합니다.
     @Builder
-    public Member(String username, String email, String profileImageUrl) {
-        this.username = username;
+    public Member(String name, String email, String profileImageUrl) {
+        this.name = name;
         this.email = email;
         this.profileImageUrl = profileImageUrl;
     }
