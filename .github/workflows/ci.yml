@@ -5,6 +5,8 @@ name: Spring CI on main/develop
 on:
   pull_request:
     branches: [ "main", "develop" ]
+    paths:
+      - 'src/**' # src 디렉토리 하위 파일이 변경될 때만 실행
 
 jobs:
   # ==================================
@@ -25,7 +27,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Gradle 캐시 설정 (경로 수정)
+      # 3. Gradle 캐시 설정
       # 프로젝트 루트의 gradle 파일들을 기준으로 캐시를 설정합니다.
       - name: Cache Gradle packages
         uses: actions/cache@v4
