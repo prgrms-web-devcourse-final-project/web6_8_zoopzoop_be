@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.entity;
+package org.tuna.zoopzoop.backend.domain.space.space.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tuna.zoopzoop.backend.domain.space.invitation.entity.Invitation;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.util.List;
@@ -24,7 +26,7 @@ public class Space extends BaseEntity {
     //soft-delete 용 status
     //default = true;
     @Column(nullable = false)
-    private boolean active;
+    private boolean active = true;
 
     //연결된 MemberShip
     //Space 삭제시 cascade.all

@@ -8,8 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.tuna.zoopzoop.backend.domain.space.entity.Invitation;
-import org.tuna.zoopzoop.backend.domain.space.entity.MemberShip;
+import org.tuna.zoopzoop.backend.domain.space.invitation.entity.Invitation;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.util.List;
@@ -36,7 +36,7 @@ public class Member extends BaseEntity {
     //soft-delete 용 status
     //default = true;
     @Column
-    private Boolean active;
+    private Boolean active = true;
 
     //연결된 MemberShip
     //Space 삭제시 cascade.all
@@ -44,7 +44,7 @@ public class Member extends BaseEntity {
     private List<MemberShip> memberShips;
 
     //연결된 Invitation
-    //Space 삭제시 cascade.all
+    //멤버 삭제시 cascade.all
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Invitation> invitations;
 

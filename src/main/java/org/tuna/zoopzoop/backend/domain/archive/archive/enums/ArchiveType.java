@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.archive.entity;
+package org.tuna.zoopzoop.backend.domain.archive.archive.enums;
 
 public enum ArchiveType {
     PERSONAL, //개인 아카이브

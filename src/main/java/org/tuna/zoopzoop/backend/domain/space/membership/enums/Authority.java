@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.entity;
+package org.tuna.zoopzoop.backend.domain.space.membership.enums;
 
 public enum Authority {
     READ_ONLY, //읽기만 가능
