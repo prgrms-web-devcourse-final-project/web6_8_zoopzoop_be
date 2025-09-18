@@ -1,20 +1,26 @@
 # 워크플로우 이름
-name: Spring CI on main/develop 
+name: Spring CI develop
 
-# 워크플로우 실행 조건: main 또는 develop 브랜치로 Pull Request가 생성될 때 실행
+# 워크플로우 실행 조건
 on:
   pull_request:
-    branches: [ "main", "develop" ]
+    branches:
+      - develop # develop 브랜치에서 CI 검증이 완료된 후에 main 브랜치로 머지되기 때문에 main 브랜치에서는 CI를 실행하지 않음
     paths:
-      - 'src/**' # src 디렉토리 하위 파일이 변경될 때만 실행
+      - 'src/**'
+      - 'build.gradle*'
+      - 'settings.gradle*'
+      - 'gradle/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 jobs:
   # ==================================
-  # CI Job: Gradle 테스트 및 빌드 실행
+  # CI Job : Test and Build and Push Docker Image
   # ==================================
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
       # 1. 소스 코드 체크아웃
       - name: Checkout source code
@@ -28,7 +34,6 @@ jobs:
           distribution: 'temurin'
 
       # 3. Gradle 캐시 설정
-      # 프로젝트 루트의 gradle 파일들을 기준으로 캐시를 설정합니다.
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -74,3 +79,22 @@ jobs:
       # 8. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
         run: ./gradlew build
+
+      # 7. GHCR 로그인
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. Docker 이미지 빌드 & 푸시
+      - name: Build & Push Docker Image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}/myapp
+          
+          docker build -t $IMAGE_NAME:${GITHUB_SHA} . 
+          docker tag $IMAGE_NAME:${GITHUB_SHA} $IMAGE_NAME:latest
+          
+          docker push $IMAGE_NAME:${GITHUB_SHA}
+          docker push $IMAGE_NAME:latest
