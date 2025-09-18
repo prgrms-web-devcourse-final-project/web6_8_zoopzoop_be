@@ -1,12 +1,10 @@
 package org.tuna.zoopzoop.backend.domain.archive.archive.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tuna.zoopzoop.backend.domain.archive.archive.enums.ArchiveType;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 @Getter
@@ -16,9 +14,10 @@ import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class Archive extends BaseEntity {
     @Column
-    private String archiveType;
+    @Enumerated(EnumType.STRING)
+    private ArchiveType archiveType;
 
-    public Archive(String archiveType) {
+    public Archive(ArchiveType archiveType) {
         this.archiveType = archiveType;
     }
 }

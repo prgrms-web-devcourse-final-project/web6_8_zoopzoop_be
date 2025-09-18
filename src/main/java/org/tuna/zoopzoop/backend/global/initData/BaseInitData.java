@@ -10,11 +10,14 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
+import org.tuna.zoopzoop.backend.domain.space.repository.SpaceRepository;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 
 @Configuration
 @RequiredArgsConstructor
 public class BaseInitData {
     private final MemberRepository memberRepository;
+    private final SpaceRepository spaceRepository;
 
     @Autowired
     @Lazy
@@ -43,8 +46,21 @@ public class BaseInitData {
                     .profileImageUrl("https://example.com/bob.png")
                     .build();
 
+            Space space1 = Space.builder()
+                    .name("Space1")
+                    .active(true)
+                    .build();
+
+            Space space2 = Space.builder()
+                    .name("Space2")
+                    .active(true)
+                    .build();
+
             memberRepository.save(member1);
             memberRepository.save(member2);
+
+            spaceRepository.save(space1);
+            spaceRepository.save(space2);
         } catch (Exception e) {
             System.err.println("초기 데이터 생성 중 오류 발생: " + e.getMessage());
         }
