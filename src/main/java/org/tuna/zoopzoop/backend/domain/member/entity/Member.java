@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.member.entity;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
@@ -13,54 +14,44 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
+@NoArgsConstructor
 public class Member extends BaseEntity {
-    //사용자 이름
-    //UNIQUE 해야 하나?
+    //---------- 필드 ----------//
     @Column(unique = true, nullable = false)
     private String name;
 
-    //사용자 이메일
-    //검색 조건으로 사용할 것이므로, UNIQUE 해야함.
     @Column(unique = true, nullable = false)
     private String email;
 
-    //사용자 프로필 이미지 URL
     @Column
     private String profileImageUrl;
 
-    //soft-delete 용 status
-    //default = true;
     @Column
-    private Boolean active;
+    private Boolean active; //soft-delete 용 status, default = true;
 
+    //---------- 연관 관계 ----------//
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private PersonalArchive personalArchive;
+    private PersonalArchive personalArchive; //PersonalArchive(Archive 매핑 테이블), 1:1 관계, cascade.all
 
-    //연결된 MemberShip
-    //Space 삭제시 cascade.all
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MemberShip> memberShips;
+    private List<MemberShip> memberShips; //MemberShip, 1:N 관계, cascade.all
 
-    public Member() {
-        this.personalArchive = new PersonalArchive(this);
-    }
-
-    /**
-     * Member 엔티티 빌더
-     *
-     * @param name 사용자 이름
-     * @param email 사용자 이메일
-     * @param profileImageUrl 사용자 프로필 이미지 URL
-     */
-    //이런 형식으로 작성해주시면 됩니다.
-    //물론 지금처럼 코드가 직관적인 경우에는, 굳이 작성 하실 필요 없습니다.
-    //해당 방식으로 작성하실 경우, 도구 -> javadoc 생성을 통해 자동 문서화가 가능합니다.
-    //추가로 @return과 같은 어노테이션도 사용이 가능합니다.
+    //---------- 생성자 ----------//
     @Builder
     public Member(String name, String email, String profileImageUrl) {
         this.name = name;
         this.email = email;
         this.profileImageUrl = profileImageUrl;
-        this.personalArchive = new PersonalArchive(this);
+        this.active = true;
+        this.personalArchive = new PersonalArchive(this); //Member 객체 생성 시 PersonalArchive 자동 생성.
+    }
+
+    //---------- 메소드 ----------//
+    public void updateName(String name) { //사용자 이름 수정
+        this.name = name;
+    }
+
+    public void deactivate() { //사용자 비활성화(=soft-delete)
+        this.active = false;
     }
 }
