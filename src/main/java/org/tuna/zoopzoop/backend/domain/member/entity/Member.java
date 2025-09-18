@@ -54,4 +54,7 @@ public class Member extends BaseEntity {
     public void deactivate() { //사용자 비활성화(=soft-delete)
         this.active = false;
     }
+
+
+
 }
