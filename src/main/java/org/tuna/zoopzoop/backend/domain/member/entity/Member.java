@@ -1,14 +1,10 @@
 package org.tuna.zoopzoop.backend.domain.member.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.tuna.zoopzoop.backend.domain.space.invitation.entity.Invitation;
+import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
@@ -17,7 +13,6 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
-@NoArgsConstructor
 public class Member extends BaseEntity {
     //사용자 이름
     //UNIQUE 해야 하나?
@@ -36,17 +31,19 @@ public class Member extends BaseEntity {
     //soft-delete 용 status
     //default = true;
     @Column
-    private Boolean active = true;
+    private Boolean active;
+
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PersonalArchive personalArchive;
 
     //연결된 MemberShip
     //Space 삭제시 cascade.all
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberShip> memberShips;
 
-    //연결된 Invitation
-    //멤버 삭제시 cascade.all
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Invitation> invitations;
+    public Member() {
+        this.personalArchive = new PersonalArchive(this);
+    }
 
     /**
      * Member 엔티티 빌더
@@ -64,5 +61,6 @@ public class Member extends BaseEntity {
         this.name = name;
         this.email = email;
         this.profileImageUrl = profileImageUrl;
+        this.personalArchive = new PersonalArchive(this);
     }
 }
