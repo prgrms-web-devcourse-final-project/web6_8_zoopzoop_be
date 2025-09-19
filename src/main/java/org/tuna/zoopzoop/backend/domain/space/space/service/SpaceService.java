@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.space.space.service;
 
+import jakarta.persistence.NoResultException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
@@ -31,4 +32,43 @@ public class SpaceService {
             throw e;
         }
     }
+
+    /**
+     * 스페이스 삭제 (hard delete)
+     * @param spaceId 스페이스 ID
+     * @return 삭제된 스페이스 이름
+     * @throws IllegalArgumentException 스페이스가 존재하지 않을 경우
+     */
+    public String deleteSpace(Integer spaceId) {
+        Space space = spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+        String spaceName = space.getName();
+
+        spaceRepository.delete(space);
+
+        return spaceName;
+    }
+
+    /**
+     * 스페이스 ID로 스페이스 조회
+     * @param spaceId 스페이스 ID
+     * @return 조회된 스페이스
+     * @throws NoResultException 스페이스가 존재하지 않을 경우
+     */
+    public Space getSpaceById(Integer spaceId) {
+        return spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+    }
+
+    /**
+     * 스페이스 이름으로 스페이스 조회
+     * @param name 스페이스 이름
+     * @return 조회된 스페이스
+     * @throws NoResultException 스페이스가 존재하지 않을 경우
+     */
+    public Space getSpaceByName(String name) {
+        return spaceRepository.findByName(name)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+    }
+
 }
