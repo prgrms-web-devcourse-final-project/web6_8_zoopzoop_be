@@ -51,7 +51,7 @@ jobs:
       - name: Show test results
         run: |
           echo "==== Test Results ===="
-          if [ -f build/test-results/test/TEST-*.xml ]; then
+          if compgen -G "build/test-results/test/TEST-*.xml" > /dev/null; then
             total=$(grep '<testcase ' build/test-results/test/TEST-*.xml | wc -l)
             failed=$(grep -h '<failure' build/test-results/test/TEST-*.xml | wc -l)
             error=$(grep -h '<error' build/test-results/test/TEST-*.xml | wc -l)
