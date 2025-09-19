@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -99,10 +100,10 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPost(url, requestBody); // 중복 생성 시도
 
         // Then
-        expectBadRequest(
-                resultActions,
-                "이미 존재하는 스페이스 입니다."
-        );
+        resultActions.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.resultCode").value("409"))
+                .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
 

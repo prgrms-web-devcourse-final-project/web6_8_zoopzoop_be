@@ -3,8 +3,10 @@ package org.tuna.zoopzoop.backend.domain.space.space.service;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 
 @Service
@@ -21,7 +23,12 @@ public class SpaceService {
         Space newSpace = Space.builder()
                 .name(name)
                 .build();
-
-        return spaceRepository.save(newSpace);
+        try{
+            return spaceRepository.save(newSpace);
+        }catch (DataIntegrityViolationException e) {
+            throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
+        } catch (Exception e) {
+            throw e;
+        }
     }
 }

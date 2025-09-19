@@ -38,7 +38,10 @@ public class Space extends BaseEntity {
     @Builder
     public Space(String name, Boolean active) {
         this.name = name;
-        this.active = active;
+
+        if (active != null)
+            this.active = active;
+
         this.sharingArchive = new SharingArchive(this);
     }
 }
