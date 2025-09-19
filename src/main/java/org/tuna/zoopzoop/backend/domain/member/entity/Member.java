@@ -50,7 +50,6 @@ public class Member extends BaseEntity {
     public void updateName(String name) { //사용자 이름 수정
         this.name = name;
     } //사용자 이름 변경
-    public void deactivate() { //사용자 비활성화(=soft-delete)
-        this.active = false;
-    } //soft-delete
+    public void deactivate() { this.active = false; } //soft-delete
+    public void activate() { this.active = true; } //restore
 }
