@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,25 +89,14 @@ public abstract class ControllerTestSupport {
     // ====================== COMMON ASSERTIONS (Response) ======================= //
 
     /**
-     * 403 Forbidden 응답을 기대하는 헬퍼 메서드
-     * @param resultActions - MockMvc의 ResultActions 객체
-     * @throws Exception - 예외 발생 시 던짐
-     */
-    protected void expectForbidden(ResultActions resultActions) throws Exception {
-        resultActions.andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.resultCode").value("403"))
-                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
-    }
-
-    /**
-     * 403 Forbidden 응답을 기대하는 헬퍼 메서드 (메시지 커스터마이징)
+     * 200 OK 응답을 기대하는 헬퍼 메서드
      * @param resultActions - MockMvc의 ResultActions 객체
      * @param msg - 기대하는 메시지
      * @throws Exception - 예외 발생 시 던짐
      */
-    protected void expectForbidden(ResultActions resultActions, String msg) throws Exception {
-        resultActions.andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.resultCode").value("403"))
+    protected void expectOk(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.msg").value(msg));
     }
 
@@ -123,18 +113,6 @@ public abstract class ControllerTestSupport {
     }
 
     /**
-     * 200 OK 응답을 기대하는 헬퍼 메서드
-     * @param resultActions - MockMvc의 ResultActions 객체
-     * @param msg - 기대하는 메시지
-     * @throws Exception - 예외 발생 시 던짐
-     */
-    protected void expectOk(ResultActions resultActions, String msg) throws Exception {
-        resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value(msg));
-    }
-
-    /**
      * 400 Bad Request 응답을 기대하는 헬퍼 메서드
      * @param resultActions - MockMvc의 ResultActions 객체
      * @param msg - 기대하는 메시지
@@ -143,6 +121,34 @@ public abstract class ControllerTestSupport {
     protected void expectBadRequest(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400"))
-                .andExpect(jsonPath("$.msg").value(msg));
+                .andExpect(jsonPath("$.msg").value(msg))
+                .andExpect(jsonPath("$.data").value(nullValue()));
     }
+
+    /**
+     * 403 Forbidden 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectForbidden(ResultActions resultActions) throws Exception {
+        resultActions.andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    /**
+     * 403 Forbidden 응답을 기대하는 헬퍼 메서드 (메시지 커스터마이징)
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectForbidden(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value(msg))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+
 }
