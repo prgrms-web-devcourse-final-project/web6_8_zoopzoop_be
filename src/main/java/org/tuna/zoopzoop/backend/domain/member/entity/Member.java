@@ -47,6 +47,7 @@ public class Member extends BaseEntity {
     }
 
     //---------- 메소드 ----------//
+    public boolean isActive() { return this.active; }
     public void updateName(String name) { //사용자 이름 수정
         this.name = name;
     } //사용자 이름 변경
