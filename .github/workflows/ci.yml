@@ -53,8 +53,8 @@ jobs:
           echo "==== Test Results ===="
           if [ -f build/test-results/test/TEST-*.xml ]; then
             total=$(grep '<testcase ' build/test-results/test/TEST-*.xml | wc -l)
-            failed=$(grep -c 'failure' build/test-results/test/TEST-*.xml)
-            error=$(grep -c 'error' build/test-results/test/TEST-*.xml)
+            failed=$(grep -h '<failure' build/test-results/test/TEST-*.xml | wc -l)
+            error=$(grep -h '<error' build/test-results/test/TEST-*.xml | wc -l)
             passed=$((total - failed - error))
             echo "Total tests: $total"
             echo "Passed tests: $passed"
