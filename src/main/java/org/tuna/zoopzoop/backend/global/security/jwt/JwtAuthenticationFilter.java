@@ -32,9 +32,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = getTokenFromRequest(request); // Authorization 헤더에서 JWT 토큰 추출
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) { // 토큰이 존재하고 유효한 경우
-            String email = jwtUtil.getEmailFromToken(token); //토큰에서 이메일 추출
+            String kakaoKey = jwtUtil.getKakaoKeyFromToken(token); //토큰에서 카카오 키 값 추출
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email); // 사용자 정보 로드
+            UserDetails userDetails = userDetailsService.loadUserByUsername(kakaoKey); // 사용자 정보 로드
 
             //권한 생성 로직 X (사용 안함.)
 

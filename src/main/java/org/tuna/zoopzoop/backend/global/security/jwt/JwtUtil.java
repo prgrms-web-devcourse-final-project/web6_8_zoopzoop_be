@@ -26,7 +26,7 @@ public class JwtUtil {
         Date expiryDate = new Date(now.getTime() + jwtProperties.getAccessTokenValidity());
 
         return Jwts.builder()
-                .setSubject(member.getEmail())
+                .setSubject(String.valueOf(member.getKakaoKey()))
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
                 .setIssuedAt(now)
@@ -35,8 +35,18 @@ public class JwtUtil {
                 .compact();
     }
 
-    // 토큰에서 이메일 추출
-    public String getEmailFromToken(String token) {
+//    // 토큰에서 이메일 추출
+//    public String getEmailFromToken(String token) {
+//        Claims claims = Jwts.parser()
+//                .verifyWith(getSigningKey())
+//                .build()
+//                .parseSignedClaims(token)
+//                .getPayload();
+//        return claims.getSubject();
+//    }
+
+    // 토큰에서 카카오 키 추출
+    public String getKakaoKeyFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -93,7 +103,7 @@ public class JwtUtil {
         Date expiryDate = new Date(now.getTime() + jwtProperties.getRefreshTokenValidity());
 
         return Jwts.builder()
-                .setSubject(member.getEmail())
+                .setSubject(String.valueOf(member.getKakaoKey()))
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
                 .claim("tokenType", "refresh")
