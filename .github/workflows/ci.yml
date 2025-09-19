@@ -47,6 +47,23 @@ jobs:
       - name: Test with Gradle
         run: ./gradlew test
 
-      # 6. Gradle 빌드 실행 (테스트 성공 시)
+      # 6. 테스트 결과 요약 출력 (optional, CI 로그에서 확인 가능)
+      - name: Show test results
+        run: |
+          echo "==== Test Results ===="
+          if [ -f build/test-results/test/TEST-*.xml ]; then
+            total=$(grep '<testcase ' build/test-results/test/TEST-*.xml | wc -l)
+            failed=$(grep -c 'failure' build/test-results/test/TEST-*.xml)
+            error=$(grep -c 'error' build/test-results/test/TEST-*.xml)
+            passed=$((total - failed - error))
+            echo "Total tests: $total"
+            echo "Passed tests: $passed"
+            echo "Failed tests: $failed"
+            echo "Errored tests: $error"
+          else
+            echo "No test results found."
+          fi
+
+      # 7. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
         run: ./gradlew build
