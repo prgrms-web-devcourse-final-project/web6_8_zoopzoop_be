@@ -4,6 +4,7 @@ import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
@@ -36,6 +37,7 @@ public class MemberService {
     //빈 List를 전달하는 경우, 예외 처리를 할 지는 고민해봐야 할 사항.
 
     //회원 생성/정보 수정 관련
+    @Transactional
     public Member createMember(String name, String email, String profileUrl){
         if(memberRepository.findByEmail(email).isPresent()){
             throw new DataIntegrityViolationException("이미 사용중인 이메일입니다.");
@@ -51,6 +53,8 @@ public class MemberService {
                 .build();
         return memberRepository.save(member);
     }
+
+    @Transactional
     public void updateMemberName(Member member, String newName){
         if(memberRepository.findByName(newName).isPresent()) {
             throw new DataIntegrityViolationException("이미 사용중인 이름입니다.");

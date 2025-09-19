@@ -52,15 +52,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class) // 유효하지 않은 메소드 파라미터 예외
     public ResponseEntity<RsData<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult()
-                .getAllErrors()
+                .getFieldErrors()
                 .stream()
-                .filter(error -> error instanceof FieldError)
-                .map(error -> {
-                    FieldError fe = (FieldError) error;
-                    return fe.getField() + "-" + fe.getCode() + "-" + fe.getDefaultMessage();
-                })
-                .sorted()
-                .collect(Collectors.joining("\n"));
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("잘못된 요청입니다."); // 메세지가 없을 경우 기본값
 
         return new ResponseEntity<>(
                 new RsData<>(
