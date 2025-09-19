@@ -95,7 +95,7 @@ public abstract class ControllerTestSupport {
     protected void expectForbidden(ResultActions resultActions) throws Exception {
         resultActions.andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403"))
-                .andExpect(jsonPath("$.message").value("권한이 없습니다."));
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 
     /**
@@ -107,7 +107,7 @@ public abstract class ControllerTestSupport {
     protected void expectForbidden(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403"))
-                .andExpect(jsonPath("$.message").value(msg));
+                .andExpect(jsonPath("$.msg").value(msg));
     }
 
     /**
@@ -119,7 +119,7 @@ public abstract class ControllerTestSupport {
     protected void expectCreated(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultCode").value("201"))
-                .andExpect(jsonPath("$.message").value(msg));
+                .andExpect(jsonPath("$.msg").value(msg));
     }
 
     /**
@@ -131,7 +131,7 @@ public abstract class ControllerTestSupport {
     protected void expectOk(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.message").value(msg));
+                .andExpect(jsonPath("$.msg").value(msg));
     }
 
     /**
@@ -143,6 +143,6 @@ public abstract class ControllerTestSupport {
     protected void expectBadRequest(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400"))
-                .andExpect(jsonPath("$.message").value(msg));
+                .andExpect(jsonPath("$.msg").value(msg));
     }
 }
