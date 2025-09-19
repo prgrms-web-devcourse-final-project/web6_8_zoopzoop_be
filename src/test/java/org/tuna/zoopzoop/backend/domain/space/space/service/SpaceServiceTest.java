@@ -1,12 +1,15 @@
 package org.tuna.zoopzoop.backend.domain.space.space.service;
 
+import jakarta.persistence.NoResultException;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -18,6 +21,13 @@ class SpaceServiceTest {
     @Autowired
     private SpaceService spaceService;
 
+    @BeforeEach
+    void setUp() {
+        spaceService.createSpace("기존 스페이스 1");
+        spaceService.createSpace("기존 스페이스 2");
+    }
+
+    // ============================= CREATE ============================= //
     @Test
     @DisplayName("스페이스 생성 - 성공")
     void createSpace_Success() {
@@ -54,6 +64,34 @@ class SpaceServiceTest {
                 .isInstanceOf(DuplicateSpaceNameException.class);
     }
 
+    // ============================= DELETE ============================= //
 
+    @Test
+    @DisplayName("스페이스 삭제 - 성공")
+    void deleteSpace_Success() {
+        // Given
+        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Integer spaceId = space.getId();
+        String spaceName = space.getName();
+
+        // When
+        String deletedSpaceName = spaceService.deleteSpace(spaceId);
+
+        // Then
+        Assertions.assertThat(deletedSpaceName).isEqualTo(spaceName);
+        assertThatThrownBy(() -> spaceService.getSpaceById(spaceId))
+                .isInstanceOf(NoResultException.class);
+    }
+
+    @Test
+    @DisplayName("스페이스 삭제 - 실패 : 존재하지 않는 스페이스")
+    void deleteSpace_Fail_NotFound() {
+        // Given
+        Integer nonExistentSpaceId = 9999;
+
+        // When & Then
+        assertThatThrownBy(() -> spaceService.deleteSpace(nonExistentSpaceId))
+                .isInstanceOf(NoResultException.class);
+    }
 
 }

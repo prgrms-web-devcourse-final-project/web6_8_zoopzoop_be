@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.space.space.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.hamcrest.Matchers.nullValue;
@@ -24,6 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class ApiV1SpaceControllerTest extends ControllerTestSupport {
+    @Autowired
+    private SpaceService spaceService;
+
+    @BeforeEach
+    void setUp() {
+        spaceService.createSpace("기존 스페이스 1");
+        spaceService.createSpace("기존 스페이스 2");
+    }
 
     // ============================= CREATE ============================= //
 
@@ -105,6 +115,46 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
+
+    // ============================= DELETE ============================= //
+
+    @Test
+    @DisplayName("스페이스 삭제 - 성공")
+    void deleteSpace_Success() throws Exception {
+        // Given
+        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performDelete(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                String.format("%s - 스페이스가 삭제됐습니다.", "기존 스페이스 1")
+        );
+        resultActions.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("스페이스 삭제 - 실패 : 존재하지 않는 스페이스")
+    void deleteSpace_Fail_NotFound() throws Exception {
+        // Given
+        Integer spaceId = 9999; // 존재하지 않는 스페이스 ID
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performDelete(url);
+
+        // Then
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+
 
 
     // ======================= TEST DATA FACTORIES ======================== //

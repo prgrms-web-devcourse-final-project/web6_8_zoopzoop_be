@@ -35,4 +35,17 @@ public class ApiV1SpaceController {
         );
     }
 
+    @DeleteMapping("/{spaceId}")
+    @Operation(summary = "스페이스 삭제")
+    public RsData<Void> deleteSpace(
+            @PathVariable Integer spaceId
+    ){
+        String deletedSpaceName = spaceService.deleteSpace(spaceId);
+        return new RsData<>(
+                "200",
+                String.format("%s - 스페이스가 삭제됐습니다.", deletedSpaceName),
+                null
+        );
+    }
+
 }
