@@ -133,7 +133,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 resultActions,
                 String.format("%s - 스페이스가 삭제됐습니다.", "기존 스페이스 1")
         );
-        resultActions.andExpect(status().isConflict())
+        resultActions
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
