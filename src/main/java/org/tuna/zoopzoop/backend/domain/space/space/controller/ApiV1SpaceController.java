@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceCreateRequest;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceCreateResponse;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
@@ -22,9 +23,14 @@ public class ApiV1SpaceController {
     public RsData<SpaceCreateResponse> createClub(
             @Valid @RequestBody SpaceCreateRequest reqBody
     ){
-        return new RsData<>("201", "클럽이 생성됐습니다.",
+        Space newSpace = spaceService.createSpace(reqBody.name());
+
+        return new RsData<>(
+                "201",
+                String.format("%s - 스페이스가 생성됐습니다.", newSpace.getName()),
                 new SpaceCreateResponse(
-                        "buffer"
+                        newSpace.getId(),
+                        newSpace.getName()
                 )
         );
     }
