@@ -63,7 +63,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // Then
         expectBadRequest(
                 resultActions,
-                "name-NOT_BLANK-스페이스 이름은 필수입니다."
+                "name-NotBlank-must not be blank"
         );
     }
 
@@ -84,7 +84,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // Then
         expectBadRequest(
                 resultActions,
-                "name-SIZE-스페이스 이름은 최대 50자까지 가능합니다."
+                "name-Length-length must be between 0 and 50"
         );
     }
 
