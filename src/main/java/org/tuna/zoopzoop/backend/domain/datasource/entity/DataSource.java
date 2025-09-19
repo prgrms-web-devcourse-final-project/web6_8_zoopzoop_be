@@ -15,10 +15,21 @@ import java.util.List;
 @Setter
 @Entity
 @NoArgsConstructor
+@Table(
+        uniqueConstraints = {
+                // 복합 Unique 제약(folder_id, title)
+                // 같은 폴더 내에 자료 제목 중복 금지
+                @UniqueConstraint(columnNames = {"folder_id", "title"})
+        },
+        // 폴더 내 자료 목록 조회 최적화
+        indexes = {
+                @Index(name = "idx_datasource__folder_id", columnList = "folder_id")
+        }
+)
 public class DataSource extends BaseEntity {
     //연결된 폴더 id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "folder_id")
     private Folder folder;
 
     //제목
