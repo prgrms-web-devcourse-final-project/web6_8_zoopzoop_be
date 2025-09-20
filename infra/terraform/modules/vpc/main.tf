@@ -9,37 +9,38 @@ resource "aws_vpc" "this"{
   }
 }
 
-resource "aws_subnet" "a"{
+resource "aws_subnet" "public"{
   vpc_id = aws_vpc.this.id
   cidr_block = "10.0.1.0/24"
   availability_zone = "${var.region}a"
   map_public_ip_on_launch = true
-  tags = {Name = "${var.prefix}-subnet-a"}
+  tags = {Name = "${var.prefix}-subnet-public"}
 }
 
-resource "aws_subnet" "b"{
+resource "aws_subnet" "private"{
   vpc_id = aws_vpc.this.id
   cidr_block = "10.0.2.0/24"
   availability_zone = "${var.region}b"
-  map_public_ip_on_launch = true
-  tags = {Name = "${var.prefix}-subnet-b"}
+  map_public_ip_on_launch = false
+  tags = {Name = "${var.prefix}-subnet-private"}
 }
 
-resource "aws_subnet" "c"{
-  vpc_id = aws_vpc.this.id
-  cidr_block = "10.0.3.0/24"
-  availability_zone = "${var.region}c"
-  map_public_ip_on_launch = true
-  tags = {Name = "${var.prefix}-subnet-c"}
-}
-
-resource "aws_subnet" "d"{
-  vpc_id = aws_vpc.this.id
-  cidr_block = "10.0.4.0/24"
-  availability_zone = "${var.region}d"
-  map_public_ip_on_launch = true
-  tags = {Name = "${var.prefix}-subnet-d"}
-}
+# 고가용성 구성이 필요할때
+# resource "aws_subnet" "c"{
+#   vpc_id = aws_vpc.this.id
+#   cidr_block = "10.0.3.0/24"
+#   availability_zone = "${var.region}c"
+#   map_public_ip_on_launch = true
+#   tags = {Name = "${var.prefix}-subnet-c"}
+# }
+#
+# resource "aws_subnet" "d"{
+#   vpc_id = aws_vpc.this.id
+#   cidr_block = "10.0.4.0/24"
+#   availability_zone = "${var.region}d"
+#   map_public_ip_on_launch = true
+#   tags = {Name = "${var.prefix}-subnet-d"}
+# }
 
 resource "aws_internet_gateway" "this"{
   vpc_id = aws_vpc.this.id
@@ -62,22 +63,18 @@ resource "aws_route_table" "this" {
   }
 }
 
-resource "aws_route_table_association" "a" {
-  subnet_id = aws_subnet.a.id
+resource "aws_route_table_association" "public" {
+  subnet_id = aws_subnet.public.id
   route_table_id = aws_route_table.this.id
 }
 
-resource "aws_route_table_association" "b" {
-  subnet_id = aws_subnet.b.id
-  route_table_id = aws_route_table.this.id
-}
-
-resource "aws_route_table_association" "c" {
-  subnet_id = aws_subnet.c.id
-  route_table_id = aws_route_table.this.id
-}
-
-resource "aws_route_table_association" "d" {
-  subnet_id = aws_subnet.d.id
-  route_table_id = aws_route_table.this.id
-}
+# 고가용성 구성이 필요할때
+# resource "aws_route_table_association" "c" {
+#   subnet_id = aws_subnet.c.id
+#   route_table_id = aws_route_table.this.id
+# }
+#
+# resource "aws_route_table_association" "d" {
+#   subnet_id = aws_subnet.d.id
+#   route_table_id = aws_route_table.this.id
+# }

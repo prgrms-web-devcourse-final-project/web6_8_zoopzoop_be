@@ -15,9 +15,22 @@ systemctl start docker
 docker network create common
 
 # Nginx, Redis, MySQL 컨테이너 실행 (테스트용)
-docker run -d --name npm --restart unless-stopped --network common -p 80:80 -p 443:443 -p 81:81 jc21/nginx-proxy-manager:latest
+docker run -d --name npm \
+  --restart unless-stopped \
+  --network common \
+  -p 80:80 -p 443:443 -p 81:81 \
+  -v /opt/npm/data:/data \
+  -v /opt/npm/letsencrypt:/etc/letsencrypt \
+  jc21/nginx-proxy-manager:latest
 # docker run -d --name redis_1 --restart unless-stopped --network common -p 6379:6379 -e TZ=Asia/Seoul redis
-docker run -d --name mysql --restart unless-stopped --network common -p 3306:3306 -e MYSQL_ROOT_PASSWORD=${var.mysql_root_password} mysql:latest
+
+docker run -d --name mysql \
+  --restart unless-stopped \
+  --network common \
+  -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=${var.mysql_root_password} \
+  -v /opt/mysql/data:/var/lib/mysql \
+   mysql:latest
 EOF
 }
 
