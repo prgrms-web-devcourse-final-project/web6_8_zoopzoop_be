@@ -29,18 +29,18 @@ class MemberServiceTest {
     void setUp() {
         Member member1 = memberService.createMember(
                 "test1",
-                "test1@test.com",
+                1001L,
                 "url" );
         Member member2 = memberService.createMember(
                 "test2",
-                "test2@test.com",
+                1002L,
                 "url" );
     }
 
     private Member createTestMember() {
         return memberService.createMember(
                 "test3",
-                "test3@test.com",
+                1003L,
                 "url"
         );
     }
@@ -51,46 +51,45 @@ class MemberServiceTest {
         Member member = createTestMember();
         assertNotNull(member.getId());
         assertEquals("test3", member.getName());
-        assertEquals("test3@test.com", member.getEmail());
     }
 
-    @Test
-    @DisplayName("사용자 생성 - 이메일 중복으로 인한 실패")
-    void createMemberFailedByEmail() {
-        memberService.createMember("dupName", "dup@test.com", "url");
-        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
-            memberService.createMember("otherName", "dup@test.com", "url");
-        });
-        assertTrue(ex.getMessage().contains("이미 사용중인 이메일입니다."));
-    }
+//    @Test
+//    @DisplayName("사용자 생성 - 이메일 중복으로 인한 실패")
+//    void createMemberFailedByEmail() {
+//        memberService.createMember("dupName", 2001L,"url");
+//        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
+//            memberService.createMember("otherName", 2002L,"url");
+//        });
+//        assertTrue(ex.getMessage().contains("이미 사용중인 이메일입니다."));
+//    }
 
     @Test
     @DisplayName("사용자 생성 - 이름 중복으로 인한 실패")
     void createMemberFailedByName() {
-        memberService.createMember("dupName", "dup1@test.com", "url");
+        memberService.createMember("dupName", 3001L,"url");
         Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
-            memberService.createMember("dupName", "dup2@test.com", "url");
+            memberService.createMember("dupName", 3002L,"url");
         });
         assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
     }
 
-    @Test
-    @DisplayName("사용자 이메일 기반 조회 - 성공")
-    void findByEmailSuccess() {
-        Member saved = createTestMember();
-        Member found = memberService.findByEmail("test3@test.com");
-        assertEquals(saved.getId(), found.getId());
-        assertEquals(saved.getEmail(), found.getEmail());
-    }
-
-    @Test
-    @DisplayName("사용자 이메일 기반 조회 - 실패")
-    void findByEmailFailed() {
-        Exception ex = assertThrows(NoResultException.class, () -> {
-            memberService.findByEmail("wrong@test.com");
-        });
-        assertTrue(ex.getMessage().contains("이메일을 가진 사용자를 찾을 수 없습니다."));
-    }
+//    @Test
+//    @DisplayName("사용자 이메일 기반 조회 - 성공")
+//    void findByEmailSuccess() {
+//        Member saved = createTestMember();
+//        Member found = memberService.findByEmail("test3@test.com");
+//        assertEquals(saved.getId(), found.getId());
+//        assertEquals(saved.getEmail(), found.getEmail());
+//    }
+//
+//    @Test
+//    @DisplayName("사용자 이메일 기반 조회 - 실패")
+//    void findByEmailFailed() {
+//        Exception ex = assertThrows(NoResultException.class, () -> {
+//            memberService.findByEmail("wrong@test.com");
+//        });
+//        assertTrue(ex.getMessage().contains("이메일을 가진 사용자를 찾을 수 없습니다."));
+//    }
 
     @Test
     @DisplayName("사용자 이름 기반 조회 - 성공")
@@ -108,6 +107,24 @@ class MemberServiceTest {
             memberService.findByName("wrongName");
         });
         assertTrue(ex.getMessage().contains("이름을 가진 사용자를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("Kakao 식별 키 기반 조회 - 성공")
+    void findByKakaoKeySuccess() {
+        Member saved = createTestMember();
+        Member found = memberService.findByKakaoKey(1003L);
+        assertEquals(saved.getId(), found.getId());
+        assertEquals(saved.getName(), found.getName());
+    }
+
+    @Test
+    @DisplayName("Kakao 식별 키 기반 조회 - 실패")
+    void findByKakaoKeyFailed() {
+        Exception ex = assertThrows(NoResultException.class, () -> {
+            memberService.findByKakaoKey(1004L);
+        });
+        assertTrue(ex.getMessage().contains("카카오 키를 가진 사용자를 찾을 수 없습니다."));
     }
 
     @Test

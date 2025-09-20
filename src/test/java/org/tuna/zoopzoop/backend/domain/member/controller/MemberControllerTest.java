@@ -42,27 +42,26 @@ public class MemberControllerTest {
     void setUp() {
         memberService.createMember(
                 "test",
-                "test@test.com",
+                4001L,
                 "url");
         memberService.createMember(
                 "test2",
-                "test2@test.com",
+                4002L,
                 "url");
         memberService.createMember(
                 "test3",
-                "test3@test.com",
+                4003L,
                 "url");
     }
 
     @Test
-    @WithUserDetails(value = "test@test.com", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 정보 조회 - 성공(200)")
     void getMemberInfoSuccess() throws Exception {
         mockMvc.perform(get("/api/v1/member/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.name").value("test"))
-                .andExpect(jsonPath("$.data.email").value("test@test.com"))
                 .andExpect(jsonPath("$.data.profileUrl").value("url"));
     }
 
@@ -76,7 +75,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "test@test.com", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 이름 수정 - 성공(200)")
     void editMemberNameSuccess() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("test3");
@@ -90,7 +89,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "test@test.com", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 이름 수정 - 실패(400, Bad_Request)")
     void editMemberNameFailedByBadRequest() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("");
@@ -115,7 +114,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "test3@test.com", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "4003", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 삭제 - 성공(200)")
     void deleteMemberSuccess() throws Exception {
         mockMvc.perform(delete("/api/v1/member"))

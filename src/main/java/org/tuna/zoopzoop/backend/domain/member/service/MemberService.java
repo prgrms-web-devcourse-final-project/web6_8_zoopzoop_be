@@ -26,11 +26,16 @@ public class MemberService {
                 new NoResultException(name + " 이름을 가진 사용자를 찾을 수 없습니다.")
         );
     }
-    public Member findByEmail(String email){
-        return memberRepository.findByEmail(email).orElseThrow(() ->
-                new NoResultException(email + " 이메일을 가진 사용자를 찾을 수 없습니다.")
+    public Member findByKakaoKey(Long kakaoKey){
+        return memberRepository.findByKakaoKey(kakaoKey).orElseThrow(() ->
+                new NoResultException(kakaoKey + " 카카오 키를 가진 사용자를 찾을 수 없습니다.")
         );
     }
+//    public Member findByEmail(String email){
+//        return memberRepository.findByEmail(email).orElseThrow(() ->
+//                new NoResultException(email + " 이메일을 가진 사용자를 찾을 수 없습니다.")
+//        );
+//    }
     public List<Member> findAll(){ return memberRepository.findAll(); }
     public List<Member> findAllActive(){ return memberRepository.findByActiveTrue(); }
     public List<Member> findAllInactive(){ return memberRepository.findByActiveFalse(); }
@@ -38,17 +43,17 @@ public class MemberService {
 
     //회원 생성/정보 수정 관련
     @Transactional
-    public Member createMember(String name, String email, String profileUrl){
-        if(memberRepository.findByEmail(email).isPresent()){
-            throw new DataIntegrityViolationException("이미 사용중인 이메일입니다.");
-        }
+    public Member createMember(String name, Long kakaoKey, String profileUrl){
+//        if(memberRepository.findByEmail(email).isPresent()){
+//            throw new DataIntegrityViolationException("이미 사용중인 이메일입니다.");
+//        }
         if(memberRepository.findByName(name).isPresent()) {
             throw new DataIntegrityViolationException("이미 사용중인 이름입니다.");
         }
 
         Member member = Member.builder()
                 .name(name)
-                .email(email)
+                .kakaoKey(kakaoKey)
                 .profileImageUrl(profileUrl)
                 .build();
         return memberRepository.save(member);
