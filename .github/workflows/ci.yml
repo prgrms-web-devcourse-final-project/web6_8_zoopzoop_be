@@ -43,10 +43,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 5. Gradle 테스트 실행
+      # 5. application-secrets.yml 생성
+      - name: Generate application-secrets.yml
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secrets.yml
+
+      # 6. Gradle 테스트 실행
       - name: Test with Gradle
         run: ./gradlew test
 
-      # 6. Gradle 빌드 실행 (테스트 성공 시)
+      # 7. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
         run: ./gradlew build
