@@ -7,3 +7,4 @@ variable "key_name" { type = string }
 variable "prefix" { type = string }
 # variable "redis_password" { type = string }
 variable "mysql_root_password" { type = string }
+variable "mysql_db_name" {type=string}

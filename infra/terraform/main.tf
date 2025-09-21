@@ -39,5 +39,6 @@ module "ec2" {
   key_name      = var.key_name
   prefix       = var.prefix
   mysql_root_password = var.mysql_root_password
+  mysql_db_name = var.mysql_db_name
 }
 

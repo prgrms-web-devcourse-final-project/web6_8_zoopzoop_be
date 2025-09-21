@@ -29,6 +29,7 @@ docker run -d --name mysql \
   --network common \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=${var.mysql_root_password} \
+  -e MYSQL_DATABASE=${var.mysql_db_name} \
   -v /opt/mysql/data:/var/lib/mysql \
    mysql:latest
 EOF
