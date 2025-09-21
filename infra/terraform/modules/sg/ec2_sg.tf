@@ -25,12 +25,28 @@ resource "aws_security_group" "ec2_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["221.154.167.13/32"] # 필요시 IP 제한 가능
+    cidr_blocks = ["221.154.167.13/32"]
   }
 
   ingress{
     from_port = 81
     to_port = 81
+    protocol = "tcp"
+    cidr_blocks = ["221.154.167.13/32"]
+  }
+
+  # 개발시에만 열어놓고, 운영시에는 닫기
+  ingress{
+    from_port = 8080
+    to_port = 8080
+    protocol = "tcp"
+    cidr_blocks = ["221.154.167.13/32"]
+  }
+
+  # 개발시에만 열어놓고, 운영시에는 닫기
+  ingress{
+    from_port = 3306
+    to_port = 3306
     protocol = "tcp"
     cidr_blocks = ["221.154.167.13/32"]
   }
