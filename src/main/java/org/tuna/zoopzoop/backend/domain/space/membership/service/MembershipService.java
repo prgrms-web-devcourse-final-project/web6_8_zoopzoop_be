@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.space.membership.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
@@ -21,6 +22,12 @@ public class MembershipService {
      * @return 생성된 Membership 엔티티
      */
     public Membership addMemberToSpace(Member member, Space space, Authority authority) {
+        // 이미 해당 멤버가 스페이스에 속해있는지 확인
+        if (membershipRepository.existsByMemberAndSpace(member, space)) {
+            throw new DataIntegrityViolationException("이미 스페이스에 속한 멤버입니다.");
+        }
+
+
         Membership membership = new Membership();
         membership.setMember(member);
         membership.setSpace(space);

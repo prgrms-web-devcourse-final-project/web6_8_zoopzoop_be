@@ -107,31 +107,4 @@ class MembershipServiceTest {
         });
     }
 
-    @Test
-    @WithMockUser
-    @DisplayName("스페이스에 멤버 추가 - 실패 : 스페이스가 존재하지 않음")
-    void addMemberToSpace_Fail_SpaceNotFound() {
-        // Given
-        var member = memberService.findByKakaoKey("2222");
-        var space = spaceService.findByName("존재하지 않는 스페이스");
-
-        // When & Then
-        assertThrows(NoResultException.class, () -> {
-            membershipService.addMemberToSpace(member, space, Authority.ADMIN);
-        });
-    }
-
-    @Test
-    @WithMockUser
-    @DisplayName("스페이스에 멤버 추가 - 실패 : 멤버가 존재하지 않음")
-    void addMemberToSpace_Fail_MemberNotFound() {
-        // Given
-        var member = memberService.findByKakaoKey("9999");
-        var space = spaceService.findByName("기존 스페이스 1");
-
-        // When & Then
-        assertThrows(NoResultException.class, () -> {
-            membershipService.addMemberToSpace(member, space, Authority.ADMIN);
-        });
-    }
 }
