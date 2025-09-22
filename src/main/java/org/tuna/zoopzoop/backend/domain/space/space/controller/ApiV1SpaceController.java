@@ -5,8 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceCreateRequest;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceCreateResponse;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceSaveRequest;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceSaveResponse;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -20,15 +20,15 @@ public class ApiV1SpaceController {
 
     @PostMapping
     @Operation(summary = "스페이스 생성")
-    public RsData<SpaceCreateResponse> createClub(
-            @Valid @RequestBody SpaceCreateRequest reqBody
+    public RsData<SpaceSaveResponse> createClub(
+            @Valid @RequestBody SpaceSaveRequest reqBody
     ){
         Space newSpace = spaceService.createSpace(reqBody.name());
 
         return new RsData<>(
                 "201",
                 String.format("%s - 스페이스가 생성됐습니다.", newSpace.getName()),
-                new SpaceCreateResponse(
+                new SpaceSaveResponse(
                         newSpace.getId(),
                         newSpace.getName()
                 )
@@ -45,6 +45,24 @@ public class ApiV1SpaceController {
                 "200",
                 String.format("%s - 스페이스가 삭제됐습니다.", deletedSpaceName),
                 null
+        );
+    }
+
+    @PutMapping("/{spaceId}")
+    @Operation(summary = "스페이스 이름 변경")
+    public RsData<SpaceSaveResponse> updateSpaceName(
+            @PathVariable Integer spaceId,
+            @Valid @RequestBody SpaceSaveRequest reqBody
+    ){
+        Space updatedSpace = spaceService.updateSpaceName(spaceId, reqBody.name());
+
+        return new RsData<>(
+                "200",
+                String.format("%s - 스페이스 이름이 변경됐습니다.", updatedSpace.getName()),
+                new SpaceSaveResponse(
+                        updatedSpace.getId(),
+                        updatedSpace.getName()
+                )
         );
     }
 
