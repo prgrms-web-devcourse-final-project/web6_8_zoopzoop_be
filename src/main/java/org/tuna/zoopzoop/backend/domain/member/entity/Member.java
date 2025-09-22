@@ -20,8 +20,11 @@ public class Member extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String name;
 
+//    @Column(unique = true, nullable = false)
+//    private String email;
+
     @Column(unique = true, nullable = false)
-    private String email;
+    private Long kakaoKey;
 
     @Column
     private String profileImageUrl;
@@ -38,23 +41,19 @@ public class Member extends BaseEntity {
 
     //---------- 생성자 ----------//
     @Builder
-    public Member(String name, String email, String profileImageUrl) {
+    public Member(String name, Long kakaoKey, String profileImageUrl) {
         this.name = name;
-        this.email = email;
+        this.kakaoKey = kakaoKey;
         this.profileImageUrl = profileImageUrl;
         this.active = true;
         this.personalArchive = new PersonalArchive(this); //Member 객체 생성 시 PersonalArchive 자동 생성.
     }
 
     //---------- 메소드 ----------//
+    public boolean isActive() { return this.active; }
     public void updateName(String name) { //사용자 이름 수정
         this.name = name;
-    }
-
-    public void deactivate() { //사용자 비활성화(=soft-delete)
-        this.active = false;
-    }
-
-
-
+    } //사용자 이름 변경
+    public void deactivate() { this.active = false; } //soft-delete
+    public void activate() { this.active = true; } //restore
 }

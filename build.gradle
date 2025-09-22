@@ -34,6 +34,9 @@ dependencies {
     // Spring Web (MVC)
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // WebFlux (소셜 로그인을 위한 비동기 프레임워크)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     // Bean Validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
