@@ -31,6 +31,9 @@ dependencies {
     // Spring Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // Spring Oauth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
     // Spring Web (MVC)
     implementation 'org.springframework.boot:spring-boot-starter-web'
 

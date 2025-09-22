@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
 import java.util.List;
@@ -26,11 +27,24 @@ public class MemberService {
                 new NoResultException(name + " 이름을 가진 사용자를 찾을 수 없습니다.")
         );
     }
-    public Member findByKakaoKey(Long kakaoKey){
-        return memberRepository.findByKakaoKey(kakaoKey).orElseThrow(() ->
-                new NoResultException(kakaoKey + " 카카오 키를 가진 사용자를 찾을 수 없습니다.")
+    public Member findByKakaoKey(String key){
+        return memberRepository.findByProviderAndProviderKey(Provider.KAKAO, key).orElseThrow(() ->
+                new NoResultException(key + " 카카오 키를 가진 사용자를 찾을 수 없습니다.")
         );
     }
+
+    public Member findByGoogleKey(String key){
+        return memberRepository.findByProviderAndProviderKey(Provider.GOOGLE, key).orElseThrow(() ->
+                new NoResultException(key + " 구글 키를 가진 사용자를 찾을 수 없습니다.")
+        );
+    }
+
+    public Member findByProviderKey(String providerKey) {
+        return memberRepository.findByProviderKey(providerKey).orElseThrow(() ->
+                new NoResultException(providerKey + " 해당 키를 가진 사용자를 찾을 수 없습니다.")
+        );
+    }
+
 //    public Member findByEmail(String email){
 //        return memberRepository.findByEmail(email).orElseThrow(() ->
 //                new NoResultException(email + " 이메일을 가진 사용자를 찾을 수 없습니다.")
@@ -43,7 +57,7 @@ public class MemberService {
 
     //회원 생성/정보 수정 관련
     @Transactional
-    public Member createMember(String name, Long kakaoKey, String profileUrl){
+    public Member createMember(String name, String profileUrl, String key, Provider provider){
 //        if(memberRepository.findByEmail(email).isPresent()){
 //            throw new DataIntegrityViolationException("이미 사용중인 이메일입니다.");
 //        }
@@ -53,8 +67,9 @@ public class MemberService {
 
         Member member = Member.builder()
                 .name(name)
-                .kakaoKey(kakaoKey)
                 .profileImageUrl(profileUrl)
+                .providerKey(key)
+                .provider(provider)
                 .build();
         return memberRepository.save(member);
     }

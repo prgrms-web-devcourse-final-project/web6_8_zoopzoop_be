@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
@@ -24,7 +25,11 @@ public class Member extends BaseEntity {
 //    private String email;
 
     @Column(unique = true, nullable = false)
-    private Long kakaoKey;
+    private String providerKey;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
 
     @Column
     private String profileImageUrl;
@@ -41,9 +46,10 @@ public class Member extends BaseEntity {
 
     //---------- 생성자 ----------//
     @Builder
-    public Member(String name, Long kakaoKey, String profileImageUrl) {
+    public Member(String name, String providerKey, Provider provider, String profileImageUrl) {
         this.name = name;
-        this.kakaoKey = kakaoKey;
+        this.providerKey = providerKey;
+        this.provider = provider;
         this.profileImageUrl = profileImageUrl;
         this.active = true;
         this.personalArchive = new PersonalArchive(this); //Member 객체 생성 시 PersonalArchive 자동 생성.
