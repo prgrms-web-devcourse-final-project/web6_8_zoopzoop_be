@@ -27,7 +27,7 @@ class MemberServiceTest {
     @BeforeEach
     void setUp() {
         //memberRepository.findAll().forEach(member -> System.out.println(member.getName()));
-        memberRepository.deleteAll();
+        //memberRepository.deleteAll();
         Member member1 = memberService.createMember(
                 "test1",
                 "url",
