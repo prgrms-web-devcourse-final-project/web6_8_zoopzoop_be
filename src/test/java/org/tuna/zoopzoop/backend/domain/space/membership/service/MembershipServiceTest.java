@@ -10,6 +10,7 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
@@ -40,19 +41,26 @@ class MembershipServiceTest {
 
     }
 
+
     void setUpMember() {
         memberService.createMember(
-                "테스트 유저1",
-                4001L,
-                "url");
+                "test1",
+                "url",
+                "1111",
+                Provider.KAKAO
+        );
         memberService.createMember(
-                "테스트 유저2",
-                4002L,
-                "url");
+                "test2",
+                "url",
+                "2222",
+                Provider.KAKAO
+        );
         memberService.createMember(
-                "테스트 유저3",
-                4003L,
-                "url");
+                "test3",
+                "url",
+                "3333",
+                Provider.KAKAO
+        );
     }
 
     // ============================= ADD MEMBER TO SPACE ============================= //
@@ -62,7 +70,7 @@ class MembershipServiceTest {
     @DisplayName("스페이스에 멤버 추가 - 성공")
     void addMemberToSpace_Success() {
         // Given
-        var member = memberService.findByKakaoKey(4002L);
+        var member = memberService.findByKakaoKey("2222");
         var space = spaceService.findByName("기존 스페이스 1");
 
         // When
@@ -77,11 +85,11 @@ class MembershipServiceTest {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스에 멤버 추가 - 실패 : 이미 멤버로 존재")
     void addMemberToSpace_Fail_AlreadyMember() {
         // Given
-        var member = memberService.findByKakaoKey(4002L);
+        var member = memberService.findByKakaoKey("2222");
         var space = spaceService.findByName("기존 스페이스 1");
         membershipService.addMemberToSpace(member, space, Authority.ADMIN);
 
@@ -92,11 +100,11 @@ class MembershipServiceTest {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스에 멤버 추가 - 실패 : 스페이스가 존재하지 않음")
     void addMemberToSpace_Fail_SpaceNotFound() {
         // Given
-        var member = memberService.findByKakaoKey(4002L);
+        var member = memberService.findByKakaoKey("2222");
         var space = spaceService.findByName("존재하지 않는 스페이스");
 
         // When & Then
@@ -106,11 +114,11 @@ class MembershipServiceTest {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스에 멤버 추가 - 실패 : 멤버가 존재하지 않음")
     void addMemberToSpace_Fail_MemberNotFound() {
         // Given
-        var member = memberService.findByKakaoKey(9999L);
+        var member = memberService.findByKakaoKey("9999");
         var space = spaceService.findByName("기존 스페이스 1");
 
         // When & Then

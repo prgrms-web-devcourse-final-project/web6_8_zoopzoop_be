@@ -6,14 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
-<<<<<<< HEAD
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
-import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
-=======
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
->>>>>>> a99b97e (feat/OPS-244 : membership 관리 빈 생성)
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
-
 import java.util.List;
 
 @Setter
