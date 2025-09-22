@@ -1,4 +1,6 @@
 resource "aws_security_group" "rds_sg" {
+  count = var.create_rds ? 1 : 0
+
   name   = "${var.prefix}-rds-sg"
   vpc_id = var.vpc_id
 
