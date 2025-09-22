@@ -130,4 +130,50 @@ class FolderServiceTest {
         assertThrows(NoResultException.class, () -> folderService.deleteFolder(999));
         verify(folderRepository, never()).delete(any(Folder.class));
     }
+
+    // ---------- Update ----------
+    @Test
+    @DisplayName("폴더 이름 변경 성공")
+    void updateFolderName_success() {
+        Folder folder = new Folder();
+        folder.setName("기존이름");
+        folder.setArchive(archive);
+        ReflectionTestUtils.setField(folder, "id", 700);
+
+        when(folderRepository.findById(700)).thenReturn(Optional.of(folder));
+        when(folderRepository.save(any(Folder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String updated = folderService.updateFolderName(700, "새이름");
+
+        assertThat(updated).isEqualTo("새이름");
+        assertThat(folder.getName()).isEqualTo("새이름");
+        verify(folderRepository, times(1)).save(folder);
+    }
+
+    @Test
+    @DisplayName("폴더 이름 변경 실패 - 존재하지 않음")
+    void updateFolderName_notFound() {
+        when(folderRepository.findById(701)).thenReturn(Optional.empty());
+
+        assertThrows(NoResultException.class, () -> folderService.updateFolderName(701, "아무거나"));
+        verify(folderRepository, never()).save(any(Folder.class));
+    }
+
+    @Test
+    @DisplayName("폴더 이름 변경 실패 - 중복 이름 존재")
+    void updateFolderName_conflict() {
+        Folder folder = new Folder();
+        folder.setName("기존이름");
+        folder.setArchive(archive);
+        ReflectionTestUtils.setField(folder, "id", 700);
+
+        when(folderRepository.findById(700)).thenReturn(Optional.of(folder));
+        when(folderRepository.findNamesForConflictCheck(archive.getId(), "보고서", "기존이름"))
+                .thenReturn(List.of("보고서"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> folderService.updateFolderName(700, "보고서"));
+
+        verify(folderRepository, never()).save(any(Folder.class));
+    }
 }

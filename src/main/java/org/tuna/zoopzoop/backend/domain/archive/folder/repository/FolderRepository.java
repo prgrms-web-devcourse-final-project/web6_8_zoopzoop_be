@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +14,6 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
      * @param archiveId   아카이브 Id
      * @param filename    "파일명"
      * @param filenameEnd "파일명 + \ufffff"
-     * @return
      */
     @Query("""
         select f.name
@@ -25,4 +23,8 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
           and f.name < :filenameEnd
     """)
     List<String> findNamesForConflictCheck(Integer archiveId, String filename, String filenameEnd);
+
+    List<Folder> findByArchive(Archive archive);
+
+    Optional<Folder> findByIdAndArchive(Integer id, Archive archive);
 }

@@ -38,7 +38,7 @@ public class FolderController {
 
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
-        return new RsData<resBodyForCreateFolder>(
+        return new RsData<>(
                 "200",
                 rq.folderName() + " 폴더가 생성됐습니다.",
                 rs
@@ -60,6 +60,72 @@ public class FolderController {
         body.put("data", null);
 
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 폴더 이름 수정
+     * @param folderId 수정할 폴더 Id
+     * @param body  수정할 폴더 값
+     */
+    @PatchMapping("/{folderId}")
+    public ResponseEntity<Map<String, Object>> updateFolderName(
+            @PathVariable Integer folderId,
+            @RequestBody Map<String, String> body
+    ) {
+        String newName = body.get("folderName");
+        String updatedName = folderService.updateFolderName(folderId, newName);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", 200);
+        response.put("msg", "폴더 이름이 " + updatedName + " 으로 변경됐습니다.");
+        response.put("data", Map.of("folderName", updatedName));
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     *  개인 아카이브의 폴더 이름 전부 조회
+     *  "default", "폴더1", "폴더2"
+     */
+    @GetMapping("")
+    public ResponseEntity<?> getFolders() {
+        // 로그인된 멤버 ID 가져오기
+        Integer currentMemberId = StubAuthUtil.currentMemberId();
+
+        // 내 personal archive 안의 폴더 조회
+        List<FolderResponse> folders = folderService.getFoldersForPersonal(currentMemberId);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "status", 200,
+                        "msg", "개인 아카이브의 폴더 목록을 불러왔습니다.",
+                        "data", Map.of("folders", folders)
+                )
+        );
+    }
+
+    /**
+     * 폴더(내 PersonalArchive 소속) 안의 파일 목록 조회
+     */
+    @GetMapping("/{folderId}/files")
+    public ResponseEntity<?> getFilesInFolder(@PathVariable Integer folderId) {
+        Integer currentMemberId = StubAuthUtil.currentMemberId();
+
+        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(currentMemberId, folderId);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "status", 200,
+                        "msg", "해당 폴더의 파일 목록을 불러왔습니다.",
+                        "data", Map.of(
+                                "folder", Map.of(
+                                        "folderId", rs.folderId(),
+                                        "folderName", rs.folderName()
+                                ),
+                                "files", rs.files()
+                        )
+                )
+        );
     }
 
 }
