@@ -75,5 +75,31 @@ class FolderControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // DeleteFile
+    @Test
+    @DisplayName("개인 아카이브 폴더 삭제 - 성공 시 200과 삭제 메시지 반환")
+    void deleteFolder_ok() throws Exception {
+        // given
+        when(folderService.deleteFolder(7)).thenReturn("보고서");
 
+        // when & then
+        mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 7))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("보고서 폴더가 삭제됐습니다."));
+    }
+
+    @Test
+    @DisplayName("개인 아카이브 폴더 삭제 - 존재하지 않으면 404")
+    void deleteFolder_notFound() throws Exception {
+        // given
+        when(folderService.deleteFolder(404))
+                .thenThrow(new NoResultException("존재하지 않는 폴더입니다."));
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 404))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
+    }
 }

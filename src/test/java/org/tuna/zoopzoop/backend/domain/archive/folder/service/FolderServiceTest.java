@@ -104,4 +104,30 @@ class FolderServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> folderService.createFolderForPersonal(2, "보고서"));
     }
+
+    // ---------- Delete ----------
+    @Test
+    @DisplayName("폴더 삭제 성공")
+    void deleteFolder_success() {
+        Folder folder = new Folder();
+        folder.setName("보고서");
+        folder.setArchive(archive);
+        ReflectionTestUtils.setField(folder, "id", 500);
+
+        when(folderRepository.findById(500)).thenReturn(Optional.of(folder));
+
+        String deletedName = folderService.deleteFolder(500);
+
+        assertThat(deletedName).isEqualTo("보고서");
+        verify(folderRepository, times(1)).delete(folder);
+    }
+
+    @Test
+    @DisplayName("폴더 삭제 실패 - 존재하지 않는 폴더")
+    void deleteFolder_notFound() {
+        when(folderRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThrows(NoResultException.class, () -> folderService.deleteFolder(999));
+        verify(folderRepository, never()).delete(any(Folder.class));
+    }
 }
