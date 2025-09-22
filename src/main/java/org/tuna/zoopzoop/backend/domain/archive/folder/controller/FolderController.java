@@ -63,7 +63,7 @@ public class FolderController {
     }
 
     /**
-     * 폴더 이름 주성
+     * 폴더 이름 수정
      * @param folderId 수정할 폴더 Id
      * @param body  수정할 폴더 값
      */
