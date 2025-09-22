@@ -66,19 +66,19 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // 멤버 4001L이 스페이스 1에 가입 (ADMIN)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey(4001L),
-                spaceService.getSpaceByName("기존 스페이스 1"),
+                spaceService.findByName("기존 스페이스 1"),
                 Authority.ADMIN
         );
         // 멤버 4002L이 스페이스 1에 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey(4002L),
-                spaceService.getSpaceByName("기존 스페이스 1"),
+                spaceService.findByName("기존 스페이스 1"),
                 Authority.PENDING
         );
         // 멤버 4001L이 스페이스 2에 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey(4001L),
-                spaceService.getSpaceByName("기존 스페이스 2"),
+                spaceService.findByName("기존 스페이스 2"),
                 Authority.PENDING
         );
     }
@@ -170,7 +170,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 삭제 - 성공")
     void deleteSpace_Success() throws Exception {
         // Given
-        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
 
         // When
@@ -208,7 +208,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 성공")
     void modifySpaceName_Success() throws Exception {
         // Given
-        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -254,7 +254,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 누락")
     void modifySpaceName_Fail_NameMissing() throws Exception {
         // Given
-        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -276,7 +276,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 길이 초과")
     void modifySpaceName_Fail_NameTooLong() throws Exception {
         // Given
-        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -298,7 +298,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 중복")
     void modifySpaceName_Fail_NameDuplicate() throws Exception {
         // Given
-        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {

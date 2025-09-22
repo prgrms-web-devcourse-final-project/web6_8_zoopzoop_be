@@ -70,7 +70,7 @@ class SpaceServiceTest {
     @DisplayName("스페이스 삭제 - 성공")
     void deleteSpace_Success() {
         // Given
-        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1");
         Integer spaceId = space.getId();
         String spaceName = space.getName();
 
@@ -100,7 +100,7 @@ class SpaceServiceTest {
     @DisplayName("스페이스 이름 변경 - 성공")
     void updateSpaceName_Success() {
         // Given
-        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1");
         Integer spaceId = space.getId();
         String newName = "변경된 스페이스 이름";
 
@@ -129,7 +129,7 @@ class SpaceServiceTest {
     @DisplayName("스페이스 이름 변경 - 실패 : 중복된 스페이스 이름")
     void updateSpaceName_Fail_DuplicateName() {
         // Given
-        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1");
         Integer spaceId = space.getId();
         String duplicateName = "기존 스페이스 2";
 
