@@ -8,7 +8,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -29,10 +28,9 @@ class MembershipServiceTest {
     private MembershipService membershipService;
 
     @BeforeEach
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
-        //setUpMember();
-        //setUpSpace();
+        setUpMember();
+        setUpSpace();
     }
 
     void setUpSpace() {
