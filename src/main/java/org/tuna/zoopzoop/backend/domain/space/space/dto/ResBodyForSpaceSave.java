@@ -1,6 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.space.space.dto;
 
-public record SpaceSaveResponse(
+public record ResBodyForSpaceSave(
         Integer id,
         String name
 ) {}

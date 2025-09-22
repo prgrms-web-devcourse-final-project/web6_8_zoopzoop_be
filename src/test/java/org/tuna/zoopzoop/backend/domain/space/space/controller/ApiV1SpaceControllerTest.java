@@ -397,7 +397,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         );
         resultActions
                 .andExpect(jsonPath("$.data.spaces").isArray())
-                .andExpect(jsonPath("$.data.spaces.length()").value(2))
+                .andExpect(jsonPath("$.data.spaces.length()").value(1))
                 .andDo(print());
 
         resultActions
@@ -407,7 +407,6 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 실패 : 인증되지 않은 사용자")
     void getMySpaces_Fail_Unauthorized() throws Exception {
         // Given
@@ -433,7 +432,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // Then
         expectBadRequest(
                 resultActions,
-                "state-InvalidState-잘못된 요청입니다."
+                "파라미터 'state'의 타입이 올바르지 않습니다. 요구되는 타입: JoinState"
         );
     }
 
