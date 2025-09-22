@@ -35,11 +35,10 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     private MembershipService membershipService;
 
     @BeforeEach
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
-        //setUpMember();
-        //setUpSpace();
-        //setUpMembership();
+        setUpMember();
+        setUpSpace();
+        setUpMembership();
     }
 
     void setUpSpace() {
