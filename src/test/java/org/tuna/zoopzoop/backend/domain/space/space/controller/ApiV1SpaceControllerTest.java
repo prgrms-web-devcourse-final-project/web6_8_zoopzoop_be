@@ -1,25 +1,23 @@
 package org.tuna.zoopzoop.backend.domain.space.space.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
+import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
+import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.hamcrest.Matchers.nullValue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,9 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @Autowired
     private SpaceService spaceService;
-
     @Autowired
     private MemberService memberService;
+    @Autowired
+    private MembershipService membershipService;
 
     @BeforeEach
     void setUp() {
@@ -64,23 +63,23 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     void setUpMembership() {
-        // 멤버 4001L이 스페이스 1에 가입 (OWNER)
-        spaceService.addMemberToSpace(
-                spaceService.getSpaceByName("기존 스페이스 1").getId(),
-                memberService.findByKakaoKey(4001L).getId(),
-                "OWNER"
+        // 멤버 4001L이 스페이스 1에 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey(4001L),
+                spaceService.getSpaceByName("기존 스페이스 1"),
+                Authority.ADMIN
         );
         // 멤버 4002L이 스페이스 1에 가입 (PENDING)
-        spaceService.addMemberToSpace(
-                spaceService.getSpaceByName("기존 스페이스 1").getId(),
-                memberService.findByKakaoKey(4002L).getId(),
-                "PENDING"
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey(4002L),
+                spaceService.getSpaceByName("기존 스페이스 1"),
+                Authority.PENDING
         );
-        // 멤버 4003L이 스페이스 2에 가입 (PENDING)
-        spaceService.addMemberToSpace(
-                spaceService.getSpaceByName("기존 스페이스 2").getId(),
-                memberService.findByKakaoKey(4003L).getId(),
-                "PENDING"
+        // 멤버 4001L이 스페이스 2에 가입 (PENDING)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey(4001L),
+                spaceService.getSpaceByName("기존 스페이스 2"),
+                Authority.PENDING
         );
     }
 
@@ -342,7 +341,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
-                .andExpect(jsonPath("$.data.spaces[0].authority").value("OWNER"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
                 .andExpect(jsonPath("$.data.spaces[1].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2"))
                 .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"));
@@ -369,7 +368,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
-                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 2"))
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("PENDING"));
     }
 
@@ -396,7 +395,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
-                .andExpect(jsonPath("$.data.spaces[0].authority").value("OWNER"));
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"));
     }
 
     @Test
