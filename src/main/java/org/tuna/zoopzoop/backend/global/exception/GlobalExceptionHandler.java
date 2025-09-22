@@ -54,9 +54,15 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .findFirst()
-                .map(FieldError::getDefaultMessage)
-                .orElse("잘못된 요청입니다."); // 메세지가 없을 경우 기본값
+                .map(error ->
+                        // {필드명}-{에러코드}-{기본메시지} 형식으로 조합
+                        String.format("%s-%s-%s",
+                                error.getField(),
+                                error.getCode(),
+                                error.getDefaultMessage())
+                )
+                .sorted() // 여러 에러가 있을 경우를 대비해 정렬
+                .collect(Collectors.joining("\n")); // 여러 에러를 줄바꿈으로 연결
 
         return new ResponseEntity<>(
                 new RsData<>(

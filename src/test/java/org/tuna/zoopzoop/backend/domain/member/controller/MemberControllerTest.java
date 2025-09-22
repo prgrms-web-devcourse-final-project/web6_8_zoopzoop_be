@@ -98,7 +98,7 @@ public class MemberControllerTest {
                         .content(objectMapper.writeValueAsString(reqBodyForEditMemberName)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.msg").value("잘못된 요청입니다."));
+                .andExpect(jsonPath("$.msg").value("newName-NotBlank-잘못된 요청입니다."));
     }
 
     @Test
