@@ -91,7 +91,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new RsData<>(
                         "400",
-                        e.getMessage()
+                        message
                 ),
                 BAD_REQUEST
         );
