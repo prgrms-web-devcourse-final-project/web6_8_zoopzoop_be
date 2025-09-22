@@ -111,7 +111,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         // Then
         resultActions.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("409"))
+                .andExpect(jsonPath("$.status").value("409"))
                 .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -149,7 +149,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         // Then
         resultActions.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -197,7 +197,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         // Then
         resultActions.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -263,7 +263,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         // Then
         resultActions.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("409"))
+                .andExpect(jsonPath("$.status").value("409"))
                 .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
