@@ -10,7 +10,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
@@ -38,9 +37,9 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @BeforeEach
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
-        setUpMember();
-        setUpSpace();
-        setUpMembership();
+        //setUpMember();
+        //setUpSpace();
+        //setUpMembership();
     }
 
     void setUpSpace() {
@@ -356,6 +355,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("초대받은 스페이스 전체 조회 - 성공")
     void getInvitedSpaces_Success() throws Exception {
         // Given
@@ -407,6 +407,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 실패 : 인증되지 않은 사용자")
     void getMySpaces_Fail_Unauthorized() throws Exception {
         // Given

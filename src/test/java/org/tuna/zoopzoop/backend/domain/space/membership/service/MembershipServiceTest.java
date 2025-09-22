@@ -31,8 +31,8 @@ class MembershipServiceTest {
     @BeforeEach
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
-        setUpMember();
-        setUpSpace();
+        //setUpMember();
+        //setUpSpace();
     }
 
     void setUpSpace() {
@@ -66,7 +66,7 @@ class MembershipServiceTest {
     // ============================= ADD MEMBER TO SPACE ============================= //
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스에 멤버 추가 - 성공")
     void addMemberToSpace_Success() {
         // Given
