@@ -12,7 +12,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.service.AiService;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
-import org.tuna.zoopzoop.backend.domain.space.repository.SpaceRepository;
+import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 
 @Configuration
 @RequiredArgsConstructor
