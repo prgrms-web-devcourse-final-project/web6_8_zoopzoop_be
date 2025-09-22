@@ -155,6 +155,118 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
 
+    // ======================= Modify ======================== //
+    @Test
+    @DisplayName("스페이스 이름 변경 - 성공")
+    void modifySpaceName_Success() throws Exception {
+        // Given
+        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": "변경된 스페이스 이름"
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        expectOk(
+                resultActions,
+                String.format("%s - 스페이스 이름이 변경됐습니다.", "변경된 스페이스 이름")
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.name").value("변경된 스페이스 이름"));
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 존재하지 않는 스페이스")
+    void modifySpaceName_Fail_NotFound() throws Exception {
+        // Given
+        Integer spaceId = 9999; // 존재하지 않는 스페이스 ID
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": "변경된 스페이스 이름"
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 누락")
+    void modifySpaceName_Fail_NameMissing() throws Exception {
+        // Given
+        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": ""
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "name-NotBlank-must not be blank"
+        );
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 길이 초과")
+    void modifySpaceName_Fail_NameTooLong() throws Exception {
+        // Given
+        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": "테스트 스페이스 이름이 너무 길어서 50자를 초과하는 경우입니다. 테스트 스페이스 이름이 너무 길어서 50자를 초과하는 경우입니다."
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "name-Length-length must be between 0 and 50"
+        );
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 중복")
+    void modifySpaceName_Fail_NameDuplicate() throws Exception {
+        // Given
+        Integer spaceId = spaceService.getSpaceByName("기존 스페이스 1").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": "기존 스페이스 2"
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        resultActions.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.resultCode").value("409"))
+                .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
 
     // ======================= TEST DATA FACTORIES ======================== //

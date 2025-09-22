@@ -61,7 +61,7 @@ public abstract class ControllerTestSupport {
     }
 
     /**
-     * PUT 요청을 수행하는 헬퍼 메서드
+     * PATCH 요청을 수행하는 헬퍼 메서드
      * @param url - 요청할 URL
      * @param body - 요청 바디 (객체 형태)
      * @return ResultActions - MockMvc의 ResultActions 객체
@@ -69,6 +69,20 @@ public abstract class ControllerTestSupport {
      */
     protected ResultActions performPatch(String url, String body) throws Exception {
         return mvc.perform(patch(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print());
+    }
+
+    /**
+     * PUT 요청을 수행하는 헬퍼 메서드
+     * @param url - 요청할 URL
+     * @param body - 요청 바디 (객체 형태)
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected ResultActions performPut(String url,  String body) throws Exception {
+        return mvc.perform(put(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andDo(print());

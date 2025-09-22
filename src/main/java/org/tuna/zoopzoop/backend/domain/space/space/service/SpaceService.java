@@ -24,6 +24,9 @@ public class SpaceService {
         Space newSpace = Space.builder()
                 .name(name)
                 .build();
+
+        //TODO : 현재 로그인한 사용자를 스페이스의 관리자(Owner)로 설정하는 로직 추가 필요
+
         try{
             return spaceRepository.save(newSpace);
         }catch (DataIntegrityViolationException e) {
