@@ -1,8 +1,12 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,gradle,intellij,visualstudiocode,kotlin,maven,git,windows,macos,netbeans,eclipse
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,gradle,intellij,visualstudiocode,kotlin,maven,git,windows,macos,netbeans,eclipse
 
+### secret ###
+application-secrets.yml
+
 ### H2-DATABASE ###
 db_dev.mv.db
+db_dev.trace.db
 
 ### Eclipse ###
 .metadata
