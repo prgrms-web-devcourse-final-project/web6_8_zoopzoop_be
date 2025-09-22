@@ -19,7 +19,9 @@ public class CustomUserDetails implements UserDetails {
     public String getPassword() { return null; }
 
     @Override
-    public String getUsername() { return String.valueOf(member.getKakaoKey()); }
+    public String getUsername() {
+        return member.getProviderKey();
+    }
 
     public String getNickname() { return member.getName(); }
     public String getProfileImageUrl() { return member.getProfileImageUrl(); }

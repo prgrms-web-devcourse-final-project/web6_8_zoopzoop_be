@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.tuna.zoopzoop.backend.domain.auth.handler.OAuth2SuccessHandler;
+import org.tuna.zoopzoop.backend.domain.auth.service.CustomOAuth2UserService;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomAuthenticationEntryPoint;
 import org.tuna.zoopzoop.backend.global.security.jwt.JwtAuthenticationFilter;
 
@@ -14,10 +16,15 @@ import org.tuna.zoopzoop.backend.global.security.jwt.JwtAuthenticationFilter;
 public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // CSRF 비활성화 (H2 콘솔 사용 위해 필요)
+                .csrf(csrf -> csrf.disable())
+
                 // 모든 요청 허용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/member", "/api/v1/member/**").authenticated()
@@ -33,12 +40,14 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/v1/**" // API 테스트용으로 모두 허용. 차후 필수로 변경 필요.
                         ).permitAll()
-                        .anyRequest().denyAll()
+                        .anyRequest().authenticated()
                 )
-
-                // CSRF 비활성화 (H2 콘솔 사용 위해 필요)
-                .csrf(csrf -> csrf.disable())
-
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                )
                 // H2 콘솔 사용 허용
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
 
