@@ -14,6 +14,8 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 
@@ -40,28 +42,34 @@ public class MemberControllerTest {
 
     @BeforeAll
     void setUp() {
-        memberService.createMember(
-                "test",
-                4001L,
-                "url");
-        memberService.createMember(
+        Member member1 = memberService.createMember(
+                "test1",
+                "url",
+                "1111",
+                Provider.KAKAO
+        );
+        Member member2 = memberService.createMember(
                 "test2",
-                4002L,
-                "url");
-        memberService.createMember(
+                "url",
+                "2222",
+                Provider.GOOGLE
+        );
+        Member member3 = memberService.createMember(
                 "test3",
-                4003L,
-                "url");
+                "url",
+                "3333",
+                Provider.GOOGLE
+        );
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 정보 조회 - 성공(200)")
     void getMemberInfoSuccess() throws Exception {
         mockMvc.perform(get("/api/v1/member/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.name").value("test"))
+                .andExpect(jsonPath("$.data.name").value("test1"))
                 .andExpect(jsonPath("$.data.profileUrl").value("url"));
     }
 
@@ -75,7 +83,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "GOOGLE:2222", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 이름 수정 - 성공(200)")
     void editMemberNameSuccess() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("test3");
@@ -89,7 +97,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "GOOGLE:2222", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 이름 수정 - 실패(400, Bad_Request)")
     void editMemberNameFailedByBadRequest() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("");
@@ -114,7 +122,7 @@ public class MemberControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "4003", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "GOOGLE:3333", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 삭제 - 성공(200)")
     void deleteMemberSuccess() throws Exception {
         mockMvc.perform(delete("/api/v1/member"))
