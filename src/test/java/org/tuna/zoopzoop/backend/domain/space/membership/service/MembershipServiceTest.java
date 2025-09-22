@@ -6,12 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.test.context.support.TestExecutionEvent;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
+import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
+import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,35 +29,42 @@ class MembershipServiceTest {
     private MemberService memberService;
     @Autowired
     private MembershipService membershipService;
+    @Autowired
+    private MembershipRepository membershipRepository;
+    @Autowired
+    private MemberRepository memberRepository;
 
     @BeforeEach
     void setUp() {
+        membershipRepository.deleteAll();
         setUpMember();
         setUpSpace();
+
+        memberRepository.findAll().forEach(member -> System.out.println("Member: " + member.getName()));
+        System.out.println("----- setUp 완료 -----");
     }
 
     void setUpSpace() {
         spaceService.createSpace("기존 스페이스 1");
         spaceService.createSpace("기존 스페이스 2");
-
     }
 
 
     void setUpMember() {
         memberService.createMember(
-                "test1",
+                "tester1",
                 "url",
                 "1111",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "test2",
+                "tester2",
                 "url",
                 "2222",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "test3",
+                "tester3",
                 "url",
                 "3333",
                 Provider.KAKAO
@@ -64,7 +74,7 @@ class MembershipServiceTest {
     // ============================= ADD MEMBER TO SPACE ============================= //
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithMockUser
     @DisplayName("스페이스에 멤버 추가 - 성공")
     void addMemberToSpace_Success() {
         // Given
@@ -79,11 +89,11 @@ class MembershipServiceTest {
         assertNotNull(membership.getId());
         assertEquals(member.getId(), membership.getMember().getId());
         assertEquals(space.getId(), membership.getSpace().getId());
-        assertEquals(org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority.ADMIN, membership.getAuthority());
+        assertEquals(Authority.ADMIN, membership.getAuthority());
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithMockUser
     @DisplayName("스페이스에 멤버 추가 - 실패 : 이미 멤버로 존재")
     void addMemberToSpace_Fail_AlreadyMember() {
         // Given
@@ -98,7 +108,7 @@ class MembershipServiceTest {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithMockUser
     @DisplayName("스페이스에 멤버 추가 - 실패 : 스페이스가 존재하지 않음")
     void addMemberToSpace_Fail_SpaceNotFound() {
         // Given
@@ -112,7 +122,7 @@ class MembershipServiceTest {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithMockUser
     @DisplayName("스페이스에 멤버 추가 - 실패 : 멤버가 존재하지 않음")
     void addMemberToSpace_Fail_MemberNotFound() {
         // Given

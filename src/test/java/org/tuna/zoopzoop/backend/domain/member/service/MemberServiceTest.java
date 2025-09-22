@@ -1,9 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.member.service;
 
 import jakarta.persistence.NoResultException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,6 +26,8 @@ class MemberServiceTest {
 
     @BeforeEach
     void setUp() {
+        //memberRepository.findAll().forEach(member -> System.out.println(member.getName()));
+        memberRepository.deleteAll();
         Member member1 = memberService.createMember(
                 "test1",
                 "url",
