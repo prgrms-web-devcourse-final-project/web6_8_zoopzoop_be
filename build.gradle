@@ -74,6 +74,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+<<<<<<< HEAD
     // Spring AI
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 }
@@ -82,6 +83,9 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
     }
+=======
+
+>>>>>>> 420e7dd (feat/OPS-222 : spaceControllerTest 완성)
 }
 
 tasks.named('test') {
