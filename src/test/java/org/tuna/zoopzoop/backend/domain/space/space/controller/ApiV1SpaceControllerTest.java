@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @Autowired
     private SpaceService spaceService;
@@ -34,7 +35,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @Autowired
     private MembershipService membershipService;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() {
         setUpMember();
         setUpSpace();
@@ -49,21 +50,21 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
     void setUpMember() {
         memberService.createMember(
-                "test1",
+                "spaceControllerTester1",
                 "url",
-                "1111",
+                "sc1111",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "test2",
+                "spaceControllerTester2",
                 "url",
-                "2222",
+                "sc2222",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "test3",
+                "spaceControllerTester3",
                 "url",
-                "3333",
+                "sc3333",
                 Provider.KAKAO
         );
     }
@@ -71,19 +72,19 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     void setUpMembership() {
         // test1 -> 스페이스 1 가입 (ADMIN)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey("1111"),
+                memberService.findByKakaoKey("sc1111"),
                 spaceService.findByName("기존 스페이스 1"),
                 Authority.ADMIN
         );
         // test2 -> 스페이스 1 가입 (PENDING)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey("2222"),
+                memberService.findByKakaoKey("sc2222"),
                 spaceService.findByName("기존 스페이스 1"),
                 Authority.PENDING
         );
         // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey("1111"),
+                memberService.findByKakaoKey("sc1111"),
                 spaceService.findByName("기존 스페이스 2"),
                 Authority.PENDING
         );
@@ -325,7 +326,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     // ======================= Read ======================= //
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 성공")
     void getMySpaces_Success() throws Exception {
         // Given
@@ -354,7 +355,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("초대받은 스페이스 전체 조회 - 성공")
     void getInvitedSpaces_Success() throws Exception {
         // Given
@@ -380,7 +381,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("가입 중인 스페이스 전체 조회 - 성공")
     void getJoinedSpaces_Success() throws Exception {
         // Given
@@ -406,7 +407,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 실패 : 인증되지 않은 사용자")
     void getMySpaces_Fail_Unauthorized() throws Exception {
         // Given
@@ -420,7 +421,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 실패 : 잘못된 state 파라미터")
     void getMySpaces_Fail_InvalidState() throws Exception {
         // Given
