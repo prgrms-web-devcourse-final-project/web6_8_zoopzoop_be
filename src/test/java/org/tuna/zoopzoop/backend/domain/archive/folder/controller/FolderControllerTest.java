@@ -102,4 +102,44 @@ class FolderControllerTest {
                 .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
     }
+
+    // UpdateFile
+    @Test
+    @DisplayName("개인 아카이브 폴더 이름 변경 - 성공 시 200과 변경된 이름 반환")
+    void updateFolder_ok() throws Exception {
+        // given
+        when(folderService.updateFolderName(10, "회의록")).thenReturn("회의록");
+
+        Map<String, String> body = new HashMap<>();
+        body.put("folderName", "회의록");
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/archive/folder/{folderId}", 10)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("폴더 이름이 회의록 으로 변경됐습니다."))
+                .andExpect(jsonPath("$.data.folderName").value("회의록"));
+    }
+
+    @Test
+    @DisplayName("개인 아카이브 폴더 이름 변경 - 존재하지 않는 폴더면 404")
+    void updateFolder_notFound() throws Exception {
+        // given
+        when(folderService.updateFolderName(99, "회의록"))
+                .thenThrow(new NoResultException("존재하지 않는 폴더입니다."));
+
+
+        Map<String, String> body = new HashMap<>();
+        body.put("folderName", "회의록");
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/archive/folder/{folderId}", 99)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
+    }
 }

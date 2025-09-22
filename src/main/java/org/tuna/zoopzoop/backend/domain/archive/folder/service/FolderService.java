@@ -125,6 +125,19 @@ public class FolderService {
     }
 
     /**
+     *  folderId에 해당하는 이름 변경
+     */
+    @Transactional
+    public String updateFolderName(Integer folderId, String newName) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+
+        folder.setName(newName);
+        folderRepository.save(folder);
+        return newName;
+    }
+
+    /**
      * 입력된 폴더명을 (폴더명, 숫자)로 분리하는 유틸 클래스
      * “폴더명” → (”폴더명”, null)
      * “폴더명(3)” → (”폴더명”, 3)

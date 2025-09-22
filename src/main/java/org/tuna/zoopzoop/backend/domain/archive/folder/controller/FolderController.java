@@ -62,4 +62,25 @@ public class FolderController {
         return ResponseEntity.ok(body);
     }
 
+    /**
+     * 폴더 이름 수정
+     * @param folderId 수정할 폴더 Id
+     * @param body  수정할 폴더 값
+     * @return
+     */
+    @PatchMapping("/{folderId}")
+    public ResponseEntity<Map<String, Object>> updateFolderName(
+            @PathVariable Integer folderId,
+            @RequestBody Map<String, String> body
+    ) {
+        String newName = body.get("folderName");
+        String updatedName = folderService.updateFolderName(folderId, newName);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", 200);
+        response.put("msg", "폴더 이름이 " + updatedName + " 으로 변경됐습니다.");
+        response.put("data", Map.of("folderName", updatedName));
+
+        return ResponseEntity.ok(response);
+    }
 }
