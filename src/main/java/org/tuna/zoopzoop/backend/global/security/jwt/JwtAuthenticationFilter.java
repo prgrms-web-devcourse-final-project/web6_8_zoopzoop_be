@@ -30,11 +30,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = getTokenFromRequest(request); // Authorization 헤더에서 JWT 토큰 추출
+        log.info("[JwtFilter] Token from request: {}", token);
+        log.info("[JwtFilter] Token valid? {}", jwtUtil.validateToken(token));
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) { // 토큰이 존재하고 유효한 경우
             String kakaoKey = jwtUtil.getKakaoKeyFromToken(token); //토큰에서 카카오 키 값 추출
+            log.info("[JwtFilter] KakaoKey from token: {}", kakaoKey);
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(kakaoKey); // 사용자 정보 로드
+            log.info("[JwtFilter] UserDetails loaded: {}", userDetails);
 
             //권한 생성 로직 X (사용 안함.)
 
