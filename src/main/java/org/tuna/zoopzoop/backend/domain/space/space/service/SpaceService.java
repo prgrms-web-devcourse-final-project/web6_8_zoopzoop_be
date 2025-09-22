@@ -74,4 +74,28 @@ public class SpaceService {
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
     }
 
+    /**
+     * 스페이스 이름 변경
+     * @param spaceId 스페이스 ID
+     * @param name 새로운 스페이스 이름
+     * @return 변경된 스페이스
+     * @throws IllegalArgumentException 스페이스가 존재하지 않을 경우
+     * @throws DuplicateSpaceNameException 새로운 스페이스 이름이 중복될 경우
+     */
+    public Space updateSpaceName(Integer spaceId, @NotBlank @Length(max = 50) String name) {
+        Space space = spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+
+        // TODO : 현재 로그인한 사용자가 스페이스의 관리자(Owner)인지 확인하는 로직 추가 필요
+
+        space.setName(name);
+
+        try{
+            return spaceRepository.save(space);
+        }catch (DataIntegrityViolationException e) {
+            throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
+        } catch (Exception e) {
+            throw e;
+        }
+    }
 }

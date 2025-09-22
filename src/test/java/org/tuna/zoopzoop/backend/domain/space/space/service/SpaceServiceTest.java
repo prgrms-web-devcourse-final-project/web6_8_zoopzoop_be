@@ -94,4 +94,48 @@ class SpaceServiceTest {
                 .isInstanceOf(NoResultException.class);
     }
 
+    // ============================= Modify ============================= //
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 성공")
+    void updateSpaceName_Success() {
+        // Given
+        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Integer spaceId = space.getId();
+        String newName = "변경된 스페이스 이름";
+
+        // When
+        Space updatedSpace = spaceService.updateSpaceName(spaceId, newName);
+
+        // Then
+        Assertions.assertThat(updatedSpace).isNotNull();
+        Assertions.assertThat(updatedSpace.getId()).isEqualTo(spaceId);
+        Assertions.assertThat(updatedSpace.getName()).isEqualTo(newName);
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 존재하지 않는 스페이스")
+    void updateSpaceName_Fail_NotFound() {
+        // Given
+        Integer nonExistentSpaceId = 9999;
+        String newName = "변경된 스페이스 이름";
+
+        // When & Then
+        assertThatThrownBy(() -> spaceService.updateSpaceName(nonExistentSpaceId, newName))
+                .isInstanceOf(NoResultException.class);
+    }
+
+    @Test
+    @DisplayName("스페이스 이름 변경 - 실패 : 중복된 스페이스 이름")
+    void updateSpaceName_Fail_DuplicateName() {
+        // Given
+        Space space = spaceService.getSpaceByName("기존 스페이스 1");
+        Integer spaceId = space.getId();
+        String duplicateName = "기존 스페이스 2";
+
+        // When & Then
+        assertThatThrownBy(() -> spaceService.updateSpaceName(spaceId, duplicateName))
+                .isInstanceOf(DuplicateSpaceNameException.class);
+    }
+
 }
