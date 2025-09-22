@@ -15,6 +15,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Controller 계층의 테스트를 위한 추상 클래스
+ * MockMvc와 ObjectMapper를 자동으로 주입받아 자식 클래스에서 사용하도록 제공한다.
+ * 또한 공통적인 요청 수행 메서드와 응답 검증 메서드를 제공한다.
+ */
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,27 +33,52 @@ public abstract class ControllerTestSupport {
 
     // ========================== HELPER METHODS (Request) ========================== //
 
+    /**
+     * GET 요청을 수행하는 헬퍼 메서드
+     * @param url - 요청할 URL
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
     protected ResultActions performGet(String url) throws Exception {
         return mvc.perform(get(url)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print());
     }
 
-    protected ResultActions performPost(String url, Object body) throws Exception {
+    /**
+     * POST 요청을 수행하는 헬퍼 메서드
+     * @param url - 요청할 URL
+     * @param body - 요청 바디 (객체 형태)
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected ResultActions performPost(String url, String body) throws Exception {
         return mvc.perform(post(url)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(body))
                 .andDo(print());
     }
 
-    // ... 다른 perform 메서드들도 모두 이곳으로 이동 ...
-    protected ResultActions performPatch(String url, Object body) throws Exception {
+    /**
+     * PUT 요청을 수행하는 헬퍼 메서드
+     * @param url - 요청할 URL
+     * @param body - 요청 바디 (객체 형태)
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected ResultActions performPatch(String url, String body) throws Exception {
         return mvc.perform(patch(url)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(body))
                 .andDo(print());
     }
 
+    /**
+     * DELETE 요청을 수행하는 헬퍼 메서드
+     * @param url - 요청할 URL
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
     protected ResultActions performDelete(String url) throws Exception {
         return mvc.perform(delete(url)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -57,15 +87,62 @@ public abstract class ControllerTestSupport {
 
     // ====================== COMMON ASSERTIONS (Response) ======================= //
 
+    /**
+     * 403 Forbidden 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
     protected void expectForbidden(ResultActions resultActions) throws Exception {
         resultActions.andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("403"))
+                .andExpect(jsonPath("$.resultCode").value("403"))
                 .andExpect(jsonPath("$.message").value("권한이 없습니다."));
     }
 
+    /**
+     * 403 Forbidden 응답을 기대하는 헬퍼 메서드 (메시지 커스터마이징)
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
     protected void expectForbidden(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("403"))
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.message").value(msg));
+    }
+
+    /**
+     * 201 Created 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectCreated(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isCreated())
+                .andExpect(jsonPath("$.resultCode").value("201"))
+                .andExpect(jsonPath("$.message").value(msg));
+    }
+
+    /**
+     * 200 OK 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectOk(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.message").value(msg));
+    }
+
+    /**
+     * 400 Bad Request 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectBadRequest(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("400"))
                 .andExpect(jsonPath("$.message").value(msg));
     }
 }

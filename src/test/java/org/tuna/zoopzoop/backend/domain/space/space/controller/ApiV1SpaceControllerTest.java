@@ -28,28 +28,93 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
     @Test
     @DisplayName("스페이스 생성 - 성공")
-    void createSpace_Success() {
+    void createSpace_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+        String requestBody = createDefaultSpaceCreateRequestBody();
 
+        // When
+        ResultActions resultActions = performPost(url, requestBody);
 
+        // Then
+        expectCreated(
+                resultActions,
+                String.format("%s - 스페이스가 생성됐습니다.", "테스트 스페이스")
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.name").value("테스트 스페이스"));
+    }
+
+    @Test
+    @DisplayName("스페이스 생성 - 실패 : 스페이스명 누락")
+    void createSpace_Fail_NameMissing() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+        String requestBody = """
+                {
+                    "name": ""
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "name-NOT_BLANK-스페이스 이름은 필수입니다."
+        );
+    }
+
+    @Test
+    @DisplayName("스페이스 생성 - 실패 : 스페이스명 길이 초과")
+    void createSpace_Fail_NameTooLong() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+        String requestBody = """
+                {
+                    "name": "테스트 스페이스 이름이 너무 길어서 50자를 초과하는 경우입니다. 테스트 스페이스 이름이 너무 길어서 50자를 초과하는 경우입니다."
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "name-SIZE-스페이스 이름은 최대 50자까지 가능합니다."
+        );
+    }
+
+    @Test
+    @DisplayName("스페이스 생성 - 실패 : 스페이스명 중복")
+    void createSpace_Fail_NameDuplicate() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+        String requestBody = createDefaultSpaceCreateRequestBody();
+        performPost(url, requestBody); // 최초 생성
+
+        // When
+        ResultActions resultActions = performPost(url, requestBody); // 중복 생성 시도
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "이미 존재하는 스페이스 입니다."
+        );
     }
 
 
     // ======================= TEST DATA FACTORIES ======================== //
 
-//    private ClubCreateRequestDto createDefaultClubCreateDto() {
-//        return new ClubCreateRequestDto(
-//                "테스트 그룹",
-//                "테스트 그룹 설명",
-//                ClubCategory.TRAVEL,
-//                "서울",
-//                10,
-//                EventType.SHORT_TERM,
-//                LocalDate.of(2023, 10, 1),
-//                LocalDate.of(2023, 10, 31),
-//                true,
-//                List.of()
-//        );
-//    }
+    private String createDefaultSpaceCreateRequestBody() {
+        return """
+                {
+                    "name": "테스트 스페이스"
+                }
+                """;
+    }
 
 
 }
