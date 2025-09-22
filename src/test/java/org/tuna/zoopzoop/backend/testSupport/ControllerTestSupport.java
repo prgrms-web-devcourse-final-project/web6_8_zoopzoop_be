@@ -140,6 +140,18 @@ public abstract class ControllerTestSupport {
     }
 
     /**
+     * 401 Unauthorized 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectUnauthorized(ResultActions resultActions) throws Exception {
+        resultActions.andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("401"))
+                .andExpect(jsonPath("$.msg").value("액세스가 거부되었습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    /**
      * 403 Forbidden 응답을 기대하는 헬퍼 메서드
      * @param resultActions - MockMvc의 ResultActions 객체
      * @throws Exception - 예외 발생 시 던짐

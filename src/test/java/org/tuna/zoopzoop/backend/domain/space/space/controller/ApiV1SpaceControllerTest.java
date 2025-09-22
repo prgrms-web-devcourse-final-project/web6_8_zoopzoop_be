@@ -8,10 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.TestExecutionEvent;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
@@ -29,10 +32,56 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @Autowired
     private SpaceService spaceService;
 
+    @Autowired
+    private MemberService memberService;
+
     @BeforeEach
     void setUp() {
+        setUpMember();
+        setUpSpace();
+        setUpMembership();
+    }
+
+    void setUpSpace() {
         spaceService.createSpace("기존 스페이스 1");
         spaceService.createSpace("기존 스페이스 2");
+
+    }
+
+    void setUpMember() {
+        memberService.createMember(
+                "테스트 유저1",
+                4001L,
+                "url");
+        memberService.createMember(
+                "테스트 유저2",
+                4002L,
+                "url");
+        memberService.createMember(
+                "테스트 유저3",
+                4003L,
+                "url");
+    }
+
+    void setUpMembership() {
+        // 멤버 4001L이 스페이스 1에 가입 (OWNER)
+        spaceService.addMemberToSpace(
+                spaceService.getSpaceByName("기존 스페이스 1").getId(),
+                memberService.findByKakaoKey(4001L).getId(),
+                "OWNER"
+        );
+        // 멤버 4002L이 스페이스 1에 가입 (PENDING)
+        spaceService.addMemberToSpace(
+                spaceService.getSpaceByName("기존 스페이스 1").getId(),
+                memberService.findByKakaoKey(4002L).getId(),
+                "PENDING"
+        );
+        // 멤버 4003L이 스페이스 2에 가입 (PENDING)
+        spaceService.addMemberToSpace(
+                spaceService.getSpaceByName("기존 스페이스 2").getId(),
+                memberService.findByKakaoKey(4003L).getId(),
+                "PENDING"
+        );
     }
 
     // ============================= CREATE ============================= //
@@ -268,6 +317,117 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    // ======================= Read ======================= //
+
+    @Test
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("나의 스페이스 전체 조회 - 성공")
+    void getMySpaces_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 목록이 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(2))
+                .andDo(print());
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("OWNER"))
+                .andExpect(jsonPath("$.data.spaces[1].id").isNumber())
+                .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2"))
+                .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("초대받은 스페이스 전체 조회 - 성공")
+    void getInvitedSpaces_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space?state=PENDING";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 목록이 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(1))
+                .andDo(print());
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("PENDING"));
+    }
+
+    @Test
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("가입 중인 스페이스 전체 조회 - 성공")
+    void getJoinedSpaces_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space?state=JOINED";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 목록이 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(2))
+                .andDo(print());
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("OWNER"));
+    }
+
+    @Test
+    @DisplayName("나의 스페이스 전체 조회 - 실패 : 인증되지 않은 사용자")
+    void getMySpaces_Fail_Unauthorized() throws Exception {
+        // Given
+        String url = "/api/v1/space";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectUnauthorized(resultActions);
+    }
+
+    @Test
+    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("나의 스페이스 전체 조회 - 실패 : 잘못된 state 파라미터")
+    void getMySpaces_Fail_InvalidState() throws Exception {
+        // Given
+        String url = "/api/v1/space?state=INVALID";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectBadRequest(
+                resultActions,
+                "state-InvalidState-잘못된 요청입니다."
+        );
+    }
 
     // ======================= TEST DATA FACTORIES ======================== //
 
