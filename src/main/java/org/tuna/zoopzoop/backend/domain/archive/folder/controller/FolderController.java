@@ -38,7 +38,7 @@ public class FolderController {
 
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
-        return new RsData<resBodyForCreateFolder>(
+        return new RsData<>(
                 "200",
                 rq.folderName() + " 폴더가 생성됐습니다.",
                 rs
@@ -63,10 +63,9 @@ public class FolderController {
     }
 
     /**
-     * 폴더 이름 수정
+     * 폴더 이름 주성
      * @param folderId 수정할 폴더 Id
      * @param body  수정할 폴더 값
-     * @return
      */
     @PatchMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> updateFolderName(
@@ -83,4 +82,50 @@ public class FolderController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     *  개인 아카이브의 폴더 이름 전부 조회
+     *  "default", "폴더1", "폴더2"
+     */
+    @GetMapping("")
+    public ResponseEntity<?> getFolders() {
+        // 로그인된 멤버 ID 가져오기
+        Integer currentMemberId = StubAuthUtil.currentMemberId();
+
+        // 내 personal archive 안의 폴더 조회
+        List<FolderResponse> folders = folderService.getFoldersForPersonal(currentMemberId);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "status", 200,
+                        "msg", "개인 아카이브의 폴더 목록을 불러왔습니다.",
+                        "data", Map.of("folders", folders)
+                )
+        );
+    }
+
+    /**
+     * 폴더(내 PersonalArchive 소속) 안의 파일 목록 조회
+     */
+    @GetMapping("/{folderId}/files")
+    public ResponseEntity<?> getFilesInFolder(@PathVariable Integer folderId) {
+        Integer currentMemberId = StubAuthUtil.currentMemberId();
+
+        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(currentMemberId, folderId);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "status", 200,
+                        "msg", "해당 폴더의 파일 목록을 불러왔습니다.",
+                        "data", Map.of(
+                                "folder", Map.of(
+                                        "folderId", rs.folderId(),
+                                        "folderName", rs.folderName()
+                                ),
+                                "files", rs.files()
+                        )
+                )
+        );
+    }
+
 }

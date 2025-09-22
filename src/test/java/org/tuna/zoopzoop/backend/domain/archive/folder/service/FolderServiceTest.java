@@ -158,4 +158,22 @@ class FolderServiceTest {
         assertThrows(NoResultException.class, () -> folderService.updateFolderName(701, "아무거나"));
         verify(folderRepository, never()).save(any(Folder.class));
     }
+
+    @Test
+    @DisplayName("폴더 이름 변경 실패 - 중복 이름 존재")
+    void updateFolderName_conflict() {
+        Folder folder = new Folder();
+        folder.setName("기존이름");
+        folder.setArchive(archive);
+        ReflectionTestUtils.setField(folder, "id", 700);
+
+        when(folderRepository.findById(700)).thenReturn(Optional.of(folder));
+        when(folderRepository.findNamesForConflictCheck(archive.getId(), "보고서", "기존이름"))
+                .thenReturn(List.of("보고서"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> folderService.updateFolderName(700, "보고서"));
+
+        verify(folderRepository, never()).save(any(Folder.class));
+    }
 }

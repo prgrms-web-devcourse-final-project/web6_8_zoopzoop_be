@@ -132,9 +132,59 @@ public class FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
+        // 같은 아카이브 내에서 중복 폴더 이름 확인
+        List<String> existingNames = folderRepository.findNamesForConflictCheck(
+                folder.getArchive().getId(),
+                newName,
+                folder.getName() // 자기 자신은 제외
+        );
+
+        if (!existingNames.isEmpty()) {
+            throw new IllegalArgumentException("이미 존재하는 폴더명입니다.");
+        }
+
         folder.setName(newName);
         folderRepository.save(folder);
         return newName;
+    }
+
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getFoldersForPersonal(Integer memberId) {
+        // 1. 해당 멤버의 personal archive 찾기
+        PersonalArchive personalArchive = personalArchiveRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new NoResultException("개인 아카이브가 존재하지 않습니다."));
+
+        // 2. personal archive → archive 꺼내오기
+        Archive archive = personalArchive.getArchive();
+
+        // 3. archive 안의 폴더 전부 가져오기
+        return folderRepository.findByArchive(archive).stream()
+                .map(folder -> new FolderResponse(folder.getId(), folder.getName()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FolderFilesDto getFilesInFolderForPersonal(Integer memberId, Integer folderId) {
+        // 1) 내 PersonalArchive 찾기
+        PersonalArchive pa = personalArchiveRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new NoResultException("개인 아카이브가 존재하지 않습니다."));
+
+        Archive myArchive = pa.getArchive();
+
+        // 2) 해당 폴더가 내 아카이브인지 확인
+        Folder folder = folderRepository.findByIdAndArchive(folderId, myArchive)
+                .orElseThrow(() -> new NoResultException("해당 폴더가 존재하지 않거나 내 아카이브 소속이 아닙니다."));
+
+        // 3) 폴더 안 파일(datasource) 조회
+        List<FileSummary> files = dataSourceRepository.findAllByFolder(folder).stream()
+                .map(ds -> new FileSummary(
+                        ds.getId(),           // 파일 Id
+                        ds.getTitle(),        // 파일명 (제목)
+                        ds.getCreateDate()    // 생성일
+                ))
+                .toList();
+
+        return new FolderFilesDto(folder.getId(), folder.getName(), files);
     }
 
     /**
