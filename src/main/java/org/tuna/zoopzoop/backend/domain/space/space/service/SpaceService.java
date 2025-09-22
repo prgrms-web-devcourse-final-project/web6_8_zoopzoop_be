@@ -69,7 +69,7 @@ public class SpaceService {
      * @return 조회된 스페이스
      * @throws NoResultException 스페이스가 존재하지 않을 경우
      */
-    public Space getSpaceByName(String name) {
+    public Space findByName(String name) {
         return spaceRepository.findByName(name)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
     }
