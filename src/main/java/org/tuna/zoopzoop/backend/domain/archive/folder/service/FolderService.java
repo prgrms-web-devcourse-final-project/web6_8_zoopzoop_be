@@ -110,6 +110,19 @@ public class FolderService {
         return file + " (" + (used.size() + 1) + ")"; // fallback
     }
 
+    /**
+     *  folderId에 해당하는 폴더 삭제
+     *  soft delete 아직 구현 X
+     */
+    @Transactional
+    public String deleteFolder(Integer folderId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+
+        String name = folder.getName();
+        folderRepository.delete(folder);
+        return name;
+    }
 
     /**
      * 입력된 폴더명을 (폴더명, 숫자)로 분리하는 유틸 클래스
