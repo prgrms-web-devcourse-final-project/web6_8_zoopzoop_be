@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
+import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,5 +36,22 @@ public class MembershipService {
         membership.setSpace(space);
         membership.setAuthority(authority);
         return membershipRepository.save(membership);
+    }
+
+
+    /**
+     * 멤버가 속한 스페이스 목록 조회
+     * @param member 조회할 멤버
+     * @param state 멤버의 가입 상태로 필터링 (PENDING, JOINED, ALL)
+     * @return 멤버가 속한 스페이스 목록
+     */
+    public List<Membership> findByMember(Member member, String state) {
+        if (state.equalsIgnoreCase("PENDING")) {
+            return membershipRepository.findAllByMemberAndAuthority(member, Authority.PENDING);
+        } else if (state.equalsIgnoreCase("JOINED")) {
+            return membershipRepository.findAllByMemberAndAuthorityIsNot(member, Authority.PENDING);
+        } else {
+            return membershipRepository.findAllByMember(member);
+        }
     }
 }
