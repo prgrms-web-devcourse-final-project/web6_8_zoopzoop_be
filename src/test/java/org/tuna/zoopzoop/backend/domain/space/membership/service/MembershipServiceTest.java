@@ -1,14 +1,14 @@
 package org.tuna.zoopzoop.backend.domain.space.membership.service;
 
 import jakarta.persistence.NoResultException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
@@ -28,6 +28,7 @@ class MembershipServiceTest {
     private MembershipService membershipService;
 
     @BeforeEach
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
         setUpMember();
         setUpSpace();
@@ -84,9 +85,8 @@ class MembershipServiceTest {
         var space = spaceService.findByName("기존 스페이스 1");
         membershipService.addMemberToSpace(member, space, Authority.ADMIN);
 
-        // TODO : 커스텀 에러로 변경
         // When & Then
-        assertThrows(Exception.class, () -> {
+        assertThrows(DataIntegrityViolationException.class, () -> {
             membershipService.addMemberToSpace(member, space, Authority.READ_ONLY);
         });
     }
@@ -113,7 +113,6 @@ class MembershipServiceTest {
         var member = memberService.findByKakaoKey(9999L);
         var space = spaceService.findByName("기존 스페이스 1");
 
-        //TODO : 커스텀 에러로 변경
         // When & Then
         assertThrows(NoResultException.class, () -> {
             membershipService.addMemberToSpace(member, space, Authority.ADMIN);
