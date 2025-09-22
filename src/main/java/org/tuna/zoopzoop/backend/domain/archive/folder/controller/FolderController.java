@@ -46,6 +46,20 @@ public class FolderController {
 
     }
 
+    /**
+     * 내 PersonalArchive 안의 folder 삭제
+     * @param folderId  삭제할 folderId
+     */
+    @DeleteMapping("/{folderId}")
+    public ResponseEntity<Map<String, Object>> deleteFolder(@PathVariable Integer folderId) {
+        String deletedFolderName = folderService.deleteFolder(folderId);
 
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 200);
+        body.put("msg", deletedFolderName + " 폴더가 삭제됐습니다.");
+        body.put("data", null);
+
+        return ResponseEntity.ok(body);
+    }
 
 }
