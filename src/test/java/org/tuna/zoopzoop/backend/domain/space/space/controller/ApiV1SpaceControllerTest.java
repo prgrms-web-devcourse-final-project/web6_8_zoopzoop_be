@@ -10,6 +10,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
@@ -49,35 +51,41 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
     void setUpMember() {
         memberService.createMember(
-                "테스트 유저1",
-                4001L,
-                "url");
+                "test1",
+                "url",
+                "1111",
+                Provider.KAKAO
+        );
         memberService.createMember(
-                "테스트 유저2",
-                4002L,
-                "url");
+                "test2",
+                "url",
+                "2222",
+                Provider.KAKAO
+        );
         memberService.createMember(
-                "테스트 유저3",
-                4003L,
-                "url");
+                "test3",
+                "url",
+                "3333",
+                Provider.KAKAO
+        );
     }
 
     void setUpMembership() {
-        // 멤버 4001L이 스페이스 1에 가입 (ADMIN)
+        // test1 -> 스페이스 1 가입 (ADMIN)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey(4001L),
+                memberService.findByKakaoKey("1111"),
                 spaceService.findByName("기존 스페이스 1"),
                 Authority.ADMIN
         );
-        // 멤버 4002L이 스페이스 1에 가입 (PENDING)
+        // test2 -> 스페이스 1 가입 (PENDING)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey(4002L),
+                memberService.findByKakaoKey("2222"),
                 spaceService.findByName("기존 스페이스 1"),
                 Authority.PENDING
         );
-        // 멤버 4001L이 스페이스 2에 가입 (PENDING)
+        // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
-                memberService.findByKakaoKey(4001L),
+                memberService.findByKakaoKey("1111"),
                 spaceService.findByName("기존 스페이스 2"),
                 Authority.PENDING
         );
@@ -319,7 +327,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     // ======================= Read ======================= //
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 성공")
     void getMySpaces_Success() throws Exception {
         // Given
@@ -373,7 +381,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("가입 중인 스페이스 전체 조회 - 성공")
     void getJoinedSpaces_Success() throws Exception {
         // Given
@@ -412,7 +420,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithUserDetails(value = "4001", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @WithUserDetails(value = "1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("나의 스페이스 전체 조회 - 실패 : 잘못된 state 파라미터")
     void getMySpaces_Fail_InvalidState() throws Exception {
         // Given
