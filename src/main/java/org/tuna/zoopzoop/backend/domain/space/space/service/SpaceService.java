@@ -91,7 +91,7 @@ public class SpaceService {
         space.setName(name);
 
         try{
-            return spaceRepository.save(space);
+            return spaceRepository.saveAndFlush(space);
         }catch (DataIntegrityViolationException e) {
             throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
         } catch (Exception e) {
