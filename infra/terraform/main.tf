@@ -59,9 +59,9 @@ module "rds" {
   prod_mysql_root_password = var.prod_mysql_root_password
   prod_mysql_db_name = var.prod_mysql_db_name
   vpc_security_group_ids = [module.sg.rds_sg_id]
-  subnet_ids = module.vpc.subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
   multi_az = var.multi_az
-    skip_final_snapshot = var.skip_final_snapshot
+  skip_final_snapshot = var.skip_final_snapshot
   tags = {
     Name = "${var.prefix}-rds"
   }
