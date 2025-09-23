@@ -61,6 +61,18 @@ public abstract class ControllerTestSupport {
     }
 
     /**
+     * POST 요청을 수행하는 헬퍼 메서드 (바디 없는 경우)
+     * @param url - 요청할 URL
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected ResultActions performPost(String url) throws Exception {
+        return mvc.perform(post(url)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print());
+    }
+
+    /**
      * PATCH 요청을 수행하는 헬퍼 메서드
      * @param url - 요청할 URL
      * @param body - 요청 바디 (객체 형태)
@@ -172,6 +184,19 @@ public abstract class ControllerTestSupport {
     protected void expectForbidden(ResultActions resultActions, String msg) throws Exception {
         resultActions.andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value("403"))
+                .andExpect(jsonPath("$.msg").value(msg))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    /**
+     * 404 Not Found 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectNotFound(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value(msg))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }

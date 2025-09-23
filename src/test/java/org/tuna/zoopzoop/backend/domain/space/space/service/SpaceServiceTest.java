@@ -79,7 +79,7 @@ class SpaceServiceTest {
 
         // Then
         Assertions.assertThat(deletedSpaceName).isEqualTo(spaceName);
-        assertThatThrownBy(() -> spaceService.getSpaceById(spaceId))
+        assertThatThrownBy(() -> spaceService.findById(spaceId))
                 .isInstanceOf(NoResultException.class);
     }
 
