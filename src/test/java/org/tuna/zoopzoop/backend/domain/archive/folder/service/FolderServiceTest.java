@@ -15,6 +15,11 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchi
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
@@ -32,6 +37,7 @@ class FolderServiceTest {
     @Mock private MemberRepository memberRepository;
     @Mock private PersonalArchiveRepository personalArchiveRepository;
     @Mock private FolderRepository folderRepository;
+    @Mock private DataSourceRepository dataSourceRepository;
 
     @InjectMocks private FolderService folderService;
 
@@ -176,4 +182,89 @@ class FolderServiceTest {
 
         verify(folderRepository, never()).save(any(Folder.class));
     }
+
+    // Read: Personal Archive 내 폴더 목록
+    @Test
+    @DisplayName("개인 아카이브 폴더 목록 조회 - 성공")
+    void getFoldersForPersonal_success() {
+        // given
+        Folder f1 = new Folder(); f1.setName("default"); f1.setArchive(archive); ReflectionTestUtils.setField(f1, "id", 1);
+        Folder f2 = new Folder(); f2.setName("docs");    f2.setArchive(archive); ReflectionTestUtils.setField(f2, "id", 2);
+
+        when(personalArchiveRepository.findByMemberId(1)).thenReturn(Optional.of(personalArchive));
+        when(folderRepository.findByArchive(archive)).thenReturn(List.of(f1, f2));
+
+        // when
+        List<FolderResponse> rs = folderService.getFoldersForPersonal(1);
+
+        // then
+        assertThat(rs).hasSize(2);
+        assertThat(rs.get(0).folderId()).isEqualTo(1);
+        assertThat(rs.get(0).folderName()).isEqualTo("default");
+        assertThat(rs.get(1).folderName()).isEqualTo("docs");
+        verify(folderRepository, times(1)).findByArchive(archive);
+    }
+
+    // Read: 폴더 내 파일 목록
+    @Test
+    @DisplayName("폴더 내 파일 목록 조회")
+    void getFilesInFolderForPersonal_success() {
+        // given
+        Integer folderId = 2;
+
+        Folder folder = new Folder();
+        folder.setName("docs");
+        folder.setArchive(archive);
+        ReflectionTestUtils.setField(folder, "id", folderId);
+        when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
+
+        DataSource d1 = new DataSource();
+        ReflectionTestUtils.setField(d1, "id", 10);
+        d1.setTitle("spec.pdf");
+        d1.setFolder(folder);
+        d1.setSummary("요약 A");
+        d1.setSourceUrl("http://src/a");
+        d1.setThumbnailUrl("http://img/a");
+        d1.setTags(List.of(new Tag("tag1"), new Tag("tag2")));
+
+        DataSource d2 = new DataSource();
+        ReflectionTestUtils.setField(d2, "id", 11);
+        d2.setTitle("notes.txt");
+        d2.setFolder(folder);
+        d2.setSummary("요약 B");
+        d2.setSourceUrl("http://src/b");
+        d2.setThumbnailUrl("http://img/b");
+        d2.setTags(List.of());
+
+        when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1, d2));
+
+        // when
+        FolderFilesDto dto = folderService.getFilesInFolderForPersonal(1, folderId);
+
+        // then
+        assertThat(dto.files()).hasSize(2);
+        FileSummary f0 = dto.files().get(0);
+        assertThat(f0.dataSourceId()).isEqualTo(10);
+        assertThat(f0.title()).isEqualTo("spec.pdf");
+        assertThat(f0.summary()).isEqualTo("요약 A");
+        assertThat(f0.sourceUrl()).isEqualTo("http://src/a");
+        assertThat(f0.imageUrl()).isEqualTo("http://img/a");
+        assertThat(f0.tags()).extracting(Tag::getTagName).containsExactly("tag1", "tag2");
+    }
+
+    @Test
+    @DisplayName("폴더 내 파일 목록 조회 - 폴더가 없으면 예외 발생")
+    void getFilesInFolderForPersonal_notFound() {
+        // given
+        Integer folderId = 999;
+        when(folderRepository.findById(folderId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NoResultException.class,
+                () -> folderService.getFilesInFolderForPersonal(1, folderId));
+
+        // then(verify)
+        verify(dataSourceRepository, never()).findAllByFolder(any());
+    }
+
 }
