@@ -23,8 +23,8 @@ class SpaceServiceTest {
 
     @BeforeEach
     void setUp() {
-        spaceService.createSpace("기존 스페이스 1");
-        spaceService.createSpace("기존 스페이스 2");
+        spaceService.createSpace("기존 스페이스 1_forServiceTest");
+        spaceService.createSpace("기존 스페이스 2_forServiceTest");
     }
 
     // ============================= CREATE ============================= //
@@ -70,7 +70,7 @@ class SpaceServiceTest {
     @DisplayName("스페이스 삭제 - 성공")
     void deleteSpace_Success() {
         // Given
-        Space space = spaceService.findByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1_forServiceTest");
         Integer spaceId = space.getId();
         String spaceName = space.getName();
 
@@ -100,9 +100,9 @@ class SpaceServiceTest {
     @DisplayName("스페이스 이름 변경 - 성공")
     void updateSpaceName_Success() {
         // Given
-        Space space = spaceService.findByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1_forServiceTest");
         Integer spaceId = space.getId();
-        String newName = "변경된 스페이스 이름";
+        String newName = "변경된 스페이스 이름_forServiceTest";
 
         // When
         Space updatedSpace = spaceService.updateSpaceName(spaceId, newName);
@@ -129,9 +129,9 @@ class SpaceServiceTest {
     @DisplayName("스페이스 이름 변경 - 실패 : 중복된 스페이스 이름")
     void updateSpaceName_Fail_DuplicateName() {
         // Given
-        Space space = spaceService.findByName("기존 스페이스 1");
+        Space space = spaceService.findByName("기존 스페이스 1_forServiceTest");
         Integer spaceId = space.getId();
-        String duplicateName = "기존 스페이스 2";
+        String duplicateName = "기존 스페이스 2_forServiceTest";
 
         // When & Then
         assertThatThrownBy(() -> spaceService.updateSpaceName(spaceId, duplicateName))

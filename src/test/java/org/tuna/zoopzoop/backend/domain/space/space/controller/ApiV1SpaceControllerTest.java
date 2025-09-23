@@ -93,6 +93,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     // ============================= CREATE ============================= //
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 생성 - 성공")
     void createSpace_Success() throws Exception {
         // Given
@@ -112,6 +113,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 생성 - 실패 : 스페이스명 누락")
     void createSpace_Fail_NameMissing() throws Exception {
         // Given
@@ -133,6 +135,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 생성 - 실패 : 스페이스명 길이 초과")
     void createSpace_Fail_NameTooLong() throws Exception {
         // Given
@@ -154,6 +157,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 생성 - 실패 : 스페이스명 중복")
     void createSpace_Fail_NameDuplicate() throws Exception {
         // Given
@@ -174,6 +178,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     // ============================= DELETE ============================= //
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 삭제 - 성공")
     void deleteSpace_Success() throws Exception {
         // Given
@@ -193,6 +198,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 삭제 - 실패 : 존재하지 않는 스페이스")
     void deleteSpace_Fail_NotFound() throws Exception {
         // Given
@@ -212,6 +218,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
     // ======================= Modify ======================== //
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 성공")
     void modifySpaceName_Success() throws Exception {
         // Given
@@ -236,6 +243,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 실패 : 존재하지 않는 스페이스")
     void modifySpaceName_Fail_NotFound() throws Exception {
         // Given
@@ -258,6 +266,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 누락")
     void modifySpaceName_Fail_NameMissing() throws Exception {
         // Given
@@ -280,6 +289,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 길이 초과")
     void modifySpaceName_Fail_NameTooLong() throws Exception {
         // Given
@@ -302,6 +312,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 중복")
     void modifySpaceName_Fail_NameDuplicate() throws Exception {
         // Given
