@@ -24,6 +24,8 @@ public class ApiV1NewsController {
     public Mono<ResponseEntity<RsData<ResBodyForNaverNews>>> searchRecentNews(
             @RequestParam(defaultValue = "10") int display
     ) {
+        // Naver 뉴스 API에선 Non-keyword 방식의 검색을 지원하지 않음.
+        // 그래서 일단 그냥 검색 쿼리를 '뉴스'라고 지정하고 해 보았는데, 꽤나 좋은 결과를 받아옴. (목표하던 기능과 비슷함.)
         return newsSearchService.searchNews("뉴스", display, 1, "date")
                 .map(response -> ResponseEntity
                         .status(HttpStatus.OK)
