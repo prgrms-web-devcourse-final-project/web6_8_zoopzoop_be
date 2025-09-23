@@ -7,9 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
-import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
-
 import java.util.List;
 
 @Setter
@@ -42,7 +41,7 @@ public class Member extends BaseEntity {
     private PersonalArchive personalArchive; //PersonalArchive(Archive 매핑 테이블), 1:1 관계, cascade.all
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MemberShip> memberShips; //MemberShip, 1:N 관계, cascade.all
+    private List<Membership> memberShips; //MemberShip, 1:N 관계, cascade.all
 
     //---------- 생성자 ----------//
     @Builder

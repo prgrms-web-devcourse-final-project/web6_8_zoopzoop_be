@@ -13,7 +13,7 @@ import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 @Setter
 @Entity
 @NoArgsConstructor
-public class MemberShip extends BaseEntity {
+public class Membership extends BaseEntity {
     //Member 외래키
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)

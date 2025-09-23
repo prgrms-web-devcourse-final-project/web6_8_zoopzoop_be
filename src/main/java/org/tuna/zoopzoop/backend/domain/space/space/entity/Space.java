@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.SharingArchive;
-import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.util.List;
@@ -29,7 +29,7 @@ public class Space extends BaseEntity {
     //연결된 MemberShip
     //Space 삭제시 cascade.all
     @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MemberShip> memberShips;
+    private List<Membership> memberShips;
 
     public Space() {
         this.sharingArchive = new SharingArchive(this);
@@ -38,7 +38,10 @@ public class Space extends BaseEntity {
     @Builder
     public Space(String name, Boolean active) {
         this.name = name;
-        this.active = active;
+
+        if (active != null)
+            this.active = active;
+
         this.sharingArchive = new SharingArchive(this);
     }
 }
