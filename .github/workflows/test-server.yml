@@ -120,9 +120,9 @@ jobs:
             set -e
 
             # 환경 변수 설정
-            DB_URL="${{ secrets.TEST_DB_URL }}"
-            DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}"
-            DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}"
+            export DB_URL="${{ secrets.TEST_DB_URL }}"
+            export DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}"
+            export DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}"
 
             echo "🚀 Starting deployment to TEST environment"
 
