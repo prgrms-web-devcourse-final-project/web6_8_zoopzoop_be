@@ -1,7 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.member.service;
 
 import jakarta.persistence.NoResultException;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,19 +30,24 @@ class MemberServiceTest {
     void setUp() {
         Member member1 = memberService.createMember(
                 "test1",
-                1001L,
-                "url" );
+                "url",
+                "1111",
+                Provider.KAKAO
+        );
         Member member2 = memberService.createMember(
                 "test2",
-                1002L,
-                "url" );
+                "url",
+                "2222",
+                Provider.GOOGLE
+        );
     }
 
     private Member createTestMember() {
         return memberService.createMember(
                 "test3",
-                1003L,
-                "url"
+                "url",
+                "3333",
+                Provider.KAKAO
         );
     }
 
@@ -66,9 +72,9 @@ class MemberServiceTest {
     @Test
     @DisplayName("사용자 생성 - 이름 중복으로 인한 실패")
     void createMemberFailedByName() {
-        memberService.createMember("dupName", 3001L,"url");
+        memberService.createMember("dupName", "url", "4001", Provider.KAKAO);
         Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
-            memberService.createMember("dupName", 3002L,"url");
+            memberService.createMember("dupName", "url", "4002", Provider.KAKAO);
         });
         assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
     }
@@ -110,21 +116,21 @@ class MemberServiceTest {
     }
 
     @Test
-    @DisplayName("Kakao 식별 키 기반 조회 - 성공")
+    @DisplayName("식별 키 기반 조회 - 성공")
     void findByKakaoKeySuccess() {
         Member saved = createTestMember();
-        Member found = memberService.findByKakaoKey(1003L);
+        Member found = memberService.findByProviderKey(saved.getProviderKey());
         assertEquals(saved.getId(), found.getId());
         assertEquals(saved.getName(), found.getName());
     }
 
     @Test
-    @DisplayName("Kakao 식별 키 기반 조회 - 실패")
+    @DisplayName("식별 키 기반 조회 - 실패")
     void findByKakaoKeyFailed() {
         Exception ex = assertThrows(NoResultException.class, () -> {
-            memberService.findByKakaoKey(1004L);
+            memberService.findByProviderKey("5555");
         });
-        assertTrue(ex.getMessage().contains("카카오 키를 가진 사용자를 찾을 수 없습니다."));
+        assertTrue(ex.getMessage().contains("해당 키를 가진 사용자를 찾을 수 없습니다."));
     }
 
     @Test

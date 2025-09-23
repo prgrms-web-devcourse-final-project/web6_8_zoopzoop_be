@@ -24,12 +24,19 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    springAiVersion = "1.0.0"
+}
+
 dependencies {
     // Spring Data JPA
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // Spring Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Spring Oauth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
     // Spring Web (MVC)
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -67,6 +74,14 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+    // Spring AI
+    implementation "org.springframework.ai:spring-ai-starter-model-openai"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
+    }
 }
 
 tasks.named('test') {

@@ -34,10 +34,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.info("[JwtFilter] Token valid? {}", jwtUtil.validateToken(token));
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) { // 토큰이 존재하고 유효한 경우
-            String kakaoKey = jwtUtil.getKakaoKeyFromToken(token); //토큰에서 카카오 키 값 추출
-            log.info("[JwtFilter] KakaoKey from token: {}", kakaoKey);
+            String providerKey = jwtUtil.getProviderKeyFromToken(token); //토큰에서 키 값 추출
+            log.info("[JwtFilter] KakaoKey from token: {}", providerKey);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(kakaoKey); // 사용자 정보 로드
+            UserDetails userDetails = userDetailsService.loadUserByUsername(providerKey); // 사용자 정보 로드
             log.info("[JwtFilter] UserDetails loaded: {}", userDetails);
 
             //권한 생성 로직 X (사용 안함.)

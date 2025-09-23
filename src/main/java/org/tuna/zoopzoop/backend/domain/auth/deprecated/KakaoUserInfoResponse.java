@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.auth.dto;
+package org.tuna.zoopzoop.backend.domain.auth.deprecated;
 
 public record KakaoUserInfoResponse(
         Long id,

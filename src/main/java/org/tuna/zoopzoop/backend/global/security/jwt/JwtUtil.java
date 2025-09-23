@@ -25,8 +25,10 @@ public class JwtUtil {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtProperties.getAccessTokenValidity());
 
+        String subject = member.getProvider() + ":" + member.getProviderKey();
+
         return Jwts.builder()
-                .setSubject(String.valueOf(member.getKakaoKey()))
+                .setSubject(subject)
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
                 .setIssuedAt(now)
@@ -46,13 +48,13 @@ public class JwtUtil {
 //    }
 
     // 토큰에서 카카오 키 추출
-    public String getKakaoKeyFromToken(String token) {
+    public String getProviderKeyFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return claims.getSubject();
+        return claims.getSubject(); // "kakao:123456" 또는 "google:abcdef"
     }
 
     // 토큰에서 이름 추출
@@ -102,11 +104,12 @@ public class JwtUtil {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtProperties.getRefreshTokenValidity());
 
+        String subject = member.getProvider() + ":" + member.getProviderKey();
+
         return Jwts.builder()
-                .setSubject(String.valueOf(member.getKakaoKey()))
+                .setSubject(subject)
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
-                .claim("tokenType", "refresh")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey())
@@ -135,5 +138,15 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
         return claims.getExpiration();
+    }
+
+    // 액세스 토큰의 유효 시간 추출
+    public long getAccessTokenValiditySeconds() {
+        return jwtProperties.getAccessTokenValidity() / 1000;
+    }
+
+    // 리프레시 토큰의 유효 시간 추출
+    public long getRefreshTokenValiditySeconds() {
+        return jwtProperties.getRefreshTokenValidity() / 1000;
     }
 }

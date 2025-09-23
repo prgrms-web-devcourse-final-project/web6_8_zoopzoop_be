@@ -14,19 +14,29 @@ import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 public class CustomUserDetailsService implements UserDetailsService {
     private final MemberService memberService;
 
-    @Override
-    public UserDetails loadUserByUsername(String kakaoKeyStr) throws UsernameNotFoundException {
-        Long kakaoKey;
-        try {
-            kakaoKey = Long.parseLong(kakaoKeyStr);
-        } catch (NumberFormatException e) {
-            throw new UsernameNotFoundException("잘못된 카카오 키: " + kakaoKeyStr, e);
+    public UserDetails loadUserByUsername(String subject) throws UsernameNotFoundException {
+        // subject = "provider:providerKey"
+        String[] parts = subject.split(":");
+        if (parts.length != 2) {
+            throw new UsernameNotFoundException("잘못된 토큰 subject: " + subject);
         }
 
-        Member member = memberService.findByKakaoKey(kakaoKey);
-        if (!member.isActive()) {
-            throw new UsernameNotFoundException("비활성화된 계정입니다: " + kakaoKey);
+        String provider = parts[0]; // kakao, google
+        String providerKey = parts[1];
+
+        Member member;
+        if ("KAKAO".equals(provider)) {
+            member = memberService.findByKakaoKey(providerKey);
+        } else if ("GOOGLE".equals(provider)) {
+            member = memberService.findByGoogleKey(providerKey);
+        } else {
+            throw new UsernameNotFoundException("지원하지 않는 provider: " + provider);
         }
+
+        if (!member.isActive()) {
+            throw new UsernameNotFoundException("비활성화된 계정입니다: " + providerKey);
+        }
+
         return new CustomUserDetails(member);
     }
 }
