@@ -183,7 +183,7 @@ public class FolderService {
                         ds.getCreateDate(),      // LocalDateTime
                         ds.getSummary(),
                         ds.getSourceUrl(),
-                        ds.getThumbnailUrl(),
+                        ds.getImageUrl(),
                         ds.getTags() == null ? List.of() : ds.getTags()
                 ))
                 .toList();
