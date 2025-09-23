@@ -126,18 +126,20 @@ jobs:
             GREEN_PORT=8082
             BLUE=zoopzoop-blue
             GREEN=zoopzoop-green
-
-            # Blue-Green 배포 로직
-            if sudo grep -q "$BLUE_PORT" /etc/nginx/nginx.conf; then
-              CURRENT=$BLUE
-              CURRENT_PORT=$BLUE_PORT
-              NEXT=$GREEN
-              NEXT_PORT=$GREEN_PORT
+            
+            NGINX_CONTAINER=npm
+            
+            # Blue/Green 판단 (포트 기준)
+            if docker exec $NGINX_CONTAINER sh -c "grep $BLUE_PORT /etc/nginx/conf.d/default.conf" > /dev/null 2>&1; then
+            CURRENT=$BLUE
+            CURRENT_PORT=$BLUE_PORT
+            NEXT=$GREEN
+            NEXT_PORT=$GREEN_PORT
             else
-              CURRENT=$GREEN
-              CURRENT_PORT=$GREEN_PORT
-              NEXT=$BLUE
-              NEXT_PORT=$BLUE_PORT
+            CURRENT=$GREEN
+            CURRENT_PORT=$GREEN_PORT
+            NEXT=$BLUE
+            NEXT_PORT=$BLUE_PORT
             fi
 
             echo "Current live: $CURRENT ($CURRENT_PORT)"
@@ -145,10 +147,8 @@ jobs:
 
             # 이전 컨테이너 정리
             if [ "$(docker ps -q -f name=$NEXT)" ]; then
-              docker stop $NEXT
-            fi
-            if [ "$(docker ps -aq -f name=$NEXT)" ]; then
-              docker rm $NEXT
+                docker stop $NEXT
+                docker rm $NEXT
             fi
 
             # 새 이미지 pull 및 컨테이너 실행
@@ -176,11 +176,10 @@ jobs:
               fi
             done
 
-            # Nginx 설정 변경
-            sudo sed -i "s/$CURRENT_PORT/$NEXT_PORT/g" /etc/nginx/nginx.conf
-            sudo nginx -s reload
+            # nginx 포트 교체 (docker exec)
+            docker exec $NGINX_CONTAINER sh -c "sed -i 's/$CURRENT_PORT/$NEXT_PORT/g' /etc/nginx/conf.d/default.conf && nginx -s reload"
             echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
-
+            
             # 이전 컨테이너 정리
             if [ "$(docker ps -q -f name=$CURRENT)" ]; then
               docker stop $CURRENT
