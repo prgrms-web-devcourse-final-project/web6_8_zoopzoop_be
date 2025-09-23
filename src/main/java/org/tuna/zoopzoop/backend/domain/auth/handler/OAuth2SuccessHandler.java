@@ -31,11 +31,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
+        // OAuth2 로그인 사용자의 속성
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+
+        // 소셜 로그인 공급자(Google, Kakao)
         String registrationId = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
 
+        // 공급자 별로 DB 에서 회원 조회
         Member member;
-
         if ("kakao".equals(registrationId)) {
             String kakaoId = oAuth2User.getAttributes().get("id").toString();
             member = memberService.findByKakaoKey(kakaoId);
@@ -43,9 +46,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String googleId = (String) oAuth2User.getAttributes().get("sub");
             member = memberService.findByGoogleKey(googleId);
         } else {
-            throw new IllegalArgumentException("Unsupported provider: " + registrationId);
+            throw new IllegalArgumentException(registrationId + "는 지원하지 않는 소셜 로그인입니다.");
         }
 
+        // 조회된 회원 정보를 기반으로 AccessToken 및 RefreshToken 생성
         String accessToken = jwtUtil.generateToken(member);
         String refreshToken = jwtUtil.generateRefreshToken(member);
 
@@ -53,6 +57,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
+                // .domain() // 프론트엔드 & 백엔드 상위 도메인
+                // .secure(true) // https 필수 설정.
                 .sameSite("Lax")
                 .build();
 
@@ -60,11 +66,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtProperties.getRefreshTokenValidity() / 1000)
+                // .domain() // 프론트엔드 & 백엔드 상위 도메인
+                // .secure(true) // https 필수 설정.
                 .sameSite("Lax")
                 .build();
 
+        // HTTP 응답에서 쿠키 값 추가.
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        // 로그인 성공 후 리다이렉트.
+        // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
         response.sendRedirect("/login-success");
+
+        // 보안을 좀 더 강화하고자 한다면 CSRF 토큰 같은 걸 생각해볼 수 있겠으나,
+        // 일단은 구현하지 않음.(개발 과정 중에 번거로워질 수 있을 듯 함.)
     }
 }

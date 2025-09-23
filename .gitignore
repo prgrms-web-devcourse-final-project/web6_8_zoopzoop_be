@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,gradle,intellij,visualstudiocode,kotlin,maven,git,windows,macos,netbeans,eclipse
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,gradle,intellij,visualstudiocode,kotlin,maven,git,windows,macos,netbeans,eclipse
 
+### .iml ###
+main.iml
+test.iml
+
 ### secret ###
 application-secrets.yml
 

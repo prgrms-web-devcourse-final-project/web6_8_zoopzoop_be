@@ -10,10 +10,10 @@ import java.util.Optional;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Integer> {
-//    Optional<Member> findByEmail(String email);
     Optional<Member> findByName(String name);
     Optional<Member> findByProviderAndProviderKey(Provider provider, String providerKey);
     Optional<Member> findByProviderKey(String providerKey);
+    boolean existsByName(String name);
     List<Member> findByActiveTrue(); // 활성 사용자 조회
     List<Member> findByActiveFalse(); // 비활성 사용자 조회
 }
