@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
@@ -15,6 +14,32 @@ import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 @RequiredArgsConstructor
 public class SpaceService {
     private final SpaceRepository spaceRepository;
+
+    // ======================== 스페이스 조회 ======================== //
+
+    /**
+     * 스페이스 ID로 스페이스 조회
+     * @param spaceId 스페이스 ID
+     * @return 조회된 스페이스
+     * @throws NoResultException 스페이스가 존재하지 않을 경우
+     */
+    public Space findById(Integer spaceId) {
+        return spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+    }
+
+    /**
+     * 스페이스 이름으로 스페이스 조회
+     * @param name 스페이스 이름
+     * @return 조회된 스페이스
+     * @throws NoResultException 스페이스가 존재하지 않을 경우
+     */
+    public Space findByName(String name) {
+        return spaceRepository.findByName(name)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+    }
+
+    // ======================== 스페이스 생성/수정/삭제 ======================== //
 
     /**
      * 스페이스 생성
@@ -49,28 +74,6 @@ public class SpaceService {
         spaceRepository.delete(space);
 
         return spaceName;
-    }
-
-    /**
-     * 스페이스 ID로 스페이스 조회
-     * @param spaceId 스페이스 ID
-     * @return 조회된 스페이스
-     * @throws NoResultException 스페이스가 존재하지 않을 경우
-     */
-    public Space getSpaceById(Integer spaceId) {
-        return spaceRepository.findById(spaceId)
-                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
-    }
-
-    /**
-     * 스페이스 이름으로 스페이스 조회
-     * @param name 스페이스 이름
-     * @return 조회된 스페이스
-     * @throws NoResultException 스페이스가 존재하지 않을 경우
-     */
-    public Space findByName(String name) {
-        return spaceRepository.findByName(name)
-                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
     }
 
     /**

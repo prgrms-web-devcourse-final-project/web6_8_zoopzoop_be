@@ -7,6 +7,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MembershipRepository extends JpaRepository<Membership, Integer> {
     boolean existsByMemberAndSpace(Member member, Space space);
@@ -20,4 +21,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     boolean existsByMemberAndSpaceAndAuthorityIsNot(Member member, Space space, Authority authority);
 
     boolean existsByMemberAndSpaceAndAuthority(Member member, Space space, Authority authority);
+
+    Optional<Membership> findByMemberAndSpace(Member member, Space space);
+
+    List<Membership> findAllBySpaceAndAuthority(Space space, Authority authority);
 }
