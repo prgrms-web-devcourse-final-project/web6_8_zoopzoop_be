@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.space.membership.service;
 
+import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -82,5 +83,17 @@ public class MembershipService {
         } else {
             return membershipRepository.findAllByMember(member);
         }
+    }
+
+    /**
+     * 멤버와 스페이스로 Membership 조회
+     * @param member 조회할 멤버
+     * @param space 조회할 스페이스
+     * @return 해당 멤버와 스페이스에 해당하는 Membership 엔티티
+     * @throws NoResultException 해당 멤버가 스페이스에 속해있지 않은 경우
+     */
+    public Membership findByMemberAndSpace(Member member, Space space) {
+        return membershipRepository.findByMemberAndSpace(member, space)
+                .orElseThrow(() -> new NoResultException("해당 멤버는 스페이스에 속해있지 않습니다."));
     }
 }

@@ -176,5 +176,18 @@ public abstract class ControllerTestSupport {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    /**
+     * 404 Not Found 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectNotFound(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.msg").value(msg))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
 
 }
