@@ -6,6 +6,6 @@ import java.util.List;
 
 public record ResBodyForSpaceInvitationList(
         Integer spaceId,
-        List<ResBodyForGetMemberInfo> invitations
+        List<ResBodyForGetMemberInfo> invitedUsers
 ) {
 }

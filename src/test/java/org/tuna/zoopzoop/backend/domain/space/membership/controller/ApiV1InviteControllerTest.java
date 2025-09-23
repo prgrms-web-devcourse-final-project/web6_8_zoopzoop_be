@@ -94,7 +94,7 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         // test2 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("ic2222"),
-                spaceService.findByName("기존 스페이스 1_forInviteControllerTest"),
+                spaceService.findByName("기존 스페이스 2_forInviteControllerTest"),
                 Authority.PENDING
         );
         // test1 -> 스페이스 2 가입 (PENDING)
@@ -279,14 +279,14 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         expectOk(resultActions, "스페이스 초대 목록을 조회했습니다.");
 
         resultActions
-                .andExpect(jsonPath("$.data.invitations.length()").value(2))
+                .andExpect(jsonPath("$.data.invitedUsers.length()").value(2))
                 .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
-                .andExpect(jsonPath("$.data.invitations[0].userId").exists())
-                .andExpect(jsonPath("$.data.invitations[0].userName").value(member2.getName()))
-                .andExpect(jsonPath("$.data.invitations[0].userProfileImageUrl").value(member2.getProfileImageUrl()))
-                .andExpect(jsonPath("$.data.invitations[1].userId").exists())
-                .andExpect(jsonPath("$.data.invitations[1].userName").value(member3.getName()))
-                .andExpect(jsonPath("$.data.invitations[1].userProfileImageUrl").value(member3.getProfileImageUrl()));
+                .andExpect(jsonPath("$.data.invitedUsers[0].id").exists())
+                .andExpect(jsonPath("$.data.invitedUsers[0].name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers[0].profileUrl").value(member2.getProfileImageUrl()))
+                .andExpect(jsonPath("$.data.invitedUsers[1].id").exists())
+                .andExpect(jsonPath("$.data.invitedUsers[1].name").value(member3.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers[1].profileUrl").value(member3.getProfileImageUrl()));
     }
 
     @Test

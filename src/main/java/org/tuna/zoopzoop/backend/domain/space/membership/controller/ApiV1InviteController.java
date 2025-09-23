@@ -73,7 +73,7 @@ public class ApiV1InviteController {
         );
     }
 
-    @GetMapping("/space/{spaceId")
+    @GetMapping("/space/{spaceId}")
     @Operation(summary = "스페이스 초대 목록 조회")
     public RsData<ResBodyForSpaceInvitationList> getInvites(
             @AuthenticationPrincipal CustomUserDetails userDetails,
