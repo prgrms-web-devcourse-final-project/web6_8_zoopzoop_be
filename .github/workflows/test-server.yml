@@ -117,73 +117,47 @@ jobs:
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
-            
-            echo "🚀 Starting deployment to TEST environment"
 
-            IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
-            BLUE_PORT=8081
-            GREEN_PORT=8082
-            BLUE=zoopzoop-blue
-            GREEN=zoopzoop-green
-            
-            NGINX_CONTAINER=npm
-            
-            # Blue/Green 판단 (포트 기준)
-            if docker exec $NGINX_CONTAINER sh -c "grep $BLUE_PORT /etc/nginx/conf.d/default.conf" > /dev/null 2>&1; then
-            CURRENT=$BLUE
-            CURRENT_PORT=$BLUE_PORT
-            NEXT=$GREEN
-            NEXT_PORT=$GREEN_PORT
+            # GHCR 로그인 (EC2)
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{github.repository_owner}} --password-stdin
+
+            # 최신 이미지 pull
+            docker pull ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
+
+            # Blue-Green 배포
+            if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
+              NEW_CONTAINER=zoopzoop-green
+              OLD_CONTAINER=zoopzoop-blue
+              PORT=8081
             else
-            CURRENT=$GREEN
-            CURRENT_PORT=$GREEN_PORT
-            NEXT=$BLUE
-            NEXT_PORT=$BLUE_PORT
+              NEW_CONTAINER=zoopzoop-blue
+              OLD_CONTAINER=zoopzoop-green
+              PORT=8080
             fi
 
-            echo "Current live: $CURRENT ($CURRENT_PORT)"
-            echo "Next to deploy: $NEXT ($NEXT_PORT)"
-
-            # 이전 컨테이너 정리
-            if [ "$(docker ps -q -f name=$NEXT)" ]; then
-                docker stop $NEXT
-                docker rm $NEXT
-            fi
-
-            # 새 이미지 pull 및 컨테이너 실행
-            sudo docker pull $IMAGE
-            sudo docker run -d --name $NEXT \
-              -e DB_URL="${{ secrets.TEST_DB_URL }}" \
-              -e DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}" \
-              -e DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}" \
-              -p $NEXT_PORT:8080 \
-              $IMAGE
+            echo "Starting new container: $NEW_CONTAINER on port $PORT"
+            docker run -d --restart unless-stopped \
+              -p $PORT:8080 \
+              --name $NEW_CONTAINER \
+              --network common \
+              -e SPRING_DATASOURCE_URL=${{secrets.TEST_DB_URL}} \
+              -e SPRING_DATASOURCE_USERNAME=${{secrets.TEST_DB_USERNAME}} \
+                -e SPRING_DATASOURCE_PASSWORD=${{secrets.TEST_DB_PASSWORD}} \
+              ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
             
-            # Health check
+            
+            # 헬스체크 (Spring Boot Actuator)
             for i in {1..30}; do
-              if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
-                echo "✅ $NEXT is healthy!"
+              if curl -s http://localhost:$PORT/actuator/health | grep -q '"status":"UP"'; then
+                echo "New container is healthy!"
                 break
-              fi
-              echo "⏳ Waiting... ($i/30)"
-              sleep 2
-              if [ $i -eq 30 ]; then
-                echo "❌ Health check failed. Rolling back..."
-                docker stop $NEXT
-                docker rm $NEXT
-                exit 1
+              else
+                echo "Waiting for new container to be healthy..."
+                sleep 5
               fi
             done
 
-            # nginx 포트 교체 (docker exec)
-            docker exec $NGINX_CONTAINER sh -c "sed -i 's/$CURRENT_PORT/$NEXT_PORT/g' /etc/nginx/conf.d/default.conf && nginx -s reload"
-            echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
-            
-            # 이전 컨테이너 정리
-            if [ "$(docker ps -q -f name=$CURRENT)" ]; then
-              docker stop $CURRENT
-              docker rm $CURRENT
-            fi
-
-            echo "🎉 Deployment to TEST environment completed!"
+            # 이전 컨테이너 종료 및 제거
+            echo "Stopping old container: $OLD_CONTAINER"
+            docker stop $OLD_CONTAINER || true
+            docker rm $OLD_CONTAINER || true
