@@ -60,6 +60,15 @@ public class MembershipService {
         }
     }
 
+    /**
+     * 스페이스에 속한 멤버 중 초대 상태(PENDING)인 멤버십 목록 조회
+     * @param space 조회할 스페이스
+     * @return 해당 스페이스에 속한 초대 상태(PENDING)인 멤버십 목록
+     */
+    public List<Membership> findInvitationsBySpace(Space space) {
+        return membershipRepository.findAllBySpaceAndAuthority(space, Authority.PENDING);
+    }
+
 
     // ======================== 멤버십 존재 여부 확인 ======================== //
 

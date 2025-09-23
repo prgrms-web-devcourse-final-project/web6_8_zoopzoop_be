@@ -23,4 +23,6 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     boolean existsByMemberAndSpaceAndAuthority(Member member, Space space, Authority authority);
 
     Optional<Membership> findByMemberAndSpace(Member member, Space space);
+
+    List<Membership> findAllBySpaceAndAuthority(Space space, Authority authority);
 }

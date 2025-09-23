@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
@@ -24,7 +23,7 @@ public class SpaceService {
      * @return 조회된 스페이스
      * @throws NoResultException 스페이스가 존재하지 않을 경우
      */
-    public Space getSpaceById(Integer spaceId) {
+    public Space findById(Integer spaceId) {
         return spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
     }

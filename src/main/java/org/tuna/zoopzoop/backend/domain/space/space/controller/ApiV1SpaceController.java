@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -23,7 +22,6 @@ import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -65,7 +63,7 @@ public class ApiV1SpaceController {
     ) throws AccessDeniedException {
         // ADMIN 권한 체크
         Member member = userDetails.getMember();
-        if(!membershipService.isMemberAdminInSpace(member, spaceService.getSpaceById(spaceId)))
+        if(!membershipService.isMemberAdminInSpace(member, spaceService.findById(spaceId)))
             throw new AccessDeniedException("스페이스의 ADMIN 권한이 필요합니다.");
 
         String deletedSpaceName = spaceService.deleteSpace(spaceId);
@@ -86,7 +84,7 @@ public class ApiV1SpaceController {
     ) throws AccessDeniedException {
         // ADMIN 권한 체크
         Member member = userDetails.getMember();
-        if(!membershipService.isMemberAdminInSpace(member, spaceService.getSpaceById(spaceId)))
+        if(!membershipService.isMemberAdminInSpace(member, spaceService.findById(spaceId)))
             throw new AccessDeniedException("스페이스의 ADMIN 권한이 필요합니다.");
 
         Space updatedSpace = spaceService.updateSpaceName(spaceId, reqBody.name());
