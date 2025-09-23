@@ -87,7 +87,7 @@ public class ApiV1InviteController {
         List<Membership> invitations = membershipService.findByMember(member, "PENDING");
         List<SpaceMembershipInfoWithoutAuthority> invitationInfos = invitations.stream()
                 .map(membership -> new SpaceMembershipInfoWithoutAuthority(
-                        membership.getId(),
+                        membership.getSpace().getId(),
                         membership.getSpace().getName()
                 ))
                 .toList();

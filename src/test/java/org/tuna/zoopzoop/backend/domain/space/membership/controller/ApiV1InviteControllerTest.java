@@ -16,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
@@ -258,6 +259,31 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.msg").value("이미 완료된 초대입니다."));
     }
 
+    // ============================= GET MY INVITES ============================= //
+    @Test
+    @WithUserDetails(value = "KAKAO:ic2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("나에게 온 초대 목록 조회 - 성공")
+    void getMyInvites_Success() throws Exception {
+        // given
+        String url = "/api/v1/invite";
+
+        Space space1 = spaceService.findByName("기존 스페이스 1_forInviteControllerTest");
+        Space space2 = spaceService.findByName("기존 스페이스 2_forInviteControllerTest");
+
+        // when
+        ResultActions resultActions = performGet(url);
+
+        // then
+        expectOk(resultActions, "사용자에게 온 스페이스 초대 목록을 조회했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(2))
+                .andExpect(jsonPath("$.data.spaces[0].id").value(space1.getId()))
+                .andExpect(jsonPath("$.data.spaces[0].name").value(space1.getName()))
+                .andExpect(jsonPath("$.data.spaces[1].id").value(space2.getId()))
+                .andExpect(jsonPath("$.data.spaces[1].name").value(space2.getName()));
+    }
 
 
 }
