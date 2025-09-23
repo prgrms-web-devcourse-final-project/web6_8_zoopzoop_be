@@ -43,8 +43,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     void setUpSpace() {
-        spaceService.createSpace("기존 스페이스 1");
-        spaceService.createSpace("기존 스페이스 2");
+        spaceService.createSpace("기존 스페이스 1_forSpaceControllerTest");
+        spaceService.createSpace("기존 스페이스 2_forSpaceControllerTest");
 
     }
 
@@ -73,19 +73,19 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // test1 -> 스페이스 1 가입 (ADMIN)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("sc1111"),
-                spaceService.findByName("기존 스페이스 1"),
+                spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
                 Authority.ADMIN
         );
         // test2 -> 스페이스 1 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("sc2222"),
-                spaceService.findByName("기존 스페이스 1"),
+                spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
                 Authority.PENDING
         );
         // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("sc1111"),
-                spaceService.findByName("기존 스페이스 2"),
+                spaceService.findByName("기존 스페이스 2_forSpaceControllerTest"),
                 Authority.PENDING
         );
     }
@@ -182,7 +182,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 삭제 - 성공")
     void deleteSpace_Success() throws Exception {
         // Given
-        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
 
         // When
@@ -191,7 +191,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // Then
         expectOk(
                 resultActions,
-                String.format("%s - 스페이스가 삭제됐습니다.", "기존 스페이스 1")
+                String.format("%s - 스페이스가 삭제됐습니다.", "기존 스페이스 1_forSpaceControllerTest")
         );
         resultActions
                 .andExpect(jsonPath("$.data").value(nullValue()));
@@ -215,6 +215,24 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    @Test
+    @WithUserDetails(value = "KAKAO:sc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 삭제 - 실패 : ADMIN 권한 없는 사용자")
+    void deleteSpace_Fail_NoAdminAuthority() throws Exception {
+        // Given
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performDelete(url);
+
+        // Then
+        resultActions.andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value("403"))
+                .andExpect(jsonPath("$.msg").value("스페이스의 ADMIN 권한이 필요합니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
 
     // ======================= Modify ======================== //
     @Test
@@ -222,7 +240,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 성공")
     void modifySpaceName_Success() throws Exception {
         // Given
-        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -270,7 +288,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 누락")
     void modifySpaceName_Fail_NameMissing() throws Exception {
         // Given
-        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -293,7 +311,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 길이 초과")
     void modifySpaceName_Fail_NameTooLong() throws Exception {
         // Given
-        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
@@ -316,11 +334,11 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 이름 변경 - 실패 : 스페이스명 중복")
     void modifySpaceName_Fail_NameDuplicate() throws Exception {
         // Given
-        Integer spaceId = spaceService.findByName("기존 스페이스 1").getId();
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
         String url = String.format("/api/v1/space/%d", spaceId);
         String requestBody = """
                 {
-                    "name": "기존 스페이스 2"
+                    "name": "기존 스페이스 2_forSpaceControllerTest"
                 }
                 """;
 
@@ -331,6 +349,29 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         resultActions.andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value("409"))
                 .andExpect(jsonPath("$.msg").value("이미 존재하는 스페이스 이름입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 이름 변경 - 실패 : ADMIN 권한 없는 사용자")
+    void modifySpaceName_Fail_NoAdminAuthority() throws Exception {
+        // Given
+        Integer spaceId = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest").getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+        String requestBody = """
+                {
+                    "name": "변경된 스페이스 이름"
+                }
+                """;
+
+        // When
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // Then
+        resultActions.andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value("403"))
+                .andExpect(jsonPath("$.msg").value("스페이스의 ADMIN 권한이 필요합니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
@@ -358,10 +399,10 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
-                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
                 .andExpect(jsonPath("$.data.spaces[1].id").isNumber())
-                .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2"))
+                .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"));
     }
 
@@ -387,7 +428,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
-                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 2"))
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 2_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("PENDING"));
     }
 
@@ -413,7 +454,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
-                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1"))
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"));
     }
 
