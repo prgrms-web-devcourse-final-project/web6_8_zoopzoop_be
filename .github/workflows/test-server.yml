@@ -157,8 +157,8 @@ jobs:
             fi
 
             # 새 이미지 pull 및 컨테이너 실행
-            docker pull $IMAGE
-            docker run -d --name $NEXT \
+            sudo docker pull $IMAGE
+            sudo docker run -d --name $NEXT \
               -e SPRING_DATASOURCE_URL="$DB_URL" \
               -e SPRING_DATASOURCE_USERNAME="$DB_USERNAME" \
               -e SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
