@@ -29,9 +29,9 @@ public class ApiV1MemberController {
     /// api/v1/member : 사용자 탈퇴 (DELETE)
     ///
     /// 아래 기능은 혹시 몰라 추가적으로 구현한 조회 기능입니다.
-    /// api/v1/member : 모든 사용자 목록 조회 (GET)
+    /// api/v1/member/all : 모든 사용자 목록 조회 (GET)
     /// api/v1/member/{id} : id 기반 사용자 조회 (GET)
-    /// api/v1/member?name={name} : 이름 기반 사용자 조회
+    /// api/v1/member?name={name} : 이름 기반 사용자 조회 (GET)
     @GetMapping("/me")
     @Operation(summary = "사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfo(
@@ -86,8 +86,8 @@ public class ApiV1MemberController {
                 );
     }
 
-    @GetMapping
-    @Operation(summary = "사용자 정보 조회 - all")
+    @GetMapping("/all")
+    @Operation(summary = "모든 사용자 정보 조회")
     public ResponseEntity<RsData<List<ResBodyForGetMemberInfo>>> getMemberInfoAll(
     ) {
         List<Member> members = memberService.findAll();
@@ -99,14 +99,14 @@ public class ApiV1MemberController {
                 .body(
                         new RsData<>(
                                 "200",
-                                "사용자 정보를 조회했습니다.",
+                                "모든 사용자 정보를 조회했습니다.",
                                 memberDtos
                         )
                 );
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "사용자 정보 조회")
+    @Operation(summary = "id 기반 사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfoById(
             @PathVariable Integer id
     ) {
@@ -123,7 +123,7 @@ public class ApiV1MemberController {
     }
 
     @GetMapping
-    @Operation(summary = "사용자 정보 조회")
+    @Operation(summary = "이름 기반 사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfoByName(
             @RequestParam String name
     ) {

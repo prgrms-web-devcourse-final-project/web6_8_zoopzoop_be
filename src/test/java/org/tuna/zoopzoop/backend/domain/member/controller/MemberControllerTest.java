@@ -83,6 +83,74 @@ public class MemberControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("모든 사용자 정보 조회 - 성공(200)")
+    void getMemberInfoAllSuccess() throws Exception {
+        mockMvc.perform(get("/api/v1/member/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("200")) // status는 문자열
+                .andExpect(jsonPath("$.msg").value("모든 사용자 정보를 조회했습니다."))
+                .andExpect(jsonPath("$.data[0].name").value("test1"))
+                .andExpect(jsonPath("$.data[0].profileUrl").value("url"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("id 기반 사용자 정보 조회 - 성공(200)")
+    void getMemberInfoByIdSuccess() throws Exception {
+        Member member = memberService.findByName("test1");
+        int testId = member.getId();
+        mockMvc.perform(get("/api/v1/member/{id}", testId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.name").value("test1"))
+                .andExpect(jsonPath("$.data.profileUrl").value("url"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("id 기반 사용자 정보 조회 - 실패(404, Not_Found)")
+    void getMemberInfoByIdNotFound() throws Exception {
+        mockMvc.perform(get("/api/v1/member/{id}", 10001))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("id 기반 사용자 정보 조회 - 실패(401, Unauthorized)")
+    void getMemberInfoByIdUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/member/{id}", 10001))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("이름 기반 사용자 정보 조회 - 성공(200)")
+    void getMemberInfoByNameSuccess() throws Exception {
+        Member member = memberService.findByName("test1");
+        String testName = member.getName();
+        mockMvc.perform(get("/api/v1/member?name={name}", testName))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.name").value("test1"))
+                .andExpect(jsonPath("$.data.profileUrl").value("url"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("이름 기반 사용자 정보 조회 - 실패(404, Not_Found)")
+    void getMemberInfoByNameNotFound() throws Exception {
+        mockMvc.perform(get("/api/v1/member?name={name}", "failedName"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("이름 기반 사용자 정보 조회 - 실패(401, Unauthorized)")
+    void getMemberInfoByNameUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/member?name={name}", "failedName"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @WithUserDetails(value = "GOOGLE:2222", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 이름 수정 - 성공(200)")
     void editMemberNameSuccess() throws Exception {
