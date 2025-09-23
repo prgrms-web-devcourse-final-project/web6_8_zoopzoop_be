@@ -19,4 +19,8 @@ public class Tag extends BaseEntity {
     //태그명
     @Column(nullable = false)
     private String tagName;
+
+    public Tag(String tagName) {
+        this.tagName = tagName;
+    }
 }
