@@ -49,4 +49,26 @@ public class ApiV1InviteController {
 
     }
 
+    @PostMapping("/{inviteId}/reject")
+    @Operation(summary = "스페이스 초대 거절")
+    public RsData<ResBodyForSpaceSave> rejectInvite(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer inviteId
+    ) throws AccessDeniedException {
+        Member member = userDetails.getMember();
+
+        // membership 가져오기
+        Membership membership = membershipService.findById(inviteId);
+        membershipService.validateMembershipInvitation(membership, member); // 초대 거절 가능 여부 검증
+        membershipService.rejectInvitation(membership); // 초대 거절 처리
+        return new RsData<>(
+                "200",
+                "스페이스 초대가 거절됐습니다.",
+                new ResBodyForSpaceSave(
+                        membership.getSpace().getId(),
+                        membership.getSpace().getName()
+                )
+        );
+    }
+
 }

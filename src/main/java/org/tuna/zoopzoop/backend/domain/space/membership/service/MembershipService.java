@@ -135,4 +135,12 @@ public class MembershipService {
     public void acceptInvitation(Membership membership) {
         changeAuthority(membership, Authority.READ_ONLY);
     }
+
+    /**
+     * 초대 거절 처리: 멤버십 엔티티 삭제
+     * @param membership
+     */
+    public void rejectInvitation(Membership membership) {
+        membershipRepository.delete(membership);
+    }
 }
