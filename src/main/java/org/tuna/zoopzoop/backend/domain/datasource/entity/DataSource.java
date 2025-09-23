@@ -7,7 +7,7 @@ import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +43,7 @@ public class DataSource extends BaseEntity {
     //소스 데이터의 작성일자
     //DB 저장용 createdDate와 다름.
     @Column(nullable = false)
-    private LocalDateTime dataCreatedDate;
+    private LocalDate dataCreatedDate;
 
     //소스 데이터 URL
     @Column(nullable = false)
@@ -56,6 +56,11 @@ public class DataSource extends BaseEntity {
     // 태그 목록
     @OneToMany(mappedBy = "dataSource", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Tag> tags = new ArrayList<>();
+
+    // 카테고리 목록
+    @Enumerated(EnumType.STRING) // IT, SCIENCE 등 ENUM 이름으로 저장
+    @Column(nullable = false)
+    private Category category;
 
     // 활성화 여부
     @Column(nullable = false)
