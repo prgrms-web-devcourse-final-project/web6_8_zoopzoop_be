@@ -1,0 +1,159 @@
+# 워크플로우 이름
+name: Spring CD (Production)
+
+# main 브랜치 PR에서만 실행 (이미 빌드된 Docker 이미지 사용)
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ==================================
+  # CD: Deploy to Production Environment
+  # ==================================
+  cd-production:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Docker Image Exists
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
+          echo "🔍 Checking if Docker image exists: $IMAGE"
+          
+          # 이미지가 존재하는지 확인
+          if docker pull $IMAGE; then
+            echo "✅ Docker image found and pulled successfully"
+            docker images | grep zoopzoop
+          else
+            echo "❌ Docker image not found. Please ensure CI has run on develop branch first."
+            exit 1
+          fi
+
+      - name: Deploy to Production Environment
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            # 환경 변수 설정
+            DB_URL="${{ secrets.PROD_DB_URL }}"
+            DB_USERNAME="${{ secrets.PROD_DB_USERNAME }}"
+            DB_PASSWORD="${{ secrets.PROD_DB_PASSWORD }}"
+
+            echo "🚀 Starting deployment to PRODUCTION environment"
+            echo "⚠️  Using pre-built Docker image from develop branch"
+
+            IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
+            BLUE_PORT=8081
+            GREEN_PORT=8082
+            BLUE=zoopzoop-blue
+            GREEN=zoopzoop-green
+
+            # Blue-Green 배포 로직
+            if sudo grep -q "$BLUE_PORT" /etc/nginx/nginx.conf; then
+              CURRENT=$BLUE
+              CURRENT_PORT=$BLUE_PORT
+              NEXT=$GREEN
+              NEXT_PORT=$GREEN_PORT
+            else
+              CURRENT=$GREEN
+              CURRENT_PORT=$GREEN_PORT
+              NEXT=$BLUE
+              NEXT_PORT=$BLUE_PORT
+            fi
+
+            echo "Current live: $CURRENT ($CURRENT_PORT)"
+            echo "Next to deploy: $NEXT ($NEXT_PORT)"
+
+            # 이전 컨테이너 정리
+            if [ "$(docker ps -q -f name=$NEXT)" ]; then
+              docker stop $NEXT
+            fi
+            if [ "$(docker ps -aq -f name=$NEXT)" ]; then
+              docker rm $NEXT
+            fi
+
+            # 새 이미지 pull 및 컨테이너 실행 (develop에서 빌드된 이미지 사용)
+            docker pull $IMAGE
+            docker run -d --name $NEXT \
+              -e SPRING_DATASOURCE_URL="$DB_URL" \
+              -e SPRING_DATASOURCE_USERNAME="$DB_USERNAME" \
+              -e SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
+              -p $NEXT_PORT:8080 $IMAGE
+
+            # Health check (프로덕션이므로 더 엄격하게)
+            echo "🔍 Starting health check for PRODUCTION..."
+            for i in {1..60}; do  # 프로덕션은 더 오래 기다림
+              if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
+                echo "✅ $NEXT is healthy!"
+                break
+              fi
+              echo "⏳ Waiting for $NEXT to be healthy... ($i/60)"
+              sleep 3  # 프로덕션은 더 여유롭게
+              if [ $i -eq 60 ]; then
+                echo "❌ Health check failed. Rolling back..."
+                docker stop $NEXT
+                docker rm $NEXT
+                exit 1
+              fi
+            done
+
+            # 추가 검증 (프로덕션용)
+            echo "🔍 Running additional production checks..."
+            
+            # API 응답 테스트
+            if curl -s http://127.0.0.1:$NEXT_PORT/actuator/info > /dev/null; then
+              echo "✅ Info endpoint responding"
+            else
+              echo "⚠️ Info endpoint not responding"
+            fi
+
+            # Nginx 설정 변경
+            echo "🔄 Switching Nginx to new container..."
+            sudo sed -i "s/$CURRENT_PORT/$NEXT_PORT/g" /etc/nginx/nginx.conf
+            sudo nginx -s reload
+            echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
+
+            # 이전 컨테이너 정리 (프로덕션에서는 좀 더 기다림)
+            if [ "$(docker ps -q -f name=$CURRENT)" ]; then
+              echo "⏳ Waiting 30 seconds before stopping old container..."
+              sleep 30
+              echo "🧹 Stopping previous container: $CURRENT"
+              docker stop $CURRENT
+              docker rm $CURRENT
+            fi
+
+            echo "🎉 PRODUCTION deployment completed successfully!"
+            echo "🌐 Production is now live!"
+
+      - name: Production Deployment Summary
+        if: success()
+        run: |
+          echo "## 🎉 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Status**: Successfully deployed to PRODUCTION" >> $GITHUB_STEP_SUMMARY
+          echo "🐳 **Docker Image**: \`ghcr.io/${{ github.repository }}/zoopzoop:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "📝 **Note**: Used pre-built image from develop branch" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "## ❌ Production Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 **Check**: Ensure Docker image exists (run develop CI first)" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 **Check**: Verify production server connectivity" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 **Check**: Database credentials and connectivity" >> $GITHUB_STEP_SUMMARY
