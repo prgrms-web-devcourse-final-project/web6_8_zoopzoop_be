@@ -76,6 +76,9 @@ dependencies {
 
     // Spring AI
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
+
+    // Spring Boot Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 
 dependencyManagement {
