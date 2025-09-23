@@ -1,0 +1,106 @@
+name: Spring CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. GHCR 로그인
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Blue-Green 배포
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ github.ref_name == 'main' && secrets.PROD_SERVER_HOST || secrets.TEST_SERVER_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            echo "Branch: ${{ github.ref_name }}"
+
+            if [ "${{ github.ref_name }}" = "develop" ]; then
+              ENV="test"
+              DB_URL=${{ secrets.TEST_DB_URL }}
+              DB_USERNAME=${{ secrets.TEST_DB_USERNAME }}
+              DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}
+            else
+              ENV="prod"
+              DB_URL=${{ secrets.PROD_DB_URL }}
+              DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
+              DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+            fi
+
+            IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
+            BLUE_PORT=8081
+            GREEN_PORT=8082
+            BLUE=zoopzoop-blue
+            GREEN=zoopzoop-green
+
+            # 현재 Nginx가 바라보는 대상 확인
+            if grep -q "$BLUE_PORT" /etc/nginx/nginx.conf; then
+              CURRENT=$BLUE
+              CURRENT_PORT=$BLUE_PORT
+              NEXT=$GREEN
+              NEXT_PORT=$GREEN_PORT
+            else
+              CURRENT=$GREEN
+              CURRENT_PORT=$GREEN_PORT
+              NEXT=$BLUE
+              NEXT_PORT=$BLUE_PORT
+            fi
+
+            echo "Current live: $CURRENT ($CURRENT_PORT)"
+            echo "Next to deploy: $NEXT ($NEXT_PORT)"
+
+            # 새 버전 실행
+            docker pull $IMAGE
+            docker run -d --name $NEXT --rm \
+              -e SPRING_DATASOURCE_URL=$DB_URL \
+              -e SPRING_DATASOURCE_USERNAME=$DB_USERNAME \
+              -e SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD \
+              -p $NEXT_PORT:8080 $IMAGE
+
+            echo "Health check for $NEXT ..."
+            for i in {1..30}; do
+              if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
+                echo "✅ $NEXT is healthy!"
+                break
+              fi
+              echo "⏳ Waiting... ($i/30)"
+              sleep 2
+              if [ $i -eq 30 ]; then
+                echo "❌ Health check failed. Rolling back..."
+                docker stop $NEXT
+                exit 1
+              fi
+            done
+
+            # Nginx 설정 업데이트 (upstream 포트 교체)
+            sed -i "s/$CURRENT_PORT/$NEXT_PORT/g" /etc/nginx/nginx.conf
+            nginx -s reload
+
+            echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
+
+            # 이전 버전 종료
+            if [ "$(docker ps -q -f name=$CURRENT)" ]; then
+              docker stop $CURRENT
+            fi
+
+            echo "✅ Deployment to $ENV completed successfully!"
