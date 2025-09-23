@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class ApiV1AuthController {
     private final JwtProperties jwtProperties;
 
     @GetMapping("/logout")
+    @Operation(summary = "사용자 로그아웃")
     public ResponseEntity<RsData<Void>> logout(HttpServletResponse response) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)
@@ -53,6 +55,7 @@ public class ApiV1AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "사용자 액세스 토큰 재발급 (리프레시 토큰이 유효할 경우)")
     public ResponseEntity<RsData<Void>> refreshToken(@CookieValue(name = "refreshToken", required = false) String refreshToken,
                                                          HttpServletResponse response) {
 
