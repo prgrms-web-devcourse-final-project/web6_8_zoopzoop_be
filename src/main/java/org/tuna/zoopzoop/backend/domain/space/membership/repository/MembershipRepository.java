@@ -16,4 +16,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     List<Membership> findAllByMemberAndAuthorityIsNot(Member member, Authority authority);
 
     List<Membership> findAllByMember(Member member);
+
+    boolean existsByMemberAndSpaceAndAuthorityIsNot(Member member, Space space, Authority authority);
+
+    boolean existsByMemberAndSpaceAndAuthority(Member member, Space space, Authority authority);
 }

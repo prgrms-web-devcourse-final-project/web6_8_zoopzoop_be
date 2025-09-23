@@ -18,6 +18,36 @@ public class MembershipService {
     private final MembershipRepository membershipRepository;
 
     /**
+     * 멤버가 스페이스에 가입되어 있는지 여부 확인 (PENDING 상태 포함)
+     * @param member 확인할 멤버
+     * @param space 확인할 스페이스
+     * @return
+     */
+    public boolean isMemberInSpace(Member member, Space space) {
+        return membershipRepository.existsByMemberAndSpace(member, space);
+    }
+
+    /**
+     * 멤버가 스페이스에 가입되어 있는지 여부 확인 (PENDING 상태 제외)
+     * @param member 확인할 멤버
+     * @param space 확인할 스페이스
+     * @return
+     */
+    public boolean isMemberJoinedSpace(Member member, Space space) {
+        return membershipRepository.existsByMemberAndSpaceAndAuthorityIsNot(member, space, Authority.PENDING);
+    }
+
+    /**
+     * 멤버가 스페이스의 ADMIN 권한을 가지고 있는지 여부 확인
+     * @param member 확인할 멤버
+     * @param space 확인할 스페이스
+     * @return
+     */
+    public boolean isMemberAdminInSpace(Member member, Space space) {
+        return membershipRepository.existsByMemberAndSpaceAndAuthority(member, space, Authority.ADMIN);
+    }
+
+    /**
      * 스페이스에 멤버 추가
      * @param member 추가할 멤버
      * @param space 멤버가 추가될 스페이스
@@ -37,7 +67,6 @@ public class MembershipService {
         membership.setAuthority(authority);
         return membershipRepository.save(membership);
     }
-
 
     /**
      * 멤버가 속한 스페이스 목록 조회
