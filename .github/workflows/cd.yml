@@ -1,21 +1,20 @@
 name: Spring CD
 
 on:
-  push:
-    branches:
-      - main
-      - develop
+  workflow_run:
+    workflows: ["Spring CI develop"]
+    types:
+      - completed
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. GHCR 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -23,29 +22,38 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 3. Blue-Green 배포
+      - name: Set Environment based on Branch
+        run: |
+          BRANCH=${{ github.event.workflow_run.head_branch }}
+          echo "Branch: $BRANCH"
+
+          if [ "$BRANCH" = "develop" ]; then
+            ENV="test"
+            SERVER_HOST=${{ secrets.TEST_SERVER_HOST }}
+            DB_URL=${{ secrets.TEST_DB_URL }}
+            DB_USERNAME=${{ secrets.TEST_DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}
+          elif [ "$BRANCH" = "main" ]; then
+            ENV="prod"
+            SERVER_HOST=${{ secrets.PROD_SERVER_HOST }}
+            DB_URL=${{ secrets.PROD_DB_URL }}
+            DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+
+          echo "Deploying to $ENV at $SERVER_HOST"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ github.ref_name == 'main' && secrets.PROD_SERVER_HOST || secrets.TEST_SERVER_HOST }}
+          host: ${{ steps.set-env.outputs.SERVER_HOST || secrets.TEST_SERVER_HOST }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-
-            echo "Branch: ${{ github.ref_name }}"
-
-            if [ "${{ github.ref_name }}" = "develop" ]; then
-              ENV="test"
-              DB_URL=${{ secrets.TEST_DB_URL }}
-              DB_USERNAME=${{ secrets.TEST_DB_USERNAME }}
-              DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}
-            else
-              ENV="prod"
-              DB_URL=${{ secrets.PROD_DB_URL }}
-              DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
-              DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
-            fi
 
             IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
             BLUE_PORT=8081
@@ -53,7 +61,6 @@ jobs:
             BLUE=zoopzoop-blue
             GREEN=zoopzoop-green
 
-            # 현재 Nginx가 바라보는 대상 확인
             if grep -q "$BLUE_PORT" /etc/nginx/nginx.conf; then
               CURRENT=$BLUE
               CURRENT_PORT=$BLUE_PORT
@@ -69,7 +76,6 @@ jobs:
             echo "Current live: $CURRENT ($CURRENT_PORT)"
             echo "Next to deploy: $NEXT ($NEXT_PORT)"
 
-            # 새 버전 실행
             docker pull $IMAGE
             docker run -d --name $NEXT --rm \
               -e SPRING_DATASOURCE_URL=$DB_URL \
@@ -77,7 +83,7 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD \
               -p $NEXT_PORT:8080 $IMAGE
 
-            echo "Health check for $NEXT ..."
+            # Health check
             for i in {1..30}; do
               if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
                 echo "✅ $NEXT is healthy!"
@@ -92,10 +98,9 @@ jobs:
               fi
             done
 
-            # Nginx 설정 업데이트 (upstream 포트 교체)
+            # Nginx 포트 스위칭
             sed -i "s/$CURRENT_PORT/$NEXT_PORT/g" /etc/nginx/nginx.conf
             nginx -s reload
-
             echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
 
             # 이전 버전 종료
