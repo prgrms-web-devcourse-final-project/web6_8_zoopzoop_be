@@ -119,7 +119,7 @@ jobs:
           script: |
 
             # GHCR 로그인 (EC2)
-            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{github.repository_owner}}' --password-stdin
+            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{github.repository_owner}}' --password-stdin
 
             # 최신 이미지 pull
             docker pull ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
