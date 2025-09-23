@@ -46,7 +46,6 @@ public class ApiV1InviteController {
                         membership.getSpace().getName()
                 )
         );
-
     }
 
     @PostMapping("/{inviteId}/reject")
