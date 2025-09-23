@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -54,6 +55,7 @@ public class ApiV1SpaceController {
                 )
         );
     }
+
 
     @DeleteMapping("/{spaceId}")
     @Operation(summary = "스페이스 삭제")
@@ -133,6 +135,7 @@ public class ApiV1SpaceController {
                 resBody
         );
     }
+
 
 
 }

@@ -19,7 +19,8 @@ import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipServi
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -103,10 +104,14 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         String url = "/api/v1/invite/%d/accept".formatted(inviteId);
 
         // when
-        ResultActions resultActions = performPost(url, null);
+        ResultActions resultActions = performPost(url);
 
         // then
-        expectOk(resultActions, "스페이스 초대를 수락했습니다.");
+        expectOk(resultActions, "스페이스 초대가 수락됐습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.id").value(space.getId()))
+                .andExpect(jsonPath("$.data.name").value(space.getName()));
     }
 
     @Test
@@ -118,10 +123,10 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         String url = "/api/v1/invite/%d/accept".formatted(inviteId);
 
         // when
-        ResultActions resultActions = performPost(url, null);
+        ResultActions resultActions = performPost(url);
 
         // then
-        expectNotFound(resultActions, "존재하지 않는 초대 입니다.");
+        expectNotFound(resultActions, "해당 멤버십이 존재하지 않습니다.");
     }
 
     @Test
@@ -135,7 +140,7 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         String url = "/api/v1/invite/%d/accept".formatted(inviteId);
 
         // when
-        ResultActions resultActions = performPost(url, null);
+        ResultActions resultActions = performPost(url);
 
         // then
         expectForbidden(resultActions, "액세스가 거부되었습니다.");
@@ -152,9 +157,12 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         String url = "/api/v1/invite/%d/accept".formatted(inviteId);
 
         // when
-        ResultActions resultActions = performPost(url, null);
+        ResultActions resultActions = performPost(url);
 
         // then
-        expectBadRequest(resultActions, "이미 완료된 초대입니다.");
+        resultActions.
+                andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("409"))
+                .andExpect(jsonPath("$.msg").value("이미 완료된 초대입니다."));
     }
 }

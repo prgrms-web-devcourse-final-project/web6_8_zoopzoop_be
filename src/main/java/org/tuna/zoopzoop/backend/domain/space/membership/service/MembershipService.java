@@ -11,6 +11,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -97,6 +98,11 @@ public class MembershipService {
                 .orElseThrow(() -> new NoResultException("해당 멤버는 스페이스에 속해있지 않습니다."));
     }
 
+    public Membership findById(Integer id) {
+        return membershipRepository.findById(id)
+                .orElseThrow(() -> new NoResultException("해당 멤버십이 존재하지 않습니다."));
+    }
+
     /**
      * 멤버의 권한 변경
      * @param membership 권한을 변경할 Membership 엔티티
@@ -106,5 +112,27 @@ public class MembershipService {
     public Membership changeAuthority(Membership membership, Authority newAuthority) {
         membership.setAuthority(newAuthority);
         return membershipRepository.save(membership);
+    }
+
+
+    /**
+     * 멤버십 초대의 적절성 확인: 멤버십의 멤버가 일치하고, 권한이 PENDING이어야 함.
+     * 일치하지 않으면 AccessDeniedException, 권한이 PENDING이 아니면 DataIntegrityViolationException 발생.
+     */
+    public void validateMembershipInvitation(Membership membership, Member member) throws AccessDeniedException {
+        if (!membership.getMember().equals(member)) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+        if (membership.getAuthority() != Authority.PENDING) {
+            throw new DataIntegrityViolationException("이미 완료된 초대입니다.");
+        }
+    }
+
+    /**
+     * 초대 수락 처리: 멤버십의 권한을 PENDING에서 READ_ONLY로 변경
+     * @param membership
+     */
+    public void acceptInvitation(Membership membership) {
+        changeAuthority(membership, Authority.READ_ONLY);
     }
 }
