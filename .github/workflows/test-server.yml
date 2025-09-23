@@ -154,7 +154,6 @@ jobs:
             # 새 이미지 pull 및 컨테이너 실행
             sudo docker pull $IMAGE
             sudo docker run -d --name $NEXT \
-              -e SPRING_PROFILES_ACTIVE=test \
               -e DB_URL="${{ secrets.TEST_DB_URL }}" \
               -e DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}" \
               -e DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}" \
