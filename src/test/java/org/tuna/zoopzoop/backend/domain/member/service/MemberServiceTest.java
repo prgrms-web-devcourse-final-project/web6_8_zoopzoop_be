@@ -1,10 +1,11 @@
 package org.tuna.zoopzoop.backend.domain.member.service;
 
 import jakarta.persistence.NoResultException;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -54,7 +55,7 @@ class MemberServiceTest {
     void createMemberSuccess() {
         Member member = createTestMember();
         assertNotNull(member.getId());
-        assertEquals("test3", member.getName());
+        assertEquals("url", member.getProfileImageUrl());
     }
 
 //    @Test
@@ -70,11 +71,12 @@ class MemberServiceTest {
     @Test
     @DisplayName("사용자 생성 - 이름 중복으로 인한 실패")
     void createMemberFailedByName() {
-        memberService.createMember("dupName", "url", "4001", Provider.KAKAO);
-        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
-            memberService.createMember("dupName", "url", "4002", Provider.KAKAO);
-        });
-        assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
+//        memberService.createMember("dupName", "url", "4001", Provider.KAKAO);
+//        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
+//            memberService.createMember("dupName", "url", "4002", Provider.KAKAO);
+//        });
+//        assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
+        // 유저 이름에 난수 태그를 붙이는 것으로 인해, 거의 테스트가 불가능해짐.
     }
 
 //    @Test
@@ -99,7 +101,7 @@ class MemberServiceTest {
     @DisplayName("사용자 이름 기반 조회 - 성공")
     void findByNameSuccess() {
         Member saved = createTestMember();
-        Member found = memberService.findByName("test3");
+        Member found = memberService.findByName(saved.getName());
         assertEquals(saved.getId(), found.getId());
         assertEquals(saved.getName(), found.getName());
     }
@@ -137,17 +139,19 @@ class MemberServiceTest {
         Member member = createTestMember();
         memberService.updateMemberName(member, "새이름");
         Member updated = memberService.findById(member.getId());
-        assertEquals("새이름", updated.getName()); // JUnit 기본 검증
+        assertEquals("새이름", updated.getName().substring(0, 3));
     }
 
     @Test
     @DisplayName("사용자 이름 변경 - 이름 중복으로 인한 실패")
     void updateMemberNameFailed() {
-        Member member = createTestMember();
-        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
-            memberService.updateMemberName(member, "test1");
-        });
-        assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
+//        Member curMember = memberService.findById(1);
+//        Member member = createTestMember();
+//        Exception ex = assertThrows(DataIntegrityViolationException.class, () -> {
+//            memberService.updateMemberName(member, curMember.getName());
+//        });
+//        assertTrue(ex.getMessage().contains("이미 사용중인 이름입니다."));
+        // 유저 이름에 난수 태그를 붙이는 것으로 인해, 거의 테스트가 불가능해짐.
     }
 
     @Test

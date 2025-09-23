@@ -59,7 +59,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
                 // .domain() // 프론트엔드 & 백엔드 상위 도메인
                 // .secure(true) // https 필수 설정.
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -68,7 +68,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .maxAge(jwtProperties.getRefreshTokenValidity() / 1000)
                 // .domain() // 프론트엔드 & 백엔드 상위 도메인
                 // .secure(true) // https 필수 설정.
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         // HTTP 응답에서 쿠키 값 추가.

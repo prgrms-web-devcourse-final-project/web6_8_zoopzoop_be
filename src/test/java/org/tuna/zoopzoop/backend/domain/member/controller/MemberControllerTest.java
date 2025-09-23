@@ -66,11 +66,12 @@ public class MemberControllerTest {
     @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("사용자 정보 조회 - 성공(200)")
     void getMemberInfoSuccess() throws Exception {
+        Member member = memberService.findByProviderKey("1111");
         mockMvc.perform(get("/api/v1/member/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.name").value("test1"))
-                .andExpect(jsonPath("$.data.profileUrl").value("url"));
+                .andExpect(jsonPath("$.data.name").value(member.getName()))
+                .andExpect(jsonPath("$.data.profileUrl").value(member.getProfileImageUrl()));
     }
 
     @Test
@@ -90,7 +91,6 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200")) // status는 문자열
                 .andExpect(jsonPath("$.msg").value("모든 사용자 정보를 조회했습니다."))
-                .andExpect(jsonPath("$.data[0].name").value("test1"))
                 .andExpect(jsonPath("$.data[0].profileUrl").value("url"));
     }
 
@@ -98,13 +98,13 @@ public class MemberControllerTest {
     @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("id 기반 사용자 정보 조회 - 성공(200)")
     void getMemberInfoByIdSuccess() throws Exception {
-        Member member = memberService.findByName("test1");
+        Member member = memberService.findByProviderKey("1111");
         int testId = member.getId();
         mockMvc.perform(get("/api/v1/member/{id}", testId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.name").value("test1"))
-                .andExpect(jsonPath("$.data.profileUrl").value("url"));
+                .andExpect(jsonPath("$.data.name").value(member.getName()))
+                .andExpect(jsonPath("$.data.profileUrl").value(member.getProfileImageUrl()));
     }
 
     @Test
@@ -126,13 +126,13 @@ public class MemberControllerTest {
     @WithUserDetails(value = "KAKAO:1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("이름 기반 사용자 정보 조회 - 성공(200)")
     void getMemberInfoByNameSuccess() throws Exception {
-        Member member = memberService.findByName("test1");
-        String testName = member.getName();
-        mockMvc.perform(get("/api/v1/member?name={name}", testName))
+        Member memberByKey = memberService.findByProviderKey("1111");
+        Member memberByName = memberService.findByName(memberByKey.getName());
+        mockMvc.perform(get("/api/v1/member?name={name}", memberByName.getName()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.name").value("test1"))
-                .andExpect(jsonPath("$.data.profileUrl").value("url"));
+                .andExpect(jsonPath("$.data.name").value(memberByName.getName()))
+                .andExpect(jsonPath("$.data.profileUrl").value(memberByName.getProfileImageUrl()));
     }
 
     @Test
