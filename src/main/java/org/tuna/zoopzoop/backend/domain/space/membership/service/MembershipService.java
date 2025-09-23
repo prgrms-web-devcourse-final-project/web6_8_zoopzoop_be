@@ -129,10 +129,13 @@ public class MembershipService {
     }
 
     /**
-     * 초대 수락 처리: 멤버십의 권한을 PENDING에서 READ_ONLY로 변경
+     * 초대 수락 처리: 멤버십의 권한을 READ_ONLY로 변경
      * @param membership
      */
     public void acceptInvitation(Membership membership) {
+        if (membership.getAuthority() != Authority.PENDING) {
+            throw new DataIntegrityViolationException("이미 완료된 초대입니다.");
+        }
         changeAuthority(membership, Authority.READ_ONLY);
     }
 
