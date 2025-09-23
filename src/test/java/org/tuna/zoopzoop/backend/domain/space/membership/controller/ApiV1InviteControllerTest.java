@@ -165,4 +165,82 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.status").value("409"))
                 .andExpect(jsonPath("$.msg").value("이미 완료된 초대입니다."));
     }
+
+    // ============================= REJECT ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:ic1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("초대 거절 - 성공")
+    void rejectInvite_Success() throws Exception {
+        // given
+        var member = memberService.findByKakaoKey("ic1111");
+        var space = spaceService.findByName("기존 스페이스 2_forInviteControllerTest");
+        Integer inviteId = membershipService.findByMemberAndSpace(member, space).getId();
+
+        String url = "/api/v1/invite/%d/reject".formatted(inviteId);
+
+        // when
+        ResultActions resultActions = performPost(url);
+
+        // then
+        expectOk(resultActions, "스페이스 초대가 거절됐습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.id").value(space.getId()))
+                .andExpect(jsonPath("$.data.name").value(space.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:ic1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("초대 거절 - 실패 : 존재하지 않는 초대")
+    void rejectInvite_Fail_NotExistInvite() throws Exception {
+        // given
+        Integer inviteId = 9999;
+        String url = "/api/v1/invite/%d/reject".formatted(inviteId);
+
+        // when
+        ResultActions resultActions = performPost(url);
+
+        // then
+        expectNotFound(resultActions, "해당 멤버십이 존재하지 않습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:ic2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("초대 거절 - 실패 : 본인의 초대가 아님")
+    void rejectInvite_Fail_NotYourInvite() throws Exception {
+        // given
+        var member = memberService.findByKakaoKey("ic1111");
+        var space = spaceService.findByName("기존 스페이스 2_forInviteControllerTest");
+        Integer inviteId = membershipService.findByMemberAndSpace(member, space).getId();
+        String url = "/api/v1/invite/%d/reject".formatted(inviteId);
+
+        // when
+        ResultActions resultActions = performPost(url);
+
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:ic1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("초대 거절 - 실패 : 초대 상태가 아님")
+    void rejectInvite_Fail_NotPendingStatus() throws Exception {
+        // given
+        var member = memberService.findByKakaoKey("ic1111");
+        var space = spaceService.findByName("기존 스페이스 1_forInviteControllerTest");
+        Integer inviteId = membershipService.findByMemberAndSpace(member, space).getId();
+        String url = "/api/v1/invite/%d/reject".formatted(inviteId);
+
+        // when
+        ResultActions resultActions = performPost(url);
+
+        // then
+        resultActions.
+                andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("409"))
+                .andExpect(jsonPath("$.msg").value("이미 완료된 초대입니다."));
+    }
+
+
 }
