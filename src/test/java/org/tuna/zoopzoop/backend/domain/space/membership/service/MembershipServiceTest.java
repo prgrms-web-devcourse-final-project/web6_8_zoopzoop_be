@@ -45,28 +45,28 @@ class MembershipServiceTest {
     }
 
     void setUpSpace() {
-        spaceService.createSpace("기존 스페이스 1");
-        spaceService.createSpace("기존 스페이스 2");
+        spaceService.createSpace("기존 스페이스 1_forMembershipServiceTest");
+        spaceService.createSpace("기존 스페이스 2_forMembershipServiceTest");
     }
 
 
     void setUpMember() {
         memberService.createMember(
-                "tester1",
+                "tester1_forMembershipServiceTest",
                 "url",
-                "1111",
+                "ms1111",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "tester2",
+                "tester2_forMembershipServiceTest",
                 "url",
-                "2222",
+                "ms2222",
                 Provider.KAKAO
         );
         memberService.createMember(
-                "tester3",
+                "tester3_forMembershipServiceTest",
                 "url",
-                "3333",
+                "ms3333",
                 Provider.KAKAO
         );
     }
@@ -78,8 +78,8 @@ class MembershipServiceTest {
     @DisplayName("스페이스에 멤버 추가 - 성공")
     void addMemberToSpace_Success() {
         // Given
-        var member = memberService.findByKakaoKey("2222");
-        var space = spaceService.findByName("기존 스페이스 1");
+        var member = memberService.findByKakaoKey("ms2222");
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipServiceTest");
 
         // When
         var membership = membershipService.addMemberToSpace(member, space, Authority.ADMIN);
@@ -97,8 +97,8 @@ class MembershipServiceTest {
     @DisplayName("스페이스에 멤버 추가 - 실패 : 이미 멤버로 존재")
     void addMemberToSpace_Fail_AlreadyMember() {
         // Given
-        var member = memberService.findByKakaoKey("2222");
-        var space = spaceService.findByName("기존 스페이스 1");
+        var member = memberService.findByKakaoKey("ms2222");
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipServiceTest");
         membershipService.addMemberToSpace(member, space, Authority.ADMIN);
 
         // When & Then
