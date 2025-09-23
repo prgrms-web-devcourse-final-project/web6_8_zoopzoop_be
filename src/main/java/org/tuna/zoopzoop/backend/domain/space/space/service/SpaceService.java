@@ -85,8 +85,6 @@ public class SpaceService {
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
 
-        // TODO : 현재 로그인한 사용자가 스페이스의 관리자(Owner)인지 확인하는 로직 추가 필요
-
         space.setName(name);
 
         try{
