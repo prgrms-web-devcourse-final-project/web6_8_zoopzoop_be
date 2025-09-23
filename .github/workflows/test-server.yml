@@ -118,12 +118,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-
-            # 환경 변수 설정
-            export DB_URL="${{ secrets.TEST_DB_URL }}"
-            export DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}"
-            export DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}"
-
+            
             echo "🚀 Starting deployment to TEST environment"
 
             IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
@@ -159,11 +154,13 @@ jobs:
             # 새 이미지 pull 및 컨테이너 실행
             sudo docker pull $IMAGE
             sudo docker run -d --name $NEXT \
-              -e SPRING_DATASOURCE_URL="$DB_URL" \
-              -e SPRING_DATASOURCE_USERNAME="$DB_USERNAME" \
-              -e SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-              -p $NEXT_PORT:8080 $IMAGE || { echo "Docker run failed!"; sudo docker logs $NEXT; exit 1; }
-
+              -e SPRING_PROFILES_ACTIVE=test \
+              -e DB_URL="${{ secrets.TEST_DB_URL }}" \
+              -e DB_USERNAME="${{ secrets.TEST_DB_USERNAME }}" \
+              -e DB_PASSWORD="${{ secrets.TEST_DB_PASSWORD }}" \
+              -p $NEXT_PORT:8080 \
+              $IMAGE
+            
             # Health check
             for i in {1..30}; do
               if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
