@@ -143,7 +143,7 @@ jobs:
               -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
                 -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
-              ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
+              ghcr.io/${{ github.repository }}/zoopzoop:latest
             
             
             # 헬스체크 (Spring Boot Actuator)
