@@ -6,7 +6,6 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface FolderRepository extends JpaRepository<Folder, Integer>{
     /**
@@ -25,6 +24,4 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
     List<String> findNamesForConflictCheck(Integer archiveId, String filename, String filenameEnd);
 
     List<Folder> findByArchive(Archive archive);
-
-    Optional<Folder> findByIdAndArchive(Integer id, Archive archive);
 }
