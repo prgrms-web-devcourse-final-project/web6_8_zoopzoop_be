@@ -45,4 +45,10 @@ public class Folder extends BaseEntity {
     // 폴더 삭제 시 데이터 일괄 삭제
     @OneToMany(mappedBy = "folder", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<DataSource> dataSources = new ArrayList<>();
+
+
+    public Folder(String name) {
+        this.name = name;
+        this.isDefault = true;
+    }
 }

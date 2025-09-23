@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.enums.ArchiveType;
+import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
@@ -38,5 +39,9 @@ public class PersonalArchive extends BaseEntity {
     public PersonalArchive(Member member) {
         this.member = member;
         this.archive = new Archive(ArchiveType.PERSONAL);
+
+        // default 폴더 자동 생성 및 연결
+        Folder defaultFolder = new Folder("default");
+        archive.addFolder(defaultFolder);
     }
 }

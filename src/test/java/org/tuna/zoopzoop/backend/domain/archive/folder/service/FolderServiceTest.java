@@ -137,6 +137,18 @@ class FolderServiceTest {
         verify(folderRepository, never()).delete(any(Folder.class));
     }
 
+    @Test
+    @DisplayName("default 폴더는 삭제할 수 없다")
+    void deleteFolder_default_forbidden() {
+        Folder defaultFolder = new Folder("default"); // isDefault=true
+        ReflectionTestUtils.setField(defaultFolder, "id", 42);
+
+        when(folderRepository.findById(42)).thenReturn(Optional.of(defaultFolder));
+
+        assertThrows(IllegalArgumentException.class, () -> folderService.deleteFolder(42));
+        verify(folderRepository, never()).delete(any());
+    }
+
     // ---------- Update ----------
     @Test
     @DisplayName("폴더 이름 변경 성공")
