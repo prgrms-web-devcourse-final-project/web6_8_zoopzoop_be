@@ -91,7 +91,7 @@ jobs:
       # 8. Docker 이미지 빌드 & 푸시
       - name: Build & Push Docker Image
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository }}/myapp
+          IMAGE_NAME=ghcr.io/${{ github.repository }}/zoopzoop
           
           docker build -t $IMAGE_NAME:${GITHUB_SHA} . 
           docker tag $IMAGE_NAME:${GITHUB_SHA} $IMAGE_NAME:latest
