@@ -107,6 +107,4 @@ class MembershipServiceTest {
         });
     }
 
-    // ============================= MEMBER INVITE ============================= //
-
 }

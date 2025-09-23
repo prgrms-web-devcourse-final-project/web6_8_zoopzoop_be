@@ -96,4 +96,15 @@ public class MembershipService {
         return membershipRepository.findByMemberAndSpace(member, space)
                 .orElseThrow(() -> new NoResultException("해당 멤버는 스페이스에 속해있지 않습니다."));
     }
+
+    /**
+     * 멤버의 권한 변경
+     * @param membership 권한을 변경할 Membership 엔티티
+     * @param newAuthority 새로운 권한
+     * @return 변경된 Membership 엔티티
+     */
+    public Membership changeAuthority(Membership membership, Authority newAuthority) {
+        membership.setAuthority(newAuthority);
+        return membershipRepository.save(membership);
+    }
 }
