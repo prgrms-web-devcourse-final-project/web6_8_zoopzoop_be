@@ -80,6 +80,10 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
       # 7. GHCR 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v2
