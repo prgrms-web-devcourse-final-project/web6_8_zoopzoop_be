@@ -119,7 +119,7 @@ jobs:
           script: |
 
             # GHCR 로그인 (EC2)
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{github.repository_owner}} --password-stdin
+            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{github.repository_owner}}' --password-stdin
 
             # 최신 이미지 pull
             docker pull ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
@@ -128,11 +128,11 @@ jobs:
             if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
               NEW_CONTAINER=zoopzoop-green
               OLD_CONTAINER=zoopzoop-blue
-              PORT=8081
+              PORT=8082
             else
               NEW_CONTAINER=zoopzoop-blue
               OLD_CONTAINER=zoopzoop-green
-              PORT=8080
+              PORT=8081
             fi
 
             echo "Starting new container: $NEW_CONTAINER on port $PORT"
@@ -140,9 +140,9 @@ jobs:
               -p $PORT:8080 \
               --name $NEW_CONTAINER \
               --network common \
-              -e SPRING_DATASOURCE_URL=${{secrets.TEST_DB_URL}} \
-              -e SPRING_DATASOURCE_USERNAME=${{secrets.TEST_DB_USERNAME}} \
-                -e SPRING_DATASOURCE_PASSWORD=${{secrets.TEST_DB_PASSWORD}} \
+              -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
+              -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
+                -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
               ghcr.io/${{ github.repository_owner }}/zoopzoop:latest
             
             
@@ -154,6 +154,13 @@ jobs:
               else
                 echo "Waiting for new container to be healthy..."
                 sleep 5
+              fi
+            
+            if [ $i -eq 30 ]; then
+                echo "❌ Health check failed. Rolling back..."
+                docker stop $NEW_CONTAINER || true
+                docker rm $NEW_CONTAINER || true
+                exit 1  # <<< 여기를 추가
               fi
             done
 
