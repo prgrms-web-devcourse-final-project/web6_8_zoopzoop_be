@@ -51,7 +51,7 @@ public class DataSource extends BaseEntity {
 
     //썸네일 이미지 URL
     @Column
-    private String thumbnailUrl;
+    private String imageUrl;
 
     // 태그 목록
     @OneToMany(mappedBy = "dataSource", cascade = CascadeType.ALL, orphanRemoval = true)
