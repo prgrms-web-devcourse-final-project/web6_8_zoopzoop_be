@@ -30,7 +30,7 @@ public class ApiV1MembershipController {
     private final SpaceService spaceService;
 
     @GetMapping("/invite/{spaceId}")
-    @Operation(summary = "스페이스 초대 목록 조회")
+    @Operation(summary = "스페이스에 초대된 유저 목록 조회")
     public RsData<ResBodyForSpaceInvitationList> getInvites(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Integer spaceId

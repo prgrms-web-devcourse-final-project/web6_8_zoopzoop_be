@@ -9,8 +9,11 @@ import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.ResBodyForSpaceInvitationList;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
+import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.ResBodyForSpaceInviteList;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.ResBodyForSpaceSave;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.SpaceMembershipInfoWithoutAuthority;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -69,6 +72,31 @@ public class ApiV1InviteController {
                 new ResBodyForSpaceSave(
                         membership.getSpace().getId(),
                         membership.getSpace().getName()
+                )
+        );
+    }
+
+    @GetMapping
+    @Operation(summary = "사용자에게 온 스페이스 초대 목록 조회")
+    public RsData<ResBodyForSpaceInviteList> getMyInvites(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+
+        // 멤버십(초대) 목록 조회
+        List<Membership> invitations = membershipService.findByMember(member, "PENDING");
+        List<SpaceMembershipInfoWithoutAuthority> invitationInfos = invitations.stream()
+                .map(membership -> new SpaceMembershipInfoWithoutAuthority(
+                        membership.getId(),
+                        membership.getSpace().getName()
+                ))
+                .toList();
+
+        return new RsData<>(
+                "200",
+                "사용자에게 온 스페이스 초대 목록을 조회했습니다.",
+                new ResBodyForSpaceInviteList(
+                        invitationInfos
                 )
         );
     }
