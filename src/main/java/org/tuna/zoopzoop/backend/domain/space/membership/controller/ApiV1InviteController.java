@@ -73,38 +73,4 @@ public class ApiV1InviteController {
         );
     }
 
-    @GetMapping("/space/{spaceId}")
-    @Operation(summary = "스페이스 초대 목록 조회")
-    public RsData<ResBodyForSpaceInvitationList> getInvites(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Integer spaceId
-    ) throws AccessDeniedException {
-        Member member = userDetails.getMember();
-        Space space = spaceService.findById(spaceId);
-
-        // 스페이스에 멤버가 속해있는지 확인
-        if(!membershipService.isMemberJoinedSpace(member, space)) {
-            throw new AccessDeniedException("액세스가 거부되었습니다.");
-        }
-
-        // 멤버십(초대) 목록 조회
-        List<Membership> invitations = membershipService.findInvitationsBySpace(space);
-        List<ResBodyForGetMemberInfo> invitationInfos = invitations.stream()
-                .map(membership -> new ResBodyForGetMemberInfo(
-                        membership.getMember().getId(),
-                        membership.getMember().getName(),
-                        membership.getMember().getProfileImageUrl()
-                ))
-                .toList();
-
-        return new RsData<>(
-                "200",
-                "스페이스 초대 목록을 조회했습니다.",
-                new ResBodyForSpaceInvitationList(
-                        space.getId(),
-                        invitationInfos
-                )
-        );
-    }
-
 }
