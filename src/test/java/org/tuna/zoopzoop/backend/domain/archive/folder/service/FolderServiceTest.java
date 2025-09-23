@@ -236,7 +236,7 @@ class FolderServiceTest {
         d1.setFolder(folder);
         d1.setSummary("요약 A");
         d1.setSourceUrl("http://src/a");
-        d1.setThumbnailUrl("http://img/a");
+        d1.setImageUrl("http://img/a");
         d1.setTags(List.of(new Tag("tag1"), new Tag("tag2")));
 
         DataSource d2 = new DataSource();
@@ -245,7 +245,7 @@ class FolderServiceTest {
         d2.setFolder(folder);
         d2.setSummary("요약 B");
         d2.setSourceUrl("http://src/b");
-        d2.setThumbnailUrl("http://img/b");
+        d2.setImageUrl("http://img/b");
         d2.setTags(List.of());
 
         when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1, d2));
