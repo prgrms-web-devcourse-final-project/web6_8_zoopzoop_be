@@ -77,8 +77,13 @@ dependencies {
     // Spring AI
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 
+
     // 크롤링
     implementation("org.jsoup:jsoup:1.21.2")
+
+    // Spring Boot Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 }
 
 dependencyManagement {
