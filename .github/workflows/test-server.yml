@@ -162,7 +162,7 @@ jobs:
               -e SPRING_DATASOURCE_URL="$DB_URL" \
               -e SPRING_DATASOURCE_USERNAME="$DB_USERNAME" \
               -e SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-              -p $NEXT_PORT:8080 $IMAGE
+              -p $NEXT_PORT:8080 $IMAGE || { echo "Docker run failed!"; sudo docker logs $NEXT; exit 1; }
 
             # Health check
             for i in {1..30}; do
