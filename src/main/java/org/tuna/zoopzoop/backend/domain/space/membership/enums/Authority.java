@@ -5,4 +5,9 @@ public enum Authority {
     READ_ONLY, //읽기만 가능
     READ_WRITE, //읽고 쓰기 가능
     ADMIN //READ & WRITE, 관리 권한
+    ;
+
+    public boolean canManageMembers() {
+        return this == ADMIN;
+    }
 }
