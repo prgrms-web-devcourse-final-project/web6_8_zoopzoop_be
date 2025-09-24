@@ -44,7 +44,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
     void setUpSpace() {
         spaceService.createSpace("기존 스페이스 1_forMembershipControllerTest");
         spaceService.createSpace("기존 스페이스 2_forMembershipControllerTest");
-
+        spaceService.createSpace("기존 스페이스 3_forMembershipControllerTest");
     }
 
     void setUpMember() {
@@ -102,6 +102,27 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
                 spaceService.findByName("기존 스페이스 2_forMembershipControllerTest"),
                 Authority.PENDING
         );
+
+        // test1 -> 스페이스 3 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc1111"),
+                spaceService.findByName("기존 스페이스 3_forMembershipControllerTest"),
+                Authority.ADMIN
+        );
+
+        // test2 -> 스페이스 3 가입 (READ_WRITE)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc2222"),
+                spaceService.findByName("기존 스페이스 3_forMembershipControllerTest"),
+                Authority.READ_WRITE
+        );
+
+        // test3 -> 스페이스 3 가입 (READ_ONLY)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc3333"),
+                spaceService.findByName("기존 스페이스 3_forMembershipControllerTest"),
+                Authority.READ_ONLY
+        );
     }
 
 
@@ -157,6 +178,72 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         // given
         Integer spaceId = 9999;
         String url = "/api/v1/space/member/invite/%d".formatted(spaceId);
+
+        // when
+        ResultActions resultActions = performGet(url);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    // ============================= LIST Space Members ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 목록 조회 - 성공")
+    void listSpaceMembers_Success() throws Exception {
+        // given
+        var member1 = memberService.findByKakaoKey("mc1111");
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performGet(url);
+
+        // then
+        expectOk(resultActions, "스페이스 멤버 목록을 조회했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.members.length()").value(3))
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.members[0].id").exists())
+                .andExpect(jsonPath("$.data.members[0].name").value(member1.getName()))
+                .andExpect(jsonPath("$.data.members[0].profileUrl").value(member1.getProfileImageUrl()))
+                .andExpect(jsonPath("$.data.members[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.members[1].id").exists())
+                .andExpect(jsonPath("$.data.members[1].name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.members[1].profileUrl").value(member2.getProfileImageUrl()))
+                .andExpect(jsonPath("$.data.members[1].authority").value("READ_WRITE"))
+                .andExpect(jsonPath("$.data.members[2].id").exists())
+                .andExpect(jsonPath("$.data.members[2].name").value(member3.getName()))
+                .andExpect(jsonPath("$.data.members[2].profileUrl").value(member3.getProfileImageUrl()))
+                .andExpect(jsonPath("$.data.members[2].authority").value("READ_ONLY"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 목록 조회 - 실패 : 스페이스 멤버가 아님")
+    void listSpaceMembers_Fail_NotSpaceMember() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performGet(url);
+
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 목록 조회 - 실패 : 스페이스가 존재하지 않음")
+    void listSpaceMembers_Fail_NotExistSpace() throws Exception {
+        // given
+        Integer spaceId = 9999;
+        String url = "/api/v1/space/member/%d".formatted(spaceId);
 
         // when
         ResultActions resultActions = performGet(url);
