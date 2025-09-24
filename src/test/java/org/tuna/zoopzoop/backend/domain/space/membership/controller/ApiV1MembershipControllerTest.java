@@ -208,6 +208,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.members.length()").value(3))
                 .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
                 .andExpect(jsonPath("$.data.members[0].id").exists())
                 .andExpect(jsonPath("$.data.members[0].name").value(member1.getName()))
                 .andExpect(jsonPath("$.data.members[0].profileUrl").value(member1.getProfileImageUrl()))
