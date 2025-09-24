@@ -349,7 +349,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectNotFound(resultActions, "존재하지 않는 멤버입니다.");
+        expectNotFound(resultActions, "9999 id를 가진 사용자를 찾을 수 없습니다.");
     }
 
     @Test
@@ -459,7 +459,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectBadRequest(resultActions, "멤버 ID는 필수입니다.");
+        expectBadRequest(resultActions, "memberId-NotNull-must not be null");
     }
 
     @Test
@@ -480,7 +480,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectBadRequest(resultActions, "권한은 필수입니다.");
+        expectBadRequest(resultActions, "newAuthority-NotNull-must not be null");
     }
 
 }
