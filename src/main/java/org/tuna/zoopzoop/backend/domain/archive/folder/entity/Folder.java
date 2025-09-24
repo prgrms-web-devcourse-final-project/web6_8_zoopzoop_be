@@ -39,7 +39,7 @@ public class Folder extends BaseEntity {
     private String name;
 
     //디폴트 폴더 여부
-    @Column(nullable = false)
+    @Column(nullable = false, name = "is_default")
     private boolean isDefault = false;
 
     // 폴더 삭제 시 데이터 일괄 삭제
