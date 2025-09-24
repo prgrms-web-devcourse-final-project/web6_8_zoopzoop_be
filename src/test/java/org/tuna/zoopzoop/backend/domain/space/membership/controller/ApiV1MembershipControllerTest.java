@@ -371,7 +371,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectNotFound(resultActions, "존재하지 않는 멤버입니다.");
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
     }
 
     @Test
@@ -439,7 +439,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         // then
         resultActions.andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value("409"))
-                .andExpect(jsonPath("$.msg").value("이미 동일한 권한을 가지고 있습니다."));
+                .andExpect(jsonPath("$.msg").value("이미 요청된 권한을 가지고 있습니다."));
     }
 
     @Test
