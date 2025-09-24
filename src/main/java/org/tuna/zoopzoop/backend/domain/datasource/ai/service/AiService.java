@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.datasource.service;
+package org.tuna.zoopzoop.backend.domain.datasource.ai.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
