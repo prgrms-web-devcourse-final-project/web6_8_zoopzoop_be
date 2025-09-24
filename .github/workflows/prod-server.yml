@@ -57,7 +57,7 @@ jobs:
             fi
             
             # 현재 NPM Proxy Host 설정 확인
-            echo "📋 Checking current NPM configuration..."
+            echo "📋 Checking current NPM configuration... 📋"
             CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
               "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
             
