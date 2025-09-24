@@ -835,8 +835,8 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         expectOk(resultActions, "스페이스에서 탈퇴했습니다.");
 
         resultActions
-                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
-                .andExpect(jsonPath("$.data.spaceName").value(space.getName()));
+                .andExpect(jsonPath("$.data.id").value(space.getId()))
+                .andExpect(jsonPath("$.data.name").value(space.getName()));
     }
 
     @Test
@@ -854,8 +854,8 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         expectOk(resultActions, "스페이스에서 탈퇴했습니다.");
 
         resultActions
-                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
-                .andExpect(jsonPath("$.data.spaceName").value(space.getName()));
+                .andExpect(jsonPath("$.data.id").value(space.getId()))
+                .andExpect(jsonPath("$.data.name").value(space.getName()));
     }
 
     @Test
@@ -870,7 +870,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performDelete(url);
 
         // then
-        expectBadRequest(resultActions, "스페이스에 혼자 남아있을 수 없습니다. 다른 멤버를 초대하거나 스페이스를 삭제하세요.");
+        expectBadRequest(resultActions, "유일한 어드민은 탈퇴할 수 없습니다.");
     }
 
     @Test
@@ -885,7 +885,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performDelete(url);
 
         // then
-        expectBadRequest(resultActions, "유일한 어드민인 경우 탈퇴할 수 없습니다.");
+        expectBadRequest(resultActions, "유일한 어드민은 탈퇴할 수 없습니다.");
     }
 
     @Test
@@ -905,7 +905,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
 
     @Test
     @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    @DisplayName("스페이스 탈퇴 - 실패 : 스페이스 멤버가 아님")
+    @DisplayName("스페이스 탈퇴 - 실패 : 스페이스 멤버가 아님(초대된 상태)")
     void leaveSpace_Fail_NotSpaceMember() throws Exception {
         // given
         var space = spaceService.findByName("기존 스페이스 2_forMembershipControllerTest");
@@ -918,7 +918,19 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
     }
 
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 실패 : 스페이스 멤버가 아님(처음부터 속해있지 않음)")
+    void leaveSpace_Fail_NotSpaceMember_2() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
 
+        // when
+        ResultActions resultActions = performDelete(url);
 
+        // then
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
+    }
 
 }
