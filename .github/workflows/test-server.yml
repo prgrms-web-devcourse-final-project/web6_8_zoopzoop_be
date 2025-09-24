@@ -124,15 +124,42 @@ jobs:
             # 최신 이미지 pull
             docker pull ghcr.io/${{ github.repository }}/zoopzoop:latest
 
+            # NPM API 설정
+            NPM_HOST="localhost:81"
+            NPM_EMAIL="${{secrets.NPM_ADMIN_EMAIL}}"
+            NPM_PASSWORD="${{secrets.NPM_ADMIN_PASSWORD}}"
+            PROXY_HOST_ID="${{secrets.NPM_PROXY_HOST_ID}}"
+    
+            # NPM API 토큰 가져오기
+            echo "Getting NPM API token..."
+            TOKEN=$(curl -s -X POST "http://${NPM_HOST}/api/tokens" \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASSWORD}\"}" | \
+              jq -r '.token')
+            if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+              echo "❌ Failed to get NPM API token"
+              exit 1
+            fi
+            
+            # 현재 NPM Proxy Host 설정 확인
+            echo "📋 Checking current NPM configuration..."
+            CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+            
+            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.forward_host')
+            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.forward_port')
+            
+            echo "Current NPM target: $CURRENT_TARGET:$CURRENT_PORT"
+
             # Blue-Green 배포
             if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
               NEW_CONTAINER=zoopzoop-green
               OLD_CONTAINER=zoopzoop-blue
-              PORT=8082
+              NEW_PORT=8082
             else
               NEW_CONTAINER=zoopzoop-blue
               OLD_CONTAINER=zoopzoop-green
-              PORT=8081
+              NEW_PORT=8081
             fi
 
             echo "Starting new container: $NEW_CONTAINER on port $PORT"
@@ -142,14 +169,14 @@ jobs:
               --network common \
               -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
-                -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
+              -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
             
             
             # 헬스체크 (Spring Boot Actuator)
             for i in {1..30}; do
               if curl -s http://localhost:$PORT/actuator/health | grep -q '"status":"UP"'; then
-                echo "New container is healthy!"
+                echo "✅New container is healthy!"
                 break
               else
                 echo "Waiting for new container to be healthy..."
@@ -160,9 +187,53 @@ jobs:
                 echo "❌ Health check failed. Rolling back..."
                 docker stop $NEW_CONTAINER || true
                 docker rm $NEW_CONTAINER || true
-                exit 1  # <<< 여기를 추가
+                exit 1 
               fi
             done
+            
+            # NPM에서 트래픽 스위칭
+            echo "🔄 Switching traffic in Nginx Proxy Manager..."
+            DOMAIN_NAME=$(echo $CURRENT_CONFIG | jq -r '.domain_names[0]')
+            
+            SWITCH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"domain_names\": [\"$DOMAIN_NAME\"],
+                \"forward_scheme\": \"http\",
+                \"forward_host\": \"$NEW_TARGET\",
+                \"forward_port\": 8080,
+                \"caching_enabled\": false,
+                \"block_exploits\": true,
+                \"advanced_config\": \"\",
+                \"locations\": [],
+                \"certificate_id\": 0,
+                \"ssl_forced\": 0,
+                \"hsts_enabled\": 0,
+                \"hsts_subdomains\": 0
+              }")
+
+            HTTP_CODE=${SWITCH_RESPONSE: -3}
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              echo "✅ Traffic switching completed successfully!"
+              echo "🎯 NPM now points to: $NEW_TARGET:8080"
+            
+              # 최종 확인
+              sleep 5
+              echo "🔍 Final verification..."
+              VERIFY_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+              VERIFY_TARGET=$(echo $VERIFY_CONFIG | jq -r '.forward_host')
+              echo "✅ Verified NPM target: $VERIFY_TARGET"
+            
+            else
+              echo "❌ Traffic switching failed! HTTP Code: $HTTP_CODE"
+              echo "Response: ${SWITCH_RESPONSE%???}"
+              echo "🔄 Rolling back new container..."
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
 
             # 이전 컨테이너 종료 및 제거
             echo "Stopping old container: $OLD_CONTAINER"
