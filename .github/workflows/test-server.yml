@@ -162,7 +162,7 @@ jobs:
               NEW_PORT=8081
             fi
 
-            echo "Starting new container: $NEW_CONTAINER on port $PORT"
+            echo "Starting new container: $NEW_CONTAINER on port $NEW_PORT"
             docker run -d --restart unless-stopped \
               -p $PORT:8080 \
               --name $NEW_CONTAINER \
@@ -201,7 +201,7 @@ jobs:
               -d "{
                 \"domain_names\": [\"$DOMAIN_NAME\"],
                 \"forward_scheme\": \"http\",
-                \"forward_host\": \"$NEW_TARGET\",
+                \"forward_host\": \"$NEW_CONTAINER\",
                 \"forward_port\": 8080,
                 \"caching_enabled\": false,
                 \"block_exploits\": true,
@@ -216,7 +216,7 @@ jobs:
             HTTP_CODE=${SWITCH_RESPONSE: -3}
             if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
               echo "✅ Traffic switching completed successfully!"
-              echo "🎯 NPM now points to: $NEW_TARGET:8080"
+              echo "🎯 NPM now points to: $NEW_CONTAINER:8080"
             
               # 최종 확인
               sleep 5
