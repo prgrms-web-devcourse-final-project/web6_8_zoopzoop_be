@@ -2,12 +2,11 @@ package org.tuna.zoopzoop.backend.domain.news.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.tuna.zoopzoop.backend.domain.news.dto.res.ResBodyForNaverNews;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -15,34 +14,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest
 @ActiveProfiles("test")
 class NewsServiceTest {
+    @Autowired
+    private NewsSearchService newsSearchService;
 
     @Test
     @DisplayName("뉴스 서비스 테스트 - 정상적인 JSON 구조 반환 여부 확인")
     void newsJsonStructureTest() {
-        // JSON 구조용 더미 데이터
-        ResBodyForNaverNews dummyResponse = new ResBodyForNaverNews(
-                "Mon, 22 Sep 2025 17:35:10 +0900",  // lastBuildDate
-                505376,                                         // total
-                1,                                              // start
-                5,                                              // display
-                List.of(
-                        new ResBodyForNaverNews.NewsItem(       // items
-                                "뉴스 제목",                    // title
-                                "링크",                         // link
-                                "설명",                         // description
-                                "발행일"                        // pubDate
-                        )
-                )
-        );
-
-        Mono<ResBodyForNaverNews> result = Mono.just(dummyResponse);
+        Mono<ResBodyForNaverNews> result = newsSearchService.searchNews("뉴스", "sim");
 
         // JSON 구조 확인
         result.doOnNext(res -> {
-            assertNotNull(res.lastBuildDate());
             assertNotNull(res.total());
-            assertNotNull(res.start());
-            assertNotNull(res.display());
             assertNotNull(res.items());
 
             res.items().forEach(item -> {

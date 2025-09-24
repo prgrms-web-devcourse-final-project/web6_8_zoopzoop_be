@@ -24,6 +24,10 @@ public class ApiV1AuthController {
     private final MemberService memberService;
     private final JwtProperties jwtProperties;
 
+    /**
+     * 사용자 로그아웃 API
+     * @param response Servlet 기반 웹에서 server -> client로 http 응답을 보내기 위한 객체, 자동 주입.
+     */
     @GetMapping("/logout")
     @Operation(summary = "사용자 로그아웃")
     public ResponseEntity<RsData<Void>> logout(HttpServletResponse response) {
@@ -54,6 +58,11 @@ public class ApiV1AuthController {
                 );
     }
 
+    /**
+     * refreshToken 기반으로 accessToken 재발급
+     * @param refreshToken 쿠키에 포함된 현재 로그인한 사용자의 refreshToken
+     * @param response Servlet 기반 웹에서 server -> client로 http 응답을 보내기 위한 객체, 자동 주입.
+     */
     @PostMapping("/refresh")
     @Operation(summary = "사용자 액세스 토큰 재발급 (리프레시 토큰이 유효할 경우)")
     public ResponseEntity<RsData<Void>> refreshToken(@CookieValue(name = "refreshToken", required = false) String refreshToken,

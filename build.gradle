@@ -76,6 +76,9 @@ dependencies {
 
     // Spring AI
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
+
+    // 크롤링
+    implementation("org.jsoup:jsoup:1.21.2")
 }
 
 dependencyManagement {
