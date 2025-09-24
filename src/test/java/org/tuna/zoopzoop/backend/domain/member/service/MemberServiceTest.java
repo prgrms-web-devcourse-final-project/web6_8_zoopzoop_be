@@ -28,13 +28,13 @@ class MemberServiceTest {
     @BeforeEach
     void setUp() {
         Member member1 = memberService.createMember(
-                "test1",
+                "testtest1",
                 "url",
                 "1111",
                 Provider.KAKAO
         );
         Member member2 = memberService.createMember(
-                "test2",
+                "testtest2",
                 "url",
                 "2222",
                 Provider.GOOGLE

@@ -1,9 +1,10 @@
 package org.tuna.zoopzoop.backend.domain.member.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MemberControllerTest {
     @Autowired
     private MemberService memberService;
@@ -38,7 +40,7 @@ public class MemberControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() {
         Member member1 = memberService.createMember(
                 "test1",
