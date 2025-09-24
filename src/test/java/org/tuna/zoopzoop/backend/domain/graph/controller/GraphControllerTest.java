@@ -57,7 +57,7 @@ class GraphControllerTest {
                 "nodes": [
                     {
                         "id": "1",
-                        "type": "custom",
+                        "type": "CUSTOM",
                         "data": {
                             "title": "노드1",
                             "description": "설명1"
@@ -69,7 +69,7 @@ class GraphControllerTest {
                     },
                     {
                         "id": "2",
-                        "type": "custom",
+                        "type": "CUSTOM",
                         "data": {
                             "title": "노드2"
                         },
@@ -84,7 +84,7 @@ class GraphControllerTest {
                         "id": "e1-2",
                         "source": "1",
                         "target": "2",
-                        "type": "smoothstep",
+                        "type": "SMOOTHSTEP",
                         "animated": true,
                         "style": {
                             "stroke": "#999",
@@ -119,7 +119,7 @@ class GraphControllerTest {
                 .andExpect(jsonPath("$.data.nodes", hasSize(2)))
                 .andExpect(jsonPath("$.data.edges", hasSize(1)))
                 .andExpect(jsonPath("$.data.nodes[0].id").value("1"))
-                .andExpect(jsonPath("$.data.nodes[0].type").value("custom"))
+                .andExpect(jsonPath("$.data.nodes[0].type").value("CUSTOM"))
                 .andExpect(jsonPath("$.data.nodes[0].data.title").value("노드1"))
                 .andExpect(jsonPath("$.data.edges[0].id").value("e1-2"))
                 .andExpect(jsonPath("$.data.edges[0].animated").value(true));
