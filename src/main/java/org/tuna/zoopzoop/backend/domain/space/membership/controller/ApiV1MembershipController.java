@@ -11,6 +11,8 @@ import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.*;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.req.ReqBodyForExpelMember;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.res.ResBodyForExpelMember;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
@@ -167,6 +169,42 @@ public class ApiV1MembershipController {
                         space.getId(),
                         space.getName(),
                         invitedMemberInfos
+                )
+        );
+    }
+
+    @DeleteMapping("/{spaceId}")
+    @Operation(summary = "스페이스 멤버 퇴출")
+    public RsData<ResBodyForExpelMember> expelMember(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @RequestBody @Valid ReqBodyForExpelMember reqBody
+    ) throws AccessDeniedException {
+        Member requester = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
+        Member targetMember = memberService.findById(reqBody.memberId());
+
+        membershipService.checkAdminAuthority(requester, space);
+
+        // 본인 강퇴 방지
+        if(requester.equals(targetMember)) {
+            throw new AccessDeniedException("본인은 강퇴할 수 없습니다.");
+        }
+
+        membershipService.expelMemberFromSpace(targetMember, space);
+
+        ResBodyForGetMemberInfo expelledMemberInfo = new ResBodyForGetMemberInfo(
+                targetMember.getId(),
+                targetMember.getName(),
+                targetMember.getProfileImageUrl()
+        );
+        return new RsData<>(
+                "200",
+                "멤버를 스페이스에서 퇴출했습니다.",
+                new ResBodyForExpelMember(
+                        space.getId(),
+                        space.getName(),
+                        expelledMemberInfo
                 )
         );
     }

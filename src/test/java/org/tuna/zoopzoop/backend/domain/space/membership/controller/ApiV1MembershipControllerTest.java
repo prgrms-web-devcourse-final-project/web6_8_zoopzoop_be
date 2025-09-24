@@ -640,7 +640,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         expectForbidden(resultActions, "액세스가 거부되었습니다.");
     }
 
-    // ============================= DELETE MEMBER ============================= //
+    // ============================= EXPEL MEMBER ============================= //
 
     @Test
     @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
@@ -660,14 +660,14 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performDelete(url, requestBody);
 
         // then
-        expectOk(resultActions, "스페이스 멤버를 삭제했습니다.");
+        expectOk(resultActions, "멤버를 스페이스에서 퇴출했습니다.");
 
         resultActions
                 .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
                 .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
-                .andExpect(jsonPath("$.data.deletedMember.id").value(member2.getId()))
-                .andExpect(jsonPath("$.data.deletedMember.name").value(member2.getName()))
-                .andExpect(jsonPath("$.data.deletedMember.profileUrl").value(member2.getProfileImageUrl()));
+                .andExpect(jsonPath("$.data.expelledMemberInfo.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.expelledMemberInfo.name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.expelledMemberInfo.profileUrl").value(member2.getProfileImageUrl()));
     }
 
     @Test
@@ -688,14 +688,14 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performDelete(url, requestBody);
 
         // then
-        expectOk(resultActions, "스페이스 멤버를 삭제했습니다.");
+        expectOk(resultActions, "멤버를 스페이스에서 퇴출했습니다.");
 
         resultActions
                 .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
                 .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
-                .andExpect(jsonPath("$.data.deletedMember.id").value(member2.getId()))
-                .andExpect(jsonPath("$.data.deletedMember.name").value(member2.getName()))
-                .andExpect(jsonPath("$.data.deletedMember.profileUrl").value(member2.getProfileImageUrl()));
+                .andExpect(jsonPath("$.data.expelledMemberInfo.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.expelledMemberInfo.name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.expelledMemberInfo.profileUrl").value(member2.getProfileImageUrl()));
     }
 
     @Test
@@ -774,10 +774,12 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
                     "memberId": %d
                 }
                 """.formatted(member3.getId());
+
         // when
         ResultActions resultActions = performDelete(url, requestBody);
+
         // then
-        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
     }
 
     @Test
@@ -798,8 +800,6 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performDelete(url, requestBody);
 
         // then
-        expectBadRequest(resultActions, "본인은 스페이스에서 퇴출할 수 없습니다.");
+        expectForbidden(resultActions, "본인은 강퇴할 수 없습니다.");
     }
-
-
 }
