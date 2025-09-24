@@ -45,7 +45,6 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     void setUpSpace() {
         spaceService.createSpace("기존 스페이스 1_forSpaceControllerTest");
         spaceService.createSpace("기존 스페이스 2_forSpaceControllerTest");
-
     }
 
     void setUpMember() {
@@ -235,6 +234,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
 
     // ======================= Modify ======================== //
+
     @Test
     @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("스페이스 이름 변경 - 성공")

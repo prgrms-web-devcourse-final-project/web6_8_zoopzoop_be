@@ -62,4 +62,6 @@ public class ApiV1MembershipController {
                 )
         );
     }
+
+    // 스페이스의 멤버 목록 조회 API
 }
