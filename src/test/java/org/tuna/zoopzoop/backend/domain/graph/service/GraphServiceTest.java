@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.graph.service;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class GraphServiceTest {
     @Autowired
     private GraphRepository graphRepository;
+
+    @AfterEach
+    void cleanUp() {
+        graphRepository.deleteAll(); // Graph만 삭제
+        // 필요하면 다른 Repository도 순서대로 삭제
+    }
 
     @Test
     @DisplayName("Graph + Node + Edge 저장 테스트")

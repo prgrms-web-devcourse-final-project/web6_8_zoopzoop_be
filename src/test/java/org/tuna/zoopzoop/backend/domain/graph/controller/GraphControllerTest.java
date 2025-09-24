@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.graph.controller;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,12 @@ class GraphControllerTest {
     @BeforeEach
     void setUp() {
         graphRepository.deleteAll(); // 테스트 전 DB 초기화
+    }
+
+    @AfterEach
+    void cleanUp() {
+        graphRepository.deleteAll(); // Graph만 삭제
+        // 필요하면 다른 Repository도 순서대로 삭제
     }
 
     // 단위 테스트가 백엔드 컨벡션 원칙이나, 서비스 특성 상 단위 테스트가 어려워
@@ -117,4 +124,6 @@ class GraphControllerTest {
                 .andExpect(jsonPath("$.data.edges[0].id").value("e1-2"))
                 .andExpect(jsonPath("$.data.edges[0].animated").value(true));
     }
+
+
 }

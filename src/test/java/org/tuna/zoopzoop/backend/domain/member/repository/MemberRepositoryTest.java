@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.member.repository;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,11 @@ public class MemberRepositoryTest {
     @Autowired
     MemberRepository memberRepository;
 
+    @AfterEach
+    void cleanUp() {
+        memberRepository.deleteAll(); // Graph만 삭제
+        // 필요하면 다른 Repository도 순서대로 삭제
+    }
 
     @Test
     @DisplayName("Member 저장 시 PersonalArchive + Archive + default 폴더가 자동 생성된다")

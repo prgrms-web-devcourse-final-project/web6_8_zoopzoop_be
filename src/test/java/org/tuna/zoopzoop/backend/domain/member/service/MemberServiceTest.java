@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.member.service;
 
 import jakarta.persistence.NoResultException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,12 @@ class MemberServiceTest {
                 "3333",
                 Provider.KAKAO
         );
+    }
+
+    @AfterEach
+    void cleanUp() {
+        memberRepository.deleteAll(); // Graph만 삭제
+        // 필요하면 다른 Repository도 순서대로 삭제
     }
 
     @Test
