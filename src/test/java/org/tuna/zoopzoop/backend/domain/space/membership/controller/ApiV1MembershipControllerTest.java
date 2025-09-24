@@ -640,4 +640,166 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         expectForbidden(resultActions, "액세스가 거부되었습니다.");
     }
 
+    // ============================= DELETE MEMBER ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 성공")
+    void deleteMember_Success() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectOk(resultActions, "스페이스 멤버를 삭제했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.deletedMember.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.deletedMember.name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.deletedMember.profileUrl").value(member2.getProfileImageUrl()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 성공 : PENDING 멤버 퇴출")
+    void deleteMember_Success_PendingMember() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectOk(resultActions, "스페이스 멤버를 삭제했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.deletedMember.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.deletedMember.name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.deletedMember.profileUrl").value(member2.getProfileImageUrl()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 실패 : 어드민 권한 없음")
+    void deleteMember_Fail_NoAuthority() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member3.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 실패 : 스페이스가 존재하지 않음")
+    void deleteMember_Fail_NotExistSpace() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        Integer spaceId = 9999;
+        String url = "/api/v1/space/member/%d".formatted(spaceId);
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 실패 : 멤버가 존재하지 않음")
+    void deleteMember_Fail_NotExistMember() throws Exception {
+        // given
+        Integer memberId = 9999;
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(memberId);
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "9999 id를 가진 사용자를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 실패 : 멤버가 스페이스에 속해있지 않음")
+    void deleteMember_Fail_MemberNotInSpace() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member3.getId());
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 퇴출 - 실패 : 본인을 퇴출하려고 함")
+    void deleteMember_Fail_DeleteOwnMembership() throws Exception {
+        // given
+        var member1 = memberService.findByKakaoKey("mc1111");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member1.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url, requestBody);
+
+        // then
+        expectBadRequest(resultActions, "본인은 스페이스에서 퇴출할 수 없습니다.");
+    }
+
+
 }

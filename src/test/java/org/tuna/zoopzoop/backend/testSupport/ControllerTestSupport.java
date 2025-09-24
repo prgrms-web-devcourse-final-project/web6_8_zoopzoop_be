@@ -112,6 +112,20 @@ public abstract class ControllerTestSupport {
                 .andDo(print());
     }
 
+    /**
+     * DELETE 요청을 수행하는 헬퍼 메서드 (바디 있는 경우)
+     * @param url - 요청할 URL
+     * @param body - 요청 바디 (객체 형태)
+     * @return ResultActions - MockMvc의 ResultActions 객체
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected ResultActions performDelete(String url,  String body) throws Exception {
+        return mvc.perform(delete(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print());
+    }
+
     // ====================== COMMON ASSERTIONS (Response) ======================= //
 
     /**
