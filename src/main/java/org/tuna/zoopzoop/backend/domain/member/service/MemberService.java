@@ -10,6 +10,7 @@ import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -44,6 +45,10 @@ public class MemberService {
         return memberRepository.findByProviderKey(providerKey).orElseThrow(() ->
                 new NoResultException(providerKey + " 해당 키를 가진 사용자를 찾을 수 없습니다.")
         );
+    }
+
+    public Optional<Member> findOptionalByName(String name) {
+        return memberRepository.findByName(name);
     }
 
 //    public Member findByEmail(String email){

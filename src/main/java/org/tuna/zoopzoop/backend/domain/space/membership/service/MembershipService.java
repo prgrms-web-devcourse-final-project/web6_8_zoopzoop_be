@@ -17,6 +17,7 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -104,9 +105,6 @@ public class MembershipService {
     }
 
 
-
-
-
     // ======================== 멤버십 존재 여부 확인 ======================== //
 
     /**
@@ -160,6 +158,39 @@ public class MembershipService {
         membership.setSpace(space);
         membership.setAuthority(authority);
         return membershipRepository.save(membership);
+    }
+
+
+    /**
+     * 스페이스에 멤버 초대 (여러 명)
+     * @param space 멤버가 추가될 스페이스
+     * @param invitedName 초대할 멤버 이름 목록
+     * @return 생성된 Membership 엔티티 목록
+     */
+    public List<Membership> inviteMembersToSpace(Space space, List<String> invitedName) {
+        // 1. 이름 중복 제거
+        List<String> uniqueNames = invitedName.stream().distinct().toList();
+
+        // 2. 존재하는 멤버만 필터링
+        List<Member> members = uniqueNames.stream()
+                .map(memberService::findOptionalByName)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+
+        // 3. 이미 초대된 멤버는 제외
+        List<Membership> invitedMemberships = members.stream()
+                .filter(member -> !membershipRepository.existsByMemberAndSpace(member, space))
+                .map(member -> {
+                    Membership membership = new Membership();
+                    membership.setMember(member);
+                    membership.setSpace(space);
+                    membership.setAuthority(Authority.PENDING);
+                    return membership;
+                })
+                .toList();
+
+        return membershipRepository.saveAll(invitedMemberships);
     }
 
     /**
