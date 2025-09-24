@@ -49,7 +49,7 @@ public record BodyForReactFlow(
                 .map(dto -> {
                     Node node = new Node();
                     node.setNodeKey(dto.nodeKey());
-                    node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase())); // string → enum
+                    node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase()));
                     node.setData(dto.data());
                     node.setPositonX(dto.positionDto().x());
                     node.setPositonY(dto.positionDto().y());
@@ -64,7 +64,7 @@ public record BodyForReactFlow(
                     edge.setEdgeKey(dto.edgeKey());
                     edge.setSourceNodeKey(dto.sourceNodeKey());
                     edge.setTargetNodeKey(dto.targetNodeKey());
-                    edge.setEdgeType(EdgeType.valueOf(dto.edgeType().toUpperCase())); // string → enum
+                    edge.setEdgeType(EdgeType.valueOf(dto.edgeType().toUpperCase()));
                     edge.setAnimated(dto.isAnimated());
                     if (dto.styleDto() != null) {
                         edge.setStroke(dto.styleDto().stroke());
@@ -86,7 +86,7 @@ public record BodyForReactFlow(
         List<NodeDto> nodeDtos = graph.getNodes().stream()
                 .map(n -> new NodeDto(
                         n.getNodeKey(),
-                        n.getNodeType().name().toLowerCase(), // enum → 소문자
+                        n.getNodeType().name().toUpperCase(),
                         n.getData(),
                         new NodeDto.PositionDto(n.getPositonX(), n.getPositonY())
                 ))
@@ -97,7 +97,7 @@ public record BodyForReactFlow(
                         e.getEdgeKey(),
                         e.getSourceNodeKey(),
                         e.getTargetNodeKey(),
-                        e.getEdgeType().name().toLowerCase(), // enum → 소문자
+                        e.getEdgeType().name().toUpperCase(),
                         e.isAnimated(),
                         new EdgeDto.StyleDto(e.getStroke(), e.getStrokeWidth())
                 ))
