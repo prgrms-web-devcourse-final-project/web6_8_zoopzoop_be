@@ -12,6 +12,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.resBodyForMoveDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -128,4 +129,62 @@ class DataSourceServiceTest {
         );
     }
 
+    // delete
+    @Test
+    @DisplayName("단건 삭제 성공 - 존재하는 자료 삭제 시 ID 반환")
+    void deleteById_success() {
+        // given
+        int id = 123;
+        DataSource mockData = new DataSource();
+        when(dataSourceRepository.findById(id)).thenReturn(Optional.of(mockData));
+
+        // when
+        int deletedId = dataSourceService.deleteById(id);
+
+        // then
+        assertThat(deletedId).isEqualTo(id);
+        verify(dataSourceRepository).delete(mockData);
+    }
+
+    @Test
+    @DisplayName("단건 삭제 실패 - 자료가 존재하지 않으면 예외 발생")
+    void deleteById_notFound() {
+        // given
+        int id = 999;
+        when(dataSourceRepository.findById(id)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NoResultException.class, () -> dataSourceService.deleteById(id));
+        verify(dataSourceRepository, never()).delete(any());
+    }
+
+    // deleteMany
+    @Test
+    @DisplayName("다건 삭제 성공 - 일괄 삭제")
+    void deleteMany_success() {
+        List<Integer> ids = List.of(1, 2, 3);
+        when(dataSourceRepository.findExistingIds(ids)).thenReturn(ids);
+
+        dataSourceService.deleteMany(ids);
+
+        verify(dataSourceRepository).deleteAllByIdInBatch(ids);
+    }
+
+    @Test
+    @DisplayName("다건 삭제 실패 - 요청 배열이 비어있음 → 400")
+    void deleteMany_empty() {
+        assertThrows(IllegalArgumentException.class, () -> dataSourceService.deleteMany(List.of()));
+        verifyNoInteractions(dataSourceRepository);
+    }
+
+    @Test
+    @DisplayName("다건 삭제 실패 - 일부 ID 미존재 → 404")
+    void deleteMany_partialMissing() {
+        List<Integer> ids = List.of(1, 2, 3);
+        when(dataSourceRepository.findExistingIds(ids)).thenReturn(List.of(1, 3));
+
+        assertThrows(NoResultException.class, () -> dataSourceService.deleteMany(ids));
+
+        verify(dataSourceRepository, never()).deleteAllByIdInBatch(any());
+    }
 }
