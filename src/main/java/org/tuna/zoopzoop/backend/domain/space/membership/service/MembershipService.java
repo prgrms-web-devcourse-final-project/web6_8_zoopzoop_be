@@ -7,11 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MembershipService {
     private final MembershipRepository membershipRepository;
+    private final MemberService memberService;
 
     // ======================== 멤버십 조회 ======================== //
 
@@ -79,6 +82,29 @@ public class MembershipService {
     public List<Membership> findMembersBySpace(Space space) {
         return membershipRepository.findAllBySpaceAndAuthorityIsNot(space, Authority.PENDING);
     }
+
+    // ======================== 권한 조회 ======================== //
+    /**
+     * 멤버가 스페이스의 어드민 권한을 가지고 있는지 확인
+     * @param member 조회할 멤버
+     * @param space 조회할 스페이스
+     * @throws NoResultException 해당 멤버가 권한이 없는 경우
+     */
+    public void checkAdminAuthority(Member member, Space space) throws AccessDeniedException {
+        // 스페이스에 요청자가 속해있는지 확인
+        if(!isMemberJoinedSpace(member, space)) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+
+        // 요청자의 권한이 멤버 관리 권한이 있는지 확인
+        Membership requesterMembership = findByMemberAndSpace(member, space);
+        if(!requesterMembership.getAuthority().canManageMembers()) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+    }
+
+
+
 
 
     // ======================== 멤버십 존재 여부 확인 ======================== //
@@ -143,8 +169,49 @@ public class MembershipService {
      * @return 변경된 Membership 엔티티
      */
     public Membership changeAuthority(Membership membership, Authority newAuthority) {
+
         membership.setAuthority(newAuthority);
         return membershipRepository.save(membership);
+    }
+
+    /**
+     * 멤버의 권한 변경 처리 (요청자 검증 포함)
+     * @param requester 권한 변경을 요청하는 멤버
+     * @param space 변경이 이루어질 스페이스
+     * @param targetMemberId 권한이 변경될 대상 멤버의 ID
+     * @param newAuthority 새로운 권한
+     * @return 변경된 Membership 엔티티
+     * @throws AccessDeniedException 요청자가 멤버를 관리할 권한이 없는 경우
+     */
+    public Membership changeMemberAuthority(Member requester, Space space, Integer targetMemberId, Authority newAuthority) throws AccessDeniedException {
+        // 1. 요청자가 멤버를 관리할 권한이 있는지 확인 (기존 로직 재사용)
+        checkAdminAuthority(requester, space);
+
+        // 2. 변경 대상 멤버 조회
+        // ※ MemberService가 필요하므로 의존성 주입(DI)이 필요할 수 있습니다.
+        Member targetMember = memberService.findById(targetMemberId);
+
+        // 3. 자기 자신의 권한을 변경하는지 확인
+        if (targetMember.equals(requester)) {
+            throw new IllegalArgumentException("본인의 권한은 변경할 수 없습니다.");
+        }
+
+        // 4. PENDING 상태로 변경하려고 하는지 확인
+        if (newAuthority == Authority.PENDING) {
+            throw new IllegalArgumentException("멤버 권한을 PENDING(가입 대기)으로 변경할 수 없습니다.");
+        }
+
+        // 5. 대상 멤버의 현재 멤버십 정보 조회
+        Membership targetMembership = findByMemberAndSpace(targetMember, space);
+
+        // 6. 이미 같은 권한인지 확인
+        if (targetMembership.getAuthority() == newAuthority) {
+            // ※ 409 Conflict에 해당하는 예외를 사용하는 것이 좋습니다.
+            throw new DataIntegrityViolationException("이미 요청된 권한을 가지고 있습니다.");
+        }
+
+        // 7. 모든 검증 통과 후, 권한 변경 로직 실행
+        return changeAuthority(targetMembership, newAuthority);
     }
 
 

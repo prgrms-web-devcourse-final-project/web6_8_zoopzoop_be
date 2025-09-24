@@ -11,6 +11,7 @@ import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.*;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
+import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
@@ -109,39 +110,12 @@ public class ApiV1MembershipController {
         Member requester = userDetails.getMember();
         Space space = spaceService.findById(spaceId);
 
-        // 스페이스에 요청자가 속해있는지 확인
-        if(!membershipService.isMemberJoinedSpace(requester, space)) {
-            throw new AccessDeniedException("액세스가 거부되었습니다.");
-        }
-
-        // 요청자의 권한이 멤버 관리 권한이 있는지 확인
-        Membership requesterMembership = membershipService.findByMemberAndSpace(requester, space);
-        if(!requesterMembership.getAuthority().canManageMembers()) {
-            throw new AccessDeniedException("액세스가 거부되었습니다.");
-        }
-
-        // 변경 대상 멤버가 사용자 본인인지 확인
-        Member requestedMember = memberService.findById(reqBody.memberId());
-        if(requestedMember.equals(requester)) {
-            return new RsData<>(
-                    "400",
-                    "본인의 권한은 변경할 수 없습니다.",
-                    null
-            );
-        }
-
-
-        // 변경 대상 멤버의 권한이 요청된 권한과 같은지 확인
-        Membership requestedMembership = membershipService.findByMemberAndSpace(requestedMember, space);
-        if(requestedMembership.getAuthority().equals(reqBody.newAuthority())) {
-            return new RsData<>(
-                    "409",
-                    "이미 요청된 권한을 가지고 있습니다.",
-                    null
-            );
-        }
-        // 멤버 권한 변경
-        Membership changeResult = membershipService.changeAuthority(requestedMembership, reqBody.newAuthority());
+        Membership changeResult = membershipService.changeMemberAuthority(
+                requester,
+                space,
+                reqBody.memberId(),
+                reqBody.newAuthority()
+        );
 
         SpaceMemberInfo memberInfo = new SpaceMemberInfo(
                 changeResult.getMember().getId(),
