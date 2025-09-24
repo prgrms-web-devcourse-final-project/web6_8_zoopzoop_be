@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.membership.dto;
+package org.tuna.zoopzoop.backend.domain.space.membership.dto.req;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
