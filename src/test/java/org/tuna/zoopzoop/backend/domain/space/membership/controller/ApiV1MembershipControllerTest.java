@@ -48,6 +48,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         spaceService.createSpace("기존 스페이스 3_forMembershipControllerTest");
         spaceService.createSpace("기존 스페이스 4_forMembershipControllerTest");
         spaceService.createSpace("기존 스페이스 5_forMembershipControllerTest");
+        spaceService.createSpace("기존 스페이스 6_forMembershipControllerTest");
     }
 
     void setUpMember() {
@@ -148,6 +149,20 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
                 memberService.findByKakaoKey("mc2222"),
                 spaceService.findByName("기존 스페이스 5_forMembershipControllerTest"),
                 Authority.READ_WRITE
+        );
+
+        // test1 -> 스페이스 6 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc1111"),
+                spaceService.findByName("기존 스페이스 6_forMembershipControllerTest"),
+                Authority.ADMIN
+        );
+
+        // test2 -> 스페이스 6 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc2222"),
+                spaceService.findByName("기존 스페이스 6_forMembershipControllerTest"),
+                Authority.ADMIN
         );
     }
 
@@ -802,4 +817,108 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         // then
         expectForbidden(resultActions, "본인은 강퇴할 수 없습니다.");
     }
+
+    // ============================= LEAVE SPACE ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 성공")
+    void leaveSpace_Success() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectOk(resultActions, "스페이스에서 탈퇴했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 성공 : 유일한 어드민이 아닌 경우")
+    void leaveSpace_Success_OnlyNonAdmin() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 6_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectOk(resultActions, "스페이스에서 탈퇴했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 실패 : 혼자인 경우(어드민이자 유일한 멤버)")
+    void leaveSpace_Fail_AloneAdmin() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectBadRequest(resultActions, "스페이스에 혼자 남아있을 수 없습니다. 다른 멤버를 초대하거나 스페이스를 삭제하세요.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 실패 : 유일한 어드민인 경우")
+    void leaveSpace_Fail_OnlyAdmin() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 5_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectBadRequest(resultActions, "유일한 어드민인 경우 탈퇴할 수 없습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 실패 : 스페이스가 존재하지 않음")
+    void leaveSpace_Fail_NotExistSpace() throws Exception {
+        // given
+        Integer spaceId = 9999;
+        String url = "/api/v1/space/member/me/%d".formatted(spaceId);
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 탈퇴 - 실패 : 스페이스 멤버가 아님")
+    void leaveSpace_Fail_NotSpaceMember() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 2_forMembershipControllerTest");
+        String url = "/api/v1/space/member/me/%d".formatted(space.getId());
+
+        // when
+        ResultActions resultActions = performDelete(url);
+
+        // then
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
+    }
+
+
+
+
 }
