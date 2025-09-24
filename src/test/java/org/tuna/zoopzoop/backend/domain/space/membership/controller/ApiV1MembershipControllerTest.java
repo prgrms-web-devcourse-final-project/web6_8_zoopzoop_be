@@ -46,6 +46,8 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         spaceService.createSpace("기존 스페이스 1_forMembershipControllerTest");
         spaceService.createSpace("기존 스페이스 2_forMembershipControllerTest");
         spaceService.createSpace("기존 스페이스 3_forMembershipControllerTest");
+        spaceService.createSpace("기존 스페이스 4_forMembershipControllerTest");
+        spaceService.createSpace("기존 스페이스 5_forMembershipControllerTest");
     }
 
     void setUpMember() {
@@ -91,15 +93,17 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
                 Authority.PENDING
         );
 
-        // test2 -> 스페이스 2 가입 (PENDING)
-        membershipService.addMemberToSpace(
-                memberService.findByKakaoKey("mc2222"),
-                spaceService.findByName("기존 스페이스 2_forMembershipControllerTest"),
-                Authority.PENDING
-        );
+
         // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("mc1111"),
+                spaceService.findByName("기존 스페이스 2_forMembershipControllerTest"),
+                Authority.PENDING
+        );
+
+        // test2 -> 스페이스 2 가입 (PENDING)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc2222"),
                 spaceService.findByName("기존 스페이스 2_forMembershipControllerTest"),
                 Authority.PENDING
         );
@@ -123,6 +127,27 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
                 memberService.findByKakaoKey("mc3333"),
                 spaceService.findByName("기존 스페이스 3_forMembershipControllerTest"),
                 Authority.READ_ONLY
+        );
+
+        // test1 -> 스페이스 4 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc1111"),
+                spaceService.findByName("기존 스페이스 4_forMembershipControllerTest"),
+                Authority.ADMIN
+        );
+
+        // test1 -> 스페이스 5 가입 (ADMIN)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc1111"),
+                spaceService.findByName("기존 스페이스 5_forMembershipControllerTest"),
+                Authority.ADMIN
+        );
+
+        // test2 -> 스페이스 5 가입 (READ_WRITE)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("mc2222"),
+                spaceService.findByName("기존 스페이스 5_forMembershipControllerTest"),
+                Authority.READ_WRITE
         );
     }
 
@@ -481,6 +506,138 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
 
         // then
         expectBadRequest(resultActions, "newAuthority-NotNull-must not be null");
+    }
+
+    // ============================= INVITE MEMBERS ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 단건 초대 - 성공")
+    void inviteMember_Success() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberNames": [ %s ]
+                }
+                """.formatted(member3.getName());
+
+        // when
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // then
+        expectOk(resultActions, "사용자를 스페이스에 초대했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers.length()").value(1))
+                .andExpect(jsonPath("$.data.invitedUsers[0].id").value(member3.getId()))
+                .andExpect(jsonPath("$.data.invitedUsers[0].name").value(member3.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 다건 초대 - 성공")
+    void inviteMembers_Success() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberNames": [ %s, %s ]
+                }
+                """.formatted(member2.getName(), member3.getName());
+
+        // when
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // then
+        expectOk(resultActions, "사용자를 스페이스에 초대했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers.length()").value(2))
+                .andExpect(jsonPath("$.data.invitedUsers[0].id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.invitedUsers[0].name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers[1].id").value(member3.getId()))
+                .andExpect(jsonPath("$.data.invitedUsers[1].name").value(member3.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 초대 - 성공 : 일부만 초대됨")
+    void inviteMember_Success_PartialInvite() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 5_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberNames": [ %s, %s ]
+                }
+                """.formatted(member2.getName(), member3.getName());
+
+        // when
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // then
+        expectOk(resultActions, "사용자를 스페이스에 초대했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.invitedUsers.length()").value(1))
+                .andExpect(jsonPath("$.data.invitedUsers[0].id").value(member3.getId()))
+                .andExpect(jsonPath("$.data.invitedUsers[0].name").value(member3.getName()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 초대 - 실패 : 스페이스가 존재하지 않음")
+    void inviteMember_Fail_NotExistSpace() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        Integer spaceId = 9999;
+        String url = "/api/v1/space/member/%d".formatted(spaceId);
+        String requestBody = """
+                {
+                    "memberNames": [ %s ]
+                }
+                """.formatted(member3.getName());
+
+        // when
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 초대 - 실패 : 어드민 권한 없음")
+    void inviteMember_Fail_NoAuthority() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberNames": [ %s ]
+                }
+                """.formatted(member3.getName());
+
+        // when
+        ResultActions resultActions = performPost(url, requestBody);
+
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
     }
 
 }
