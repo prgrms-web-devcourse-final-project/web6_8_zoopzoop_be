@@ -2,17 +2,14 @@ package org.tuna.zoopzoop.backend.domain.space.membership.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
-import org.tuna.zoopzoop.backend.domain.space.membership.dto.ResBodyForSpaceInvitationList;
-import org.tuna.zoopzoop.backend.domain.space.membership.dto.ResBodyForSpaceMemberList;
-import org.tuna.zoopzoop.backend.domain.space.membership.dto.SpaceMemberInfo;
+import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.*;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
@@ -30,6 +27,7 @@ import java.util.List;
 public class ApiV1MembershipController {
     private final MembershipService membershipService;
     private final SpaceService spaceService;
+    private final MemberService memberService;
 
     @GetMapping("/invite/{spaceId}")
     @Operation(summary = "스페이스에 초대된 유저 목록 조회")
@@ -65,7 +63,6 @@ public class ApiV1MembershipController {
         );
     }
 
-    // 스페이스의 멤버 목록 조회 API
     @GetMapping("/{spaceId}")
     @Operation(summary = "스페이스의 멤버 목록 조회")
     public RsData<ResBodyForSpaceMemberList> getMembers(
@@ -98,6 +95,50 @@ public class ApiV1MembershipController {
                         space.getId(),
                         space.getName(),
                         memberInfos
+                )
+        );
+    }
+
+    @PutMapping("/{spaceId}")
+    @Operation(summary = "스페이스 멤버 권한 변경")
+    public RsData<ResBodyForChangeMemberAuthority> changeMemberAuthority(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @RequestBody @Valid ReqBodyForChangeMemberAuthority reqBody
+    ) throws AccessDeniedException {
+        Member requester = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
+
+        // 스페이스에 요청자가 속해있는지 확인
+        if(!membershipService.isMemberJoinedSpace(requester, space)) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+
+        // 요청자의 권한이 멤버 관리 권한이 있는지 확인
+        Membership requesterMembership = membershipService.findByMemberAndSpace(requester, space);
+        if(!requesterMembership.getAuthority().canManageMembers()) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+
+        // 멤버 권한 변경
+        Member requestedMember = memberService.findById(reqBody.memberId());
+        Membership requestedMembership = membershipService.findByMemberAndSpace(requestedMember, space);
+        Membership changeResult = membershipService.changeAuthority(requestedMembership, reqBody.newAuthority());
+
+        SpaceMemberInfo memberInfo = new SpaceMemberInfo(
+                changeResult.getMember().getId(),
+                changeResult.getMember().getName(),
+                changeResult.getMember().getProfileImageUrl(),
+                changeResult.getAuthority()
+        );
+
+        return new RsData<>(
+                "200",
+                "멤버 권한을 변경했습니다.",
+                new ResBodyForChangeMemberAuthority(
+                        space.getId(),
+                        space.getName(),
+                        memberInfo
                 )
         );
     }

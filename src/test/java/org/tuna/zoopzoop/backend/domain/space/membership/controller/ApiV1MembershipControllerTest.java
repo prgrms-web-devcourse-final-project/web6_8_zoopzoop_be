@@ -266,7 +266,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY",
                     "memberId": %d
                 }
                 """.formatted(member2.getId());
@@ -296,7 +296,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_WRITE"
+                    "newAuthority": "READ_WRITE",
                     "memberId": %d
                 }
                 """.formatted(member3.getId());
@@ -318,7 +318,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(spaceId);
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY",
                     "memberId": %d
                 }
                 """.formatted(member2.getId());
@@ -340,7 +340,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY",
                     "memberId": %d
                 }
                 """.formatted(memberId);
@@ -362,7 +362,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY",
                     "memberId": %d
                 }
                 """.formatted(member3.getId());
@@ -384,7 +384,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "WRONG_AUTHORITY"
+                    "newAuthority": "WRONG_AUTHORITY",
                     "memberId": %d
                 }
                 """.formatted(member2.getId());
@@ -406,7 +406,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY",
                     "memberId": %d
                 }
                 """.formatted(member1.getId());
@@ -428,7 +428,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_WRITE"
+                    "newAuthority": "READ_WRITE",
                     "memberId": %d
                 }
                 """.formatted(member2.getId());
@@ -451,7 +451,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "authority": "READ_ONLY"
+                    "newAuthority": "READ_ONLY"
                 }
                 """;
 

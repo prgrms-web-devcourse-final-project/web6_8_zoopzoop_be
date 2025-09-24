@@ -1,6 +1,8 @@
 package org.tuna.zoopzoop.backend.domain.space.membership.service;
 
 import jakarta.persistence.NoResultException;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -179,4 +181,5 @@ public class MembershipService {
     public void rejectInvitation(Membership membership) {
         membershipRepository.delete(membership);
     }
+
 }
