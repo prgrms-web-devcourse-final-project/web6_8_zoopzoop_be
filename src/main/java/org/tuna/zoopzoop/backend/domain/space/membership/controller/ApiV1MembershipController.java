@@ -17,7 +17,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.dto.req.ReqBodyForInvit
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.res.*;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.ResBodyForSpaceSave;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
