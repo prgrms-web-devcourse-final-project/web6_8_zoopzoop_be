@@ -9,6 +9,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
+
 import java.util.List;
 
 @Setter
