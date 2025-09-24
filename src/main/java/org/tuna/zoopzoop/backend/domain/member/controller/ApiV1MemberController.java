@@ -32,6 +32,12 @@ public class ApiV1MemberController {
     /// api/v1/member/all : 모든 사용자 목록 조회 (GET)
     /// api/v1/member/{id} : id 기반 사용자 조회 (GET)
     /// api/v1/member?name={name} : 이름 기반 사용자 조회 (GET)
+
+    /**
+     * 현재 로그인한 사용자의 정보를 조회하는 API
+     * HTTP METHOD: GET
+     * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
+     */
     @GetMapping("/me")
     @Operation(summary = "사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfo(
@@ -49,6 +55,12 @@ public class ApiV1MemberController {
                 );
     }
 
+    /**
+     * 현재 로그인한 사용자의 이름을 변경하는 API
+     * HTTP METHOD: PUT
+     * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
+     * @param reqBodyForEditMemberName 수정할 닉네임을 받아오는 reqDto
+     */
     @PutMapping("/edit")
     @Operation(summary = "사용자 닉네임 수정")
     public ResponseEntity<RsData<ResBodyForEditMemberName>> editMemberName(
@@ -68,6 +80,12 @@ public class ApiV1MemberController {
                 );
     }
 
+    /**
+     * 현재 로그인한 사용자를 삭제하는 API
+     * 사용할 지 모르겠음.
+     * HTTP METHOD: DELETE
+     * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
+     */
     @DeleteMapping
     @Operation(summary = "사용자 삭제")
     public ResponseEntity<RsData<Void>> deleteMember(
@@ -86,6 +104,10 @@ public class ApiV1MemberController {
                 );
     }
 
+    /**
+     * 모든 사용자의 정보를 조회하는 API
+     * HTTP METHOD: GET
+     */
     @GetMapping("/all")
     @Operation(summary = "모든 사용자 정보 조회")
     public ResponseEntity<RsData<List<ResBodyForGetMemberInfo>>> getMemberInfoAll(
@@ -105,6 +127,11 @@ public class ApiV1MemberController {
                 );
     }
 
+    /**
+     * ID 기반으로 사용자의 정보를 조회하는 API
+     * HTTP METHOD: GET
+     * @param id 조회할 사용자의 ID
+     */
     @GetMapping("/{id}")
     @Operation(summary = "id 기반 사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfoById(
@@ -122,6 +149,11 @@ public class ApiV1MemberController {
                 );
     }
 
+    /**
+     * 이름 기반으로 사용자의 정보를 조회하는 API
+     * HTTP METHOD: GET
+     * @param name 조회할 사용자의 name
+     */
     @GetMapping
     @Operation(summary = "이름 기반 사용자 정보 조회")
     public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfoByName(

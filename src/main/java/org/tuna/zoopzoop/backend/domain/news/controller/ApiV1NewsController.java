@@ -19,14 +19,18 @@ import reactor.core.publisher.Mono;
 public class ApiV1NewsController {
     private final NewsSearchService newsSearchService;
 
+    /**
+     * 최신 뉴스 목록을 조회하는 API
+     * 한번에 100개를 조회 합니다.
+     * HTTP METHOD: GET
+     */
     @GetMapping
     @Operation(summary = "최신 뉴스 목록 조회")
     public Mono<ResponseEntity<RsData<ResBodyForNaverNews>>> searchRecentNews(
-            @RequestParam(defaultValue = "10") int display
     ) {
         // Naver 뉴스 API에선 Non-keyword 방식의 검색을 지원하지 않음.
         // 그래서 일단 그냥 검색 쿼리를 '뉴스'라고 지정하고 해 보았는데, 꽤나 좋은 결과를 받아옴. (목표하던 기능과 비슷함.)
-        return newsSearchService.searchNews("뉴스", display, 1, "date")
+        return newsSearchService.searchNews("뉴스", "date")
                 .map(response -> ResponseEntity
                         .status(HttpStatus.OK)
                         .body(new RsData<>(
@@ -36,17 +40,22 @@ public class ApiV1NewsController {
                         )));
     }
 
+    /**
+     * 입력한 키워드 기반으로 뉴스 목록을 조회하는 API
+     * HTTP METHOD: GET
+     * 한번에 100개를 조회 합니다.
+     * @param dto 키워드를 받아오는 reqDto
+     */
     @PostMapping("/keywords")
     @Operation(summary = "최신 뉴스 목록 조회")
     public Mono<ResponseEntity<RsData<ResBodyForNaverNews>>> searchNewsByKeywords(
-            @RequestParam(defaultValue = "10") int display,
             @RequestBody ReqBodyForKeyword dto
     ) {
         String query = String.join(" ", dto.keywords());
         // AND, OR 연산 쿼리를 지원한다고는 하는데, 정확한지는 모름.
         // String query = String.join("+", dto.keywords()); // AND 연산 키워드 검색
         // String query = String.join("|", dto.keywords()); // OR 연산 키워드 검색
-        return newsSearchService.searchNews(query, display, 1, "sim")
+        return newsSearchService.searchNews(query, "sim")
                 .map(response -> ResponseEntity
                         .status(HttpStatus.OK)
                         .body(new RsData<>(

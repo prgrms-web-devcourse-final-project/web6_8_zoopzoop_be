@@ -3,10 +3,7 @@ package org.tuna.zoopzoop.backend.domain.news.dto.res;
 import java.util.List;
 
 public record ResBodyForNaverNews(
-        String lastBuildDate,
         int total,
-        int start,
-        int display,
         List<NewsItem> items
 ) {
     public record NewsItem(
@@ -24,7 +21,8 @@ public record ResBodyForNaverNews(
 
         private static String cleanText(String text) {
             if (text == null) return null;
-            return text.replaceAll("<.*?>", "");
+            String noTags = text.replaceAll("<.*?>", "");
+            return noTags.replaceAll("&[a-zA-Z0-9#]+;", "");
         }
     }
 }
