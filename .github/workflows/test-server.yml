@@ -146,8 +146,8 @@ jobs:
             CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
               "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
             
-            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.forward_host')
-            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.forward_port')
+            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_host // .forward_host')
+            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_port // .forward_port')
             
             echo "Current NPM target: $CURRENT_TARGET:$CURRENT_PORT"
 
@@ -164,7 +164,7 @@ jobs:
 
             echo "Starting new container: $NEW_CONTAINER on port $NEW_PORT"
             docker run -d --restart unless-stopped \
-              -p $PORT:8080 \
+              -p $NEW_PORT:8080 \
               --name $NEW_CONTAINER \
               --network common \
               -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
@@ -175,7 +175,7 @@ jobs:
             
             # 헬스체크 (Spring Boot Actuator)
             for i in {1..30}; do
-              if curl -s http://localhost:$PORT/actuator/health | grep -q '"status":"UP"'; then
+              if curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
                 echo "✅New container is healthy!"
                 break
               else
