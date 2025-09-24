@@ -21,10 +21,7 @@ class NewsServiceTest {
     void newsJsonStructureTest() {
         // JSON 구조용 더미 데이터
         ResBodyForNaverNews dummyResponse = new ResBodyForNaverNews(
-                "Mon, 22 Sep 2025 17:35:10 +0900",  // lastBuildDate
                 505376,                                         // total
-                1,                                              // start
-                5,                                              // display
                 List.of(
                         new ResBodyForNaverNews.NewsItem(       // items
                                 "뉴스 제목",                    // title
@@ -39,10 +36,7 @@ class NewsServiceTest {
 
         // JSON 구조 확인
         result.doOnNext(res -> {
-            assertNotNull(res.lastBuildDate());
             assertNotNull(res.total());
-            assertNotNull(res.start());
-            assertNotNull(res.display());
             assertNotNull(res.items());
 
             res.items().forEach(item -> {

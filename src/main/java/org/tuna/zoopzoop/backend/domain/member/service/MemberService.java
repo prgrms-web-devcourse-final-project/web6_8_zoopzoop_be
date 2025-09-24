@@ -46,11 +46,6 @@ public class MemberService {
         );
     }
 
-//    public Member findByEmail(String email){
-//        return memberRepository.findByEmail(email).orElseThrow(() ->
-//                new NoResultException(email + " 이메일을 가진 사용자를 찾을 수 없습니다.")
-//        );
-//    }
     public List<Member> findAll(){ return memberRepository.findAll(); }
     public List<Member> findAllActive(){ return memberRepository.findByActiveTrue(); }
     public List<Member> findAllInactive(){ return memberRepository.findByActiveFalse(); }

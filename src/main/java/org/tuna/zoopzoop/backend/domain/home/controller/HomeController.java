@@ -4,12 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.tuna.zoopzoop.backend.domain.news.service.NewsSearchService;
-import reactor.core.publisher.Mono;
 
 import java.net.InetAddress;
 
@@ -60,15 +57,5 @@ public class HomeController {
                     <input type="submit" value="검색"/>
                 </form>
                 """.formatted(localHost.getHostName(), localHost.getHostAddress(), kakaoLoginUrl, googleLoginUrl, logoutUrl);
-    }
-
-    @GetMapping(value = "/search-news", produces = MediaType.TEXT_HTML_VALUE)
-    public Mono<String> searchNews(@RequestParam String query) {
-        return newsSearchService.searchNews(query, 5, 1, "sim")
-                .map("""
-                        <h1>검색 결과</h1>
-                        <pre>%s</pre>
-                        <a href="/">뒤로가기</a>
-                        """::formatted);
     }
 }
