@@ -11,149 +11,139 @@ jobs:
   # ==================================
   # CD: Deploy to Production Environment
   # ==================================
-  cd-production:
+  cd-test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify Docker Image Exists
-        run: |
-          IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
-          echo "🔍 Checking if Docker image exists: $IMAGE"
-          
-          # 이미지가 존재하는지 확인
-          if docker pull $IMAGE; then
-            echo "✅ Docker image found and pulled successfully"
-            docker images | grep zoopzoop
-          else
-            echo "❌ Docker image not found. Please ensure CI has run on develop branch first."
-            exit 1
-          fi
-
-      - name: Deploy to Production Environment
+      - name: Deploy to Test Environment
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.PROD_SERVER_HOST }}
           username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
-
-            # 환경 변수 설정
-            DB_URL="${{ secrets.PROD_DB_URL }}"
-            DB_USERNAME="${{ secrets.PROD_DB_USERNAME }}"
-            DB_PASSWORD="${{ secrets.PROD_DB_PASSWORD }}"
-
-            echo "🚀 Starting deployment to PRODUCTION environment"
-            echo "⚠️  Using pre-built Docker image from develop branch"
-
-            IMAGE=ghcr.io/${{ github.repository }}/zoopzoop:latest
-            BLUE_PORT=8081
-            GREEN_PORT=8082
-            BLUE=zoopzoop-blue
-            GREEN=zoopzoop-green
-
-            # Blue-Green 배포 로직
-            if sudo grep -q "$BLUE_PORT" /etc/nginx/nginx.conf; then
-              CURRENT=$BLUE
-              CURRENT_PORT=$BLUE_PORT
-              NEXT=$GREEN
-              NEXT_PORT=$GREEN_PORT
+            
+            # GHCR 로그인 (EC2)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{github.repository_owner}}" --password-stdin
+            
+            # 최신 이미지 pull
+            docker pull ghcr.io/${{ github.repository }}/zoopzoop:latest
+            
+            # NPM API 설정
+            NPM_HOST="localhost:81"
+            NPM_EMAIL="${{secrets.NPM_ADMIN_EMAIL}}"
+            NPM_PASSWORD="${{secrets.NPM_ADMIN_PASSWORD}}"
+            PROXY_HOST_ID="${{secrets.NPM_PROXY_HOST_ID}}"
+            
+            # NPM API 토큰 가져오기
+            echo "Getting NPM API token..."
+            TOKEN=$(curl -s -X POST "http://${NPM_HOST}/api/tokens" \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASSWORD}\"}" | \
+              jq -r '.token')
+            if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+              echo "❌ Failed to get NPM API token"
+              exit 1
+            fi
+            
+            # 현재 NPM Proxy Host 설정 확인
+            echo "📋 Checking current NPM configuration..."
+            CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+            
+            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_host // .forward_host')
+            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_port // .forward_port')
+            
+            echo "Current NPM target: $CURRENT_TARGET:$CURRENT_PORT"
+            
+            # Blue-Green 배포
+            if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
+              NEW_CONTAINER=zoopzoop-green
+              OLD_CONTAINER=zoopzoop-blue
+              NEW_PORT=8082
             else
-              CURRENT=$GREEN
-              CURRENT_PORT=$GREEN_PORT
-              NEXT=$BLUE
-              NEXT_PORT=$BLUE_PORT
+              NEW_CONTAINER=zoopzoop-blue
+              OLD_CONTAINER=zoopzoop-green
+              NEW_PORT=8081
             fi
-
-            echo "Current live: $CURRENT ($CURRENT_PORT)"
-            echo "Next to deploy: $NEXT ($NEXT_PORT)"
-
-            # 이전 컨테이너 정리
-            if [ "$(docker ps -q -f name=$NEXT)" ]; then
-              docker stop $NEXT
-            fi
-            if [ "$(docker ps -aq -f name=$NEXT)" ]; then
-              docker rm $NEXT
-            fi
-
-            # 새 이미지 pull 및 컨테이너 실행 (develop에서 빌드된 이미지 사용)
-            docker pull $IMAGE
-            docker run -d --name $NEXT \
-              -e SPRING_DATASOURCE_URL="$DB_URL" \
-              -e SPRING_DATASOURCE_USERNAME="$DB_USERNAME" \
-              -e SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
-              -p $NEXT_PORT:8080 $IMAGE
-
-            # Health check (프로덕션이므로 더 엄격하게)
-            echo "🔍 Starting health check for PRODUCTION..."
-            for i in {1..60}; do  # 프로덕션은 더 오래 기다림
-              if curl -s http://127.0.0.1:$NEXT_PORT/actuator/health | grep '"status":"UP"' > /dev/null; then
-                echo "✅ $NEXT is healthy!"
+            
+            echo "Starting new container: $NEW_CONTAINER on port $NEW_PORT"
+            docker run -d --restart unless-stopped \
+              -p $NEW_PORT:8080 \
+              --name $NEW_CONTAINER \
+              --network common \
+              -e SPRING_DATASOURCE_URL="${{secrets.PROD_DB_URL}}" \
+              -e SPRING_DATASOURCE_USERNAME="${{secrets.PROD_DB_USERNAME}}" \
+              -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
+              ghcr.io/${{ github.repository }}/zoopzoop:latest
+            
+            
+            # 헬스체크 (Spring Boot Actuator)
+            for i in {1..30}; do
+              if curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
+                echo "✅New container is healthy!"
                 break
+              else
+                echo "Waiting for new container to be healthy..."
+                sleep 5
               fi
-              echo "⏳ Waiting for $NEXT to be healthy... ($i/60)"
-              sleep 3  # 프로덕션은 더 여유롭게
-              if [ $i -eq 60 ]; then
+            
+            if [ $i -eq 30 ]; then
                 echo "❌ Health check failed. Rolling back..."
-                docker stop $NEXT
-                docker rm $NEXT
-                exit 1
+                docker stop $NEW_CONTAINER || true
+                docker rm $NEW_CONTAINER || true
+                exit 1 
               fi
             done
-
-            # 추가 검증 (프로덕션용)
-            echo "🔍 Running additional production checks..."
             
-            # API 응답 테스트
-            if curl -s http://127.0.0.1:$NEXT_PORT/actuator/info > /dev/null; then
-              echo "✅ Info endpoint responding"
+            # NPM에서 트래픽 스위칭
+            echo "🔄 Switching traffic in Nginx Proxy Manager..."
+            DOMAIN_NAME=$(echo $CURRENT_CONFIG | jq -r '.domain_names[0]')
+            
+            SWITCH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"domain_names\": [\"$DOMAIN_NAME\"],
+                \"forward_scheme\": \"http\",
+                \"forward_host\": \"$NEW_CONTAINER\",
+                \"forward_port\": 8080,
+                \"caching_enabled\": false,
+                \"block_exploits\": true,
+                \"advanced_config\": \"\",
+                \"locations\": [],
+                \"certificate_id\": 0,
+                \"ssl_forced\": 0,
+                \"hsts_enabled\": 0,
+                \"hsts_subdomains\": 0
+              }")
+            
+            HTTP_CODE=${SWITCH_RESPONSE: -3}
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              echo "✅ Traffic switching completed successfully!"
+              echo "🎯 NPM now points to: $NEW_CONTAINER:8080"
+            
+              # 최종 확인
+              sleep 5
+              echo "🔍 Final verification..."
+              VERIFY_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+              VERIFY_TARGET=$(echo $VERIFY_CONFIG | jq -r '.forward_host')
+              echo "✅ Verified NPM target: $VERIFY_TARGET"
+            
             else
-              echo "⚠️ Info endpoint not responding"
+              echo "❌ Traffic switching failed! HTTP Code: $HTTP_CODE"
+              echo "Response: ${SWITCH_RESPONSE%???}"
+              echo "🔄 Rolling back new container..."
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
             fi
-
-            # Nginx 설정 변경
-            echo "🔄 Switching Nginx to new container..."
-            sudo sed -i "s/$CURRENT_PORT/$NEXT_PORT/g" /etc/nginx/nginx.conf
-            sudo nginx -s reload
-            echo "✅ Switched Nginx to $NEXT ($NEXT_PORT)"
-
-            # 이전 컨테이너 정리 (프로덕션에서는 좀 더 기다림)
-            if [ "$(docker ps -q -f name=$CURRENT)" ]; then
-              echo "⏳ Waiting 30 seconds before stopping old container..."
-              sleep 30
-              echo "🧹 Stopping previous container: $CURRENT"
-              docker stop $CURRENT
-              docker rm $CURRENT
-            fi
-
-            echo "🎉 PRODUCTION deployment completed successfully!"
-            echo "🌐 Production is now live!"
-
-      - name: Production Deployment Summary
-        if: success()
-        run: |
-          echo "## 🎉 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Status**: Successfully deployed to PRODUCTION" >> $GITHUB_STEP_SUMMARY
-          echo "🐳 **Docker Image**: \`ghcr.io/${{ github.repository }}/zoopzoop:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **Environment**: Production" >> $GITHUB_STEP_SUMMARY
-          echo "📝 **Note**: Used pre-built image from develop branch" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify on Failure
-        if: failure()
-        run: |
-          echo "## ❌ Production Deployment Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔍 **Check**: Ensure Docker image exists (run develop CI first)" >> $GITHUB_STEP_SUMMARY
-          echo "🔍 **Check**: Verify production server connectivity" >> $GITHUB_STEP_SUMMARY
-          echo "🔍 **Check**: Database credentials and connectivity" >> $GITHUB_STEP_SUMMARY
+            
+            # 이전 컨테이너 종료 및 제거
+            echo "Stopping old container: $OLD_CONTAINER"
+            docker stop $OLD_CONTAINER || true
+            docker rm $OLD_CONTAINER || true
