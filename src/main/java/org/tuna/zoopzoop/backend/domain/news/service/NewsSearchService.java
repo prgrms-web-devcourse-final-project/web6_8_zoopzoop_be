@@ -56,6 +56,7 @@ public class NewsSearchService {
 
        위 과정을 거쳐도 개수가 부족한 경우엔 부족한 만큼 내보낸다.
     */
+
     public Mono<ResBodyForNaverNews> searchNews(String query, String sort) {
         int finalDisplay = 100;
         String finalSort = (sort == null || (!sort.equals("sim") && !sort.equals("date"))) ? "sim" : sort;
