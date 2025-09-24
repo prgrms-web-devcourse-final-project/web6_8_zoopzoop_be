@@ -69,6 +69,15 @@ public class MembershipService {
         return membershipRepository.findAllBySpaceAndAuthority(space, Authority.PENDING);
     }
 
+    /**
+     * 스페이스에 속한 멤버 중 가입 상태(JOINED)인 멤버십 목록 조회
+     * @param space 조회할 스페이스
+     * @return 해당 스페이스에 속한 가입 상태(JOINED)인 멤버십 목록
+     */
+    public List<Membership> findMembersBySpace(Space space) {
+        return membershipRepository.findAllBySpaceAndAuthorityIsNot(space, Authority.PENDING);
+    }
+
 
     // ======================== 멤버십 존재 여부 확인 ======================== //
 

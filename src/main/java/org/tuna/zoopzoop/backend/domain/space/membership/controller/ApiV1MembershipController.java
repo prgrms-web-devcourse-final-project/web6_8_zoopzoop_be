@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.ResBodyForSpaceInvitationList;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.ResBodyForSpaceMemberList;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.SpaceMemberInfo;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
@@ -64,4 +66,39 @@ public class ApiV1MembershipController {
     }
 
     // 스페이스의 멤버 목록 조회 API
+    @GetMapping("/{spaceId}")
+    @Operation(summary = "스페이스의 멤버 목록 조회")
+    public RsData<ResBodyForSpaceMemberList> getMembers(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId
+    ) throws AccessDeniedException {
+        Member member = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
+
+        // 스페이스에 멤버가 속해있는지 확인
+        if(!membershipService.isMemberJoinedSpace(member, space)) {
+            throw new AccessDeniedException("액세스가 거부되었습니다.");
+        }
+
+        // 멤버십(멤버) 목록 조회
+        List<Membership> memberships = membershipService.findMembersBySpace(space);
+        List<SpaceMemberInfo> memberInfos = memberships.stream()
+                .map(membership -> new SpaceMemberInfo(
+                        membership.getMember().getId(),
+                        membership.getMember().getName(),
+                        membership.getMember().getProfileImageUrl(),
+                        membership.getAuthority()
+                ))
+                .toList();
+
+        return new RsData<>(
+                "200",
+                "스페이스 멤버 목록을 조회했습니다.",
+                new ResBodyForSpaceMemberList(
+                        space.getId(),
+                        space.getName(),
+                        memberInfos
+                )
+        );
+    }
 }
