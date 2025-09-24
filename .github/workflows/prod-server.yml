@@ -6,6 +6,13 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'build.gradle*'
+      - 'settings.gradle*'
+      - 'gradle/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 jobs:
   # ==================================
