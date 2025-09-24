@@ -393,7 +393,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectBadRequest(resultActions, "잘못된 권한입니다. (ADMIN, READ_WRITE, READ_ONLY 만 가능)");
+        expectBadRequest(resultActions, "Invalid value provided for field 'newAuthority'. Please check the allowed values.");
     }
 
     @Test
