@@ -344,4 +344,23 @@ class MembershipServiceTest {
         assertThat(membership2.getAuthority()).isEqualTo(Authority.PENDING);
     }
 
+
+    // ============================ EXPEL MEMBERS ============================= //
+
+    @Test
+    @DisplayName("멤버 퇴출 - 성공")
+    void expelMemberFromSpace_Success() throws AccessDeniedException {
+        // Given
+        Member member2 = memberService.findByKakaoKey("ms2222");
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipServiceTest");
+        Membership membershipToExpel = membershipService.findByMemberAndSpace(member2, space);
+
+        // When
+        membershipService.expelMemberFromSpace(member2, space);
+
+        // Then
+        assertThrows(NoResultException.class, () -> {
+            membershipService.findById(membershipToExpel.getId());
+        });
+    }
 }
