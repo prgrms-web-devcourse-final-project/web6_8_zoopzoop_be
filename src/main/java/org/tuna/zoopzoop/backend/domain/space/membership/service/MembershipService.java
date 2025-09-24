@@ -280,4 +280,14 @@ public class MembershipService {
         membershipRepository.delete(membership);
     }
 
+    // ======================== 멤버십 삭제 ======================== //
+    /**
+     * 멤버를 스페이스에서 퇴출 (멤버십 삭제)
+     * @param member 탈퇴할 멤버
+     * @param space 탈퇴할 스페이스
+     */
+    public void expelMemberFromSpace(Member member, Space space) {
+        Membership membership = findByMemberAndSpace(member, space);
+        membershipRepository.delete(membership);
+    }
 }
