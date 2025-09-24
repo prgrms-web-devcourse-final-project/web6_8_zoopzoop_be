@@ -383,7 +383,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
     void changeMemberAuthority_Fail_MemberNotInSpace() throws Exception {
         // given
         var member3 = memberService.findByKakaoKey("mc3333");
-        var space = spaceService.findByName("기존 스페이스 2_forMembershipControllerTest");
+        var space = spaceService.findByName("기존 스페이스 4_forMembershipControllerTest");
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
@@ -396,7 +396,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performPut(url, requestBody);
 
         // then
-        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
     }
 
     @Test
