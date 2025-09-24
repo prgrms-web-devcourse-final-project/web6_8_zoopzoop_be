@@ -105,6 +105,25 @@ public class MembershipService {
     }
 
 
+    /**
+     * requester가 스페이스의 유일한 ADMIN인지 확인
+     * @param requester 요청자 멤버
+     * @param space 확인할 스페이스
+     */
+    public boolean checkIsOnlyAdmin(Member requester, Space space) {
+        // 1. 요청자가 ADMIN 권한을 가지고 있는지 확인
+        if (!isMemberAdminInSpace(requester, space)) {
+            return false;
+        }
+
+        // 2. 스페이스의 ADMIN 멤버 수 조회
+        long adminCount = membershipRepository.countBySpaceAndAuthority(space, Authority.ADMIN);
+
+        // 3. ADMIN 멤버가 1명인지 확인
+        return adminCount == 1;
+    }
+
+
     // ======================== 멤버십 존재 여부 확인 ======================== //
 
     /**
@@ -290,4 +309,21 @@ public class MembershipService {
         Membership membership = findByMemberAndSpace(member, space);
         membershipRepository.delete(membership);
     }
+
+    public void leaveSpace(Member member, Space space) {
+        // 유일한 어드민은 탈퇴할 수 없음
+        if(checkIsOnlyAdmin(member, space)) {
+            throw new IllegalArgumentException("유일한 어드민은 탈퇴할 수 없습니다.");
+        }
+
+        // 초대 상태면 탈퇴할 수 없음 -> 초대 거절 로직 사용
+        if(!isMemberJoinedSpace(member, space)) {
+            throw new NoResultException("해당 멤버는 스페이스에 속해있지 않습니다.");
+        }
+
+        Membership membership = findByMemberAndSpace(member, space);
+        membershipRepository.delete(membership);
+    }
+
+
 }
