@@ -20,6 +20,7 @@ import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -251,6 +252,235 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
 
         // then
         expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    // ============================= CHANGE MEMBER AUTHORITY ============================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 성공")
+    void changeMemberAuthority_Success() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectOk(resultActions, "멤버 권한을 변경했습니다.");
+
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(space.getId()))
+                .andExpect(jsonPath("$.data.spaceName").value(space.getName()))
+                .andExpect(jsonPath("$.data.member.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.member.name").value(member2.getName()))
+                .andExpect(jsonPath("$.data.member.profileUrl").value(member2.getProfileImageUrl()))
+                .andExpect(jsonPath("$.data.member.authority").value("READ_ONLY"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc2222", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 어드민 권한 없음")
+    void changeMemberAuthority_Fail_NoAuthority() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_WRITE"
+                    "memberId": %d
+                }
+                """.formatted(member3.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectForbidden(resultActions, "액세스가 거부되었습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 스페이스가 존재하지 않음")
+    void changeMemberAuthority_Fail_NotExistSpace() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        Integer spaceId = 9999;
+        String url = "/api/v1/space/member/%d".formatted(spaceId);
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 스페이스입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 멤버가 존재하지 않음")
+    void changeMemberAuthority_Fail_NotExistMember() throws Exception {
+        // given
+        Integer memberId = 9999;
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                    "memberId": %d
+                }
+                """.formatted(memberId);
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 멤버입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 멤버가 스페이스에 속해있지 않음")
+    void changeMemberAuthority_Fail_MemberNotInSpace() throws Exception {
+        // given
+        var member3 = memberService.findByKakaoKey("mc3333");
+        var space = spaceService.findByName("기존 스페이스 2_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                    "memberId": %d
+                }
+                """.formatted(member3.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectNotFound(resultActions, "존재하지 않는 멤버입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 잘못된 권한")
+    void changeMemberAuthority_Fail_WrongAuthority() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "WRONG_AUTHORITY"
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectBadRequest(resultActions, "잘못된 권한입니다. (ADMIN, READ_WRITE, READ_ONLY 만 가능)");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 본인의 권한을 변경하려고 함")
+    void changeMemberAuthority_Fail_ChangeOwnAuthority() throws Exception {
+        // given
+        var member1 = memberService.findByKakaoKey("mc1111");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                    "memberId": %d
+                }
+                """.formatted(member1.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectBadRequest(resultActions, "본인의 권한은 변경할 수 없습니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 이미 동일한 권한을 가지고 있음")
+    void changeMemberAuthority_Fail_SameAuthority() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_WRITE"
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        resultActions.andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("409"))
+                .andExpect(jsonPath("$.msg").value("이미 동일한 권한을 가지고 있습니다."));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 멤버Id 누락")
+    void changeMemberAuthority_Fail_MemberIdMissing() throws Exception {
+        // given
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "authority": "READ_ONLY"
+                }
+                """;
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectBadRequest(resultActions, "멤버 ID는 필수입니다.");
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:mc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 멤버 권한 변경 - 실패 : 권한 누락")
+    void changeMemberAuthority_Fail_AuthorityMissing() throws Exception {
+        // given
+        var member2 = memberService.findByKakaoKey("mc2222");
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipControllerTest");
+        String url = "/api/v1/space/member/%d".formatted(space.getId());
+        String requestBody = """
+                {
+                    "memberId": %d
+                }
+                """.formatted(member2.getId());
+
+        // when
+        ResultActions resultActions = performPut(url, requestBody);
+
+        // then
+        expectBadRequest(resultActions, "권한은 필수입니다.");
     }
 
 }
