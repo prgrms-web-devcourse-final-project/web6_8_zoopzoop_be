@@ -40,7 +40,7 @@ public class DataSourceService {
                     .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
         // 임시 파일 생성 메서드
-        DataSource ds = buidDataSource(sourceUrl, folder);
+        DataSource ds = buildDataSource(sourceUrl, folder);
         DataSource saved = dataSourceRepository.save(ds);
 
         return saved.getId();
@@ -50,7 +50,7 @@ public class DataSourceService {
      * 임시 data build 메서드
      * 추후 title,summary, tag, category, imgUrl 불러올 예정
      */
-    private DataSource buidDataSource(String sourceUrl, Folder folder) {
+    private DataSource buildDataSource(String sourceUrl, Folder folder) {
         DataSource ds = new DataSource();
         ds.setFolder(folder);
         ds.setSourceUrl(sourceUrl);
