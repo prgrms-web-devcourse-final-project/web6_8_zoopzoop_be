@@ -5,7 +5,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.test.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.iml" filepath="$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.test.iml" filepath="$PROJECT_DIR$/.idea/modules/org.tuna.zoopzoop.backend.test.iml" />
     </modules>
   </component>
 </project>

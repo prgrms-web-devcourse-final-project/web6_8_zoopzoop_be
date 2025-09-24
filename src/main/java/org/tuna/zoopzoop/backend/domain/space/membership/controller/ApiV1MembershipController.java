@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.tuna.zoopzoop.backend.domain.member.dto.etc.SimpleUserInfo;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -131,6 +132,41 @@ public class ApiV1MembershipController {
                         space.getId(),
                         space.getName(),
                         memberInfo
+                )
+        );
+    }
+
+    @PostMapping("/{spaceId}")
+    @Operation(summary = "스페이스 멤버 초대")
+    public RsData<ResBodyForInviteMembers> inviteMember(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @RequestBody @Valid ReqBodyForInviteMembers reqBody
+    ) throws AccessDeniedException {
+        Member requester = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
+
+        membershipService.checkAdminAuthority(requester, space);
+
+        List<Membership> inviteResults = membershipService.inviteMembersToSpace(
+                space,
+                reqBody.memberNames()
+        );
+
+        List<SimpleUserInfo> invitedMemberInfos = inviteResults.stream()
+                .map(membership -> new SimpleUserInfo(
+                        membership.getMember().getId(),
+                        membership.getMember().getName()
+                ))
+                .toList();
+
+        return new RsData<>(
+                "200",
+                "사용자를 스페이스에 초대했습니다.",
+                new ResBodyForInviteMembers(
+                        space.getId(),
+                        space.getName(),
+                        invitedMemberInfos
                 )
         );
     }

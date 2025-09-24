@@ -520,7 +520,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "memberNames": [ %s ]
+                    "memberNames": [ "%s" ]
                 }
                 """.formatted(member3.getName());
 
@@ -549,7 +549,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "memberNames": [ %s, %s ]
+                    "memberNames": [ "%s", "%s" ]
                 }
                 """.formatted(member2.getName(), member3.getName());
 
@@ -580,7 +580,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "memberNames": [ %s, %s ]
+                    "memberNames": [ "%s", "%s" ]
                 }
                 """.formatted(member2.getName(), member3.getName());
 
@@ -608,7 +608,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(spaceId);
         String requestBody = """
                 {
-                    "memberNames": [ %s ]
+                    "memberNames": [ "%s" ]
                 }
                 """.formatted(member3.getName());
 
@@ -629,7 +629,7 @@ class ApiV1MembershipControllerTest extends ControllerTestSupport {
         String url = "/api/v1/space/member/%d".formatted(space.getId());
         String requestBody = """
                 {
-                    "memberNames": [ %s ]
+                    "memberNames": [ "%s" ]
                 }
                 """.formatted(member3.getName());
 
