@@ -16,6 +16,8 @@ import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.NaverNewsCraw
 import org.tuna.zoopzoop.backend.domain.datasource.dto.ArticleData;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,21 +88,28 @@ public class CrawlerManagerServiceTest {
                 .get();
 
         // 제목
-        String title = doc.select("h2").text();
+        String title = doc.selectFirst("h2#title_area").text();
 
         // 작성 날짜
         String publishedAt = doc.selectFirst(
                 "span.media_end_head_info_datestamp_time._ARTICLE_DATE_TIME"
-        ).attr("data-date-time").split(" ")[0];
+        ).attr("data-date-time");
+        System.out.println(publishedAt);
+        LocalDate dataCreatedDate = LocalDate.parse(publishedAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        System.out.println(dataCreatedDate);
 
         // 내용
         String content = doc.select("article").text();
 
         // 썸네일 이미지 url
-        String imgUrl = doc.selectFirst("img#img1._LAZY_LOADING._LAZY_LOADING_INIT_HIDE").attr("data-src");
+        String imageUrl = doc.selectFirst("img#img1._LAZY_LOADING._LAZY_LOADING_INIT_HIDE").attr("data-src");
+
+        // 출처
+        String sources = doc.selectFirst("span.media_end_head_top_logo_text").text();
 
         when(naverNewsCrawler.supports(url)).thenReturn(true);
         given(naverNewsCrawler.extract(any(Document.class))).willCallRealMethod(); // 실제 메소드 실행
+        given(naverNewsCrawler.transLocalDate(any(String.class))).willCallRealMethod();
 
         // when
         ArticleData naverDoc = crawlerManagerService.extractContent(url);
@@ -108,8 +117,9 @@ public class CrawlerManagerServiceTest {
         // then
         assertThat(naverDoc.title()).isEqualTo(title);
         assertThat(naverDoc.content()).isEqualTo(content);
-        assertThat(naverDoc.publishedAt()).isEqualTo(publishedAt);
-        assertThat(naverDoc.imgUrl()).isEqualTo(imgUrl);
+        assertThat(naverDoc.dataCreatedDate()).isEqualTo(dataCreatedDate);
+        assertThat(naverDoc.imageUrl()).isEqualTo(imageUrl);
+        assertThat(naverDoc.sources()).isEqualTo(sources);
     }
 
     @Test
