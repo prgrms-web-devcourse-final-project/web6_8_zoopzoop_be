@@ -10,20 +10,25 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MembershipServiceTest {
     @Autowired
     private SpaceService spaceService;
@@ -36,7 +41,7 @@ class MembershipServiceTest {
     @Autowired
     private MemberRepository memberRepository;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() {
         membershipRepository.deleteAll();
         setUpMember();
@@ -47,8 +52,8 @@ class MembershipServiceTest {
     void setUpSpace() {
         spaceService.createSpace("기존 스페이스 1_forMembershipServiceTest");
         spaceService.createSpace("기존 스페이스 2_forMembershipServiceTest");
+        spaceService.createSpace("기존 스페이스 3_forMembershipServiceTest");
     }
-
 
     void setUpMember() {
         memberService.createMember(
@@ -76,12 +81,22 @@ class MembershipServiceTest {
         var member2 = memberService.findByKakaoKey("ms2222");
         var space1 = spaceService.findByName("기존 스페이스 1_forMembershipServiceTest");
         var space2 = spaceService.findByName("기존 스페이스 2_forMembershipServiceTest");
+        var space3 = spaceService.findByName("기존 스페이스 3_forMembershipServiceTest");
 
+        // member1 -> space1 (ADMIN)
         membershipService.addMemberToSpace(member1, space1, Authority.ADMIN);
-        membershipService.addMemberToSpace(member1, space2, Authority.PENDING);
+
+        // member2 -> space1 (READ_ONLY)
         membershipService.addMemberToSpace(member2, space1, Authority.READ_ONLY);
+
+        // member1 -> space2 (PENDING)
+        membershipService.addMemberToSpace(member1, space2, Authority.PENDING);
+
+        // member2 -> space2 (ADMIN)
         membershipService.addMemberToSpace(member2, space2, Authority.ADMIN);
 
+        // member1  -> space3 (ADMIN)
+        membershipService.addMemberToSpace(member1, space3, Authority.ADMIN);
     }
 
     // ============================= ADD MEMBER TO SPACE ============================= //
@@ -229,4 +244,104 @@ class MembershipServiceTest {
         // Then
         assertEquals(Authority.ADMIN, updatedMembership.getAuthority());
     }
+
+    // ============================= INVITE MEMBERS ============================= //
+
+    @Test
+    @DisplayName("멤버 단건 초대 - 성공")
+    void inviteMemberToSpace_Success() {
+        // Given
+        Member member3 = memberService.findByKakaoKey("ms3333");
+        List<String> targetMembers = List.of(member3.getName());
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipServiceTest");
+
+        // When
+        List<Membership> results = membershipService.inviteMembersToSpace(space, targetMembers);
+
+        // Then
+        assertThat(results.size()).isEqualTo(1);
+        assertThat(results.get(0).getMember().getName()).isEqualTo(member3.getName());
+        assertThat(results.get(0).getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(results.get(0).getSpace().getId()).isEqualTo(space.getId());
+
+        Membership membership3 = membershipRepository.findByMemberAndSpace(member3, space).orElseThrow();
+
+        assertThat(membership3.getAuthority()).isEqualTo(Authority.PENDING);
+    }
+
+    @Test
+    @DisplayName("멤버 다건 초대 - 성공")
+    void inviteMultipleMembersToSpace_Success() {
+        // Given
+        Member member2 = memberService.findByKakaoKey("ms2222");
+        Member member3 = memberService.findByKakaoKey("ms3333");
+
+        List<String> targetMembers = List.of(member2.getName(), member3.getName());
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipServiceTest");
+
+        // When
+        List<Membership> results = membershipService.inviteMembersToSpace(space, targetMembers);
+
+        // Then
+        assertThat(results.size()).isEqualTo(2);
+        assertThat(results.get(0).getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(results.get(1).getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(results.get(0).getSpace().getId()).isEqualTo(space.getId());
+        assertThat(results.get(1).getSpace().getId()).isEqualTo(space.getId());
+        assertThat(results.get(0).getMember().getId()).isIn(member2.getId(), member3.getId());
+        assertThat(results.get(1).getMember().getId()).isIn(member2.getId(), member3.getId());
+
+        Membership membership2 = membershipRepository.findByMemberAndSpace(member2, space).orElseThrow();
+        Membership membership3 = membershipRepository.findByMemberAndSpace(member3, space).orElseThrow();
+
+        assertThat(membership2.getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(membership3.getAuthority()).isEqualTo(Authority.PENDING);
+    }
+
+    @Test
+    @DisplayName("멤버 초대 - 성공 : 일부만 초대 (이미 멤버인 경우 제외)")
+    void inviteMembersToSpace_PartialSuccess_AlreadyMember() {
+        // Given
+        Member member1 = memberService.findByKakaoKey("ms1111");
+        Member member3 = memberService.findByKakaoKey("ms3333");
+
+        List<String> targetMembers = List.of(member1.getName(), member3.getName());
+        var space = spaceService.findByName("기존 스페이스 1_forMembershipServiceTest");
+
+        // When
+        List<Membership> results = membershipService.inviteMembersToSpace(space, targetMembers);
+
+        // Then
+        assertThat(results.size()).isEqualTo(1);
+        assertThat(results.get(0).getMember().getId()).isEqualTo(member3.getId());
+        assertThat(results.get(0).getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(results.get(0).getSpace().getId()).isEqualTo(space.getId());
+
+        Membership membership3 = membershipRepository.findByMemberAndSpace(member3, space).orElseThrow();
+        assertThat(membership3.getAuthority()).isEqualTo(Authority.PENDING);
+    }
+
+    @Test
+    @DisplayName("멤버 초대 - 성공 : 일부만 초대 (없는 아이디 제외)")
+    void inviteMembersToSpace_PartialSuccess_NonExistentMember() {
+        // Given
+        Member member2 = memberService.findByKakaoKey("ms2222");
+        String nonExistentName = "nonExistentMember_forMembershipServiceTest";
+
+        List<String> targetMembers = List.of(member2.getName(), nonExistentName);
+        var space = spaceService.findByName("기존 스페이스 3_forMembershipServiceTest");
+
+        // When
+        List<Membership> results = membershipService.inviteMembersToSpace(space, targetMembers);
+
+        // Then
+        assertThat(results.size()).isEqualTo(1);
+        assertThat(results.get(0).getMember().getId()).isEqualTo(member2.getId());
+        assertThat(results.get(0).getAuthority()).isEqualTo(Authority.PENDING);
+        assertThat(results.get(0).getSpace().getId()).isEqualTo(space.getId());
+
+        Membership membership2 = membershipRepository.findByMemberAndSpace(member2, space).orElseThrow();
+        assertThat(membership2.getAuthority()).isEqualTo(Authority.PENDING);
+    }
+
 }
