@@ -63,7 +63,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
                 // .domain() // 프론트엔드 & 백엔드 상위 도메인
                 // .secure(true) // https 필수 설정.
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -72,7 +72,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .maxAge(jwtProperties.getRefreshTokenValidity() / 1000)
                 // .domain() // 프론트엔드 & 백엔드 상위 도메인
                 // .secure(true) // https 필수 설정.
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         // HTTP 응답에서 쿠키 값 추가.
@@ -81,7 +81,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 로그인 성공 후 리다이렉트.
         // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
-        response.sendRedirect("/auth/callback");
+        response.sendRedirect(redirect_domain + "/auth/callback");
 
         // 보안을 좀 더 강화하고자 한다면 CSRF 토큰 같은 걸 생각해볼 수 있겠으나,
         // 일단은 구현하지 않음.(개발 과정 중에 번거로워질 수 있을 듯 함.)
