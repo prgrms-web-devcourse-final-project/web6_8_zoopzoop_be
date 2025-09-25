@@ -53,6 +53,9 @@ public class DataSource extends BaseEntity {
     @Column
     private String imageUrl;
 
+    // 자료 출처 URL
+    private String sources;
+
     // 태그 목록
     @OneToMany(mappedBy = "dataSource", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Tag> tags = new ArrayList<>();

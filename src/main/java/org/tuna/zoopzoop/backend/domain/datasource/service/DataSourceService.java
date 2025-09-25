@@ -55,6 +55,7 @@ public class DataSourceService {
         ds.setFolder(folder);
         ds.setSourceUrl(sourceUrl);
         ds.setTitle("자료 제목");
+        ds.setSources("www.examplesource.com");
         ds.setSummary("설명");
         ds.setImageUrl("www.example.com/img");
         ds.setDataCreatedDate(LocalDate.now());
