@@ -21,6 +21,17 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+  config:
+    import: optional:classpath:application-secrets.yml
+  ai:
+    openai:
+      base-url: https://api.groq.com/openai # 내부 서버를 groq으로
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: meta-llama/llama-4-scout-17b-16e-instruct
+          temperature: 0
+
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 logging:
