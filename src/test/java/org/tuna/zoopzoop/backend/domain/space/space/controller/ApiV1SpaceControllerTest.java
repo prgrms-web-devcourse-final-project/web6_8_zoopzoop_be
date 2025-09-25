@@ -511,13 +511,13 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         // Then
         expectOk(
                 resultActions,
-                "스페이스 정보가 조회됐습니다."
+                "기존 스페이스 1_forSpaceControllerTest - 스페이스가 조회됐습니다."
         );
         resultActions
                 .andExpect(jsonPath("$.data.spaceId").value(spaceId))
                 .andExpect(jsonPath("$.data.spaceName").value("기존 스페이스 1_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.thumbnailUrl").value("thumbnailUrl1"))
-                .andExpect(jsonPath("$.data.myAuthority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.userAuthority").value("ADMIN"))
                 .andExpect(jsonPath("$.data.sharingArchiveId").value(space.getSharingArchive().getId()));
     }
 
@@ -552,10 +552,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         ResultActions resultActions = performGet(url);
 
         // Then
-        resultActions.andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status").value("403"))
-                .andExpect(jsonPath("$.msg").value("액세스가 거부되었습니다."))
-                .andExpect(jsonPath("$.data").value(nullValue()));
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
     }
 
 

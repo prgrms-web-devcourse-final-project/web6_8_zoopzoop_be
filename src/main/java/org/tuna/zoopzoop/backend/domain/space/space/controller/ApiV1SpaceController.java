@@ -14,6 +14,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.req.ReqBodyForSpaceSave;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceList;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceMembershipInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
@@ -102,6 +103,24 @@ public class ApiV1SpaceController {
         );
     }
 
+    @PutMapping(path = "/thumbnail/{spaceId}", consumes = {"multipart/form-data"})
+    @Operation(summary = "스페이스 썸네일 이미지 갱신")
+    public RsData<Void> updateSpaceThumbnail(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    ) {
+        Member member = userDetails.getMember();
+
+        spaceService.updateSpaceThumbnail(spaceId, member, image);
+
+        return new RsData<>(
+                "200",
+                "스페이스 썸네일 이미지가 갱신됐습니다.",
+                null
+        );
+    }
+
     @GetMapping
     @Operation(summary = "나의 스페이스 목록 조회")
     public RsData<ResBodyForSpaceList> getAllSpaces(
@@ -125,8 +144,8 @@ public class ApiV1SpaceController {
                 .map(membership -> new SpaceMembershipInfo(
                         membership.getSpace().getId(),
                         membership.getSpace().getName(),
-                        membership.getAuthority(),
-                        membership.getSpace().getThumbnailUrl()
+                        membership.getSpace().getThumbnailUrl(),
+                        membership.getAuthority()
                 ))
                 .collect(Collectors.toList());
         ResBodyForSpaceList resBody = new ResBodyForSpaceList(spaceInfos);
@@ -138,24 +157,32 @@ public class ApiV1SpaceController {
         );
     }
 
-    @PutMapping(path = "/thumbnail/{spaceId}", consumes = {"multipart/form-data"})
-    @Operation(summary = "스페이스 썸네일 이미지 갱신")
-    public RsData<Void> updateSpaceThumbnail(
+    @GetMapping("/{spaceId}")
+    @Operation(summary = "스페이스 단건 조회")
+    public RsData<ResBodyForSpaceInfo> getSpace(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Integer spaceId,
-            @RequestPart(value = "image", required = false) MultipartFile image
+            @PathVariable Integer spaceId
     ) {
         Member member = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
 
-        spaceService.updateSpaceThumbnail(spaceId, member, image);
+        // 해당 스페이스에 속한 멤버인지 확인
+        Membership membership = membershipService.findByMemberAndSpace(member, space);
+
+        ResBodyForSpaceInfo resBody = new ResBodyForSpaceInfo(
+                space.getId(),
+                space.getName(),
+                space.getThumbnailUrl(),
+                membership.getAuthority().name(),
+                space.getSharingArchive().getId()
+        );
 
         return new RsData<>(
                 "200",
-                "스페이스 썸네일 이미지가 갱신됐습니다.",
-                null
+                String.format("%s - 스페이스가 조회됐습니다.", space.getName()),
+                resBody
         );
     }
-
 
 
 }
