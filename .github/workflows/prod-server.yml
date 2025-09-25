@@ -3,7 +3,7 @@ name: Spring CD (Production)
 
 # main 브랜치 PR에서만 실행 (이미 빌드된 Docker 이미지 사용)
 on:
-  pull_request:
+  push:
     branches:
       - main
     paths:
@@ -18,7 +18,7 @@ jobs:
   # ==================================
   # CD: Deploy to Production Environment
   # ==================================
-  cd-test:
+  cd-prod:
     runs-on: ubuntu-latest
 
     steps:
