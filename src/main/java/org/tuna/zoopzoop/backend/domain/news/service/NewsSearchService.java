@@ -4,8 +4,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.tuna.zoopzoop.backend.domain.news.dto.res.ResBodyForNaverNews;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class NewsSearchService {
@@ -61,29 +63,52 @@ public class NewsSearchService {
         int finalDisplay = 100;
         String finalSort = (sort == null || (!sort.equals("sim") && !sort.equals("date"))) ? "sim" : sort;
 
-        return Flux
-                .range(0, 10000 / finalDisplay)
-                .concatMap(page -> webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("v1/search/news.json")
-                                .queryParam("query", query)
-                                .queryParam("display", finalDisplay)
-                                .queryParam("start", page * finalDisplay + 1)
-                                .queryParam("sort", finalSort)
-                                .build())
-                        .header("X-Naver-Client-Id", client_id)
-                        .header("X-Naver-Client-Secret", client_secret)
-                        .retrieve()
-                        .bodyToMono(ResBodyForNaverNews.class)
-                        .flatMapMany(res -> Flux.fromIterable(res.items()))
-                        .filter(item -> item.link().startsWith("https://n.news.naver.com/"))
+        List<ResBodyForNaverNews.NewsItem> collected = new ArrayList<>();
+
+        return fetchPageRecursively(query, finalSort, finalDisplay, 0, collected)
+                .map(items -> {
+                    List<ResBodyForNaverNews.NewsItem> limited =
+                            items.size() > 100 ? items.subList(0, 100) : items;
+                    return new ResBodyForNaverNews(limited.size(), limited);
+                });
+    }
+
+    private Mono<List<ResBodyForNaverNews.NewsItem>> fetchPageRecursively(
+            String query,
+            String sort,
+            int display,
+            int page,
+            List<ResBodyForNaverNews.NewsItem> collected
+    ) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("v1/search/news.json")
+                        .queryParam("query", query)
+                        .queryParam("display", display)
+                        .queryParam("start", page * display + 1)
+                        .queryParam("sort", sort)
+                        .build())
+                .header("X-Naver-Client-Id", client_id)
+                .header("X-Naver-Client-Secret", client_secret)
+                .retrieve()
+                .bodyToMono(ResBodyForNaverNews.class)
+                .map(res -> res.items().stream()
+                        .filter(item -> item.link().startsWith("https://n.news.naver.com/")) // 네이버 뉴스만
+                        .filter(item -> collected.stream().noneMatch(i -> i.link().equals(item.link()))) // 중복 제거
+                        .toList()
                 )
-                .distinct(ResBodyForNaverNews.NewsItem::link)
-                .take(100)
-                .collectList()
-                .map(items -> new ResBodyForNaverNews(
-                        items.size(),
-                        items
-                ));
+                .flatMap(filtered -> {
+                    if (filtered.isEmpty()) {
+                        return Mono.just(collected);
+                    }
+
+                    collected.addAll(filtered);
+
+                    if (collected.size() >= 100 || page >= 100) {
+                        return Mono.just(collected);
+                    } else {
+                        return fetchPageRecursively(query, sort, display, page + 1, collected);
+                    }
+                });
     }
 }
