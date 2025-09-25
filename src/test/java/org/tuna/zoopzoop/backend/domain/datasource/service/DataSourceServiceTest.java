@@ -12,12 +12,12 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.resBodyForMoveDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -186,5 +186,265 @@ class DataSourceServiceTest {
         assertThrows(NoResultException.class, () -> dataSourceService.deleteMany(ids));
 
         verify(dataSourceRepository, never()).deleteAllByIdInBatch(any());
+    }
+
+
+    // 자료 단건 이동
+    @Test
+    @DisplayName("단건 이동 성공: 지정 폴더로 이동")
+    void moveOne_ok() {
+        Integer memberId = 1, dsId = 10, fromId = 100, toId = 200;
+
+        Folder from = new Folder(); ReflectionTestUtils.setField(from, "id", fromId);
+        Folder to   = new Folder(); ReflectionTestUtils.setField(to, "id", toId);
+
+        DataSource ds = new DataSource();
+        ReflectionTestUtils.setField(ds, "id", dsId);
+        ds.setTitle("A"); ds.setFolder(from);
+
+        when(dataSourceRepository.findById(dsId)).thenReturn(Optional.of(ds));
+        when(folderRepository.findById(toId)).thenReturn(Optional.of(to));
+
+        DataSourceService.MoveResult rs = dataSourceService.moveDataSource(memberId, dsId, toId);
+
+        assertThat(rs.datasourceId()).isEqualTo(dsId);
+        assertThat(rs.folderId()).isEqualTo(toId);
+        assertThat(ds.getFolder().getId()).isEqualTo(toId);
+    }
+
+    @Test
+    @DisplayName("단건이동 성공: 기본 폴더(null)로 이동")
+    void moveOne_default_ok() {
+        Integer memberId = 7, dsId = 1, fromId = 100, defaultId = 999;
+
+        Folder from = new Folder(); ReflectionTestUtils.setField(from, "id", fromId);
+        Folder defaultFolder = new Folder(); ReflectionTestUtils.setField(defaultFolder, "id", defaultId);
+
+        DataSource ds = new DataSource();
+        ReflectionTestUtils.setField(ds, "id", dsId);
+        ds.setTitle("문서A"); ds.setFolder(from);
+
+        when(dataSourceRepository.findById(dsId)).thenReturn(Optional.of(ds));
+        when(folderRepository.findDefaultFolderByMemberId(memberId))
+                .thenReturn(Optional.of(defaultFolder));
+
+        DataSourceService.MoveResult rs = dataSourceService.moveDataSource(memberId, dsId, null);
+
+        assertThat(rs.folderId()).isEqualTo(defaultId);
+        assertThat(ds.getFolder().getId()).isEqualTo(defaultId);
+        verify(folderRepository).findDefaultFolderByMemberId(memberId);
+    }
+
+    @Test
+    @DisplayName("단건 이동 성공: 동일 폴더(멱등)")
+    void moveOne_idempotent() {
+        Integer memberId = 1, dsId = 10, folderId = 100;
+
+        Folder same = new Folder(); ReflectionTestUtils.setField(same, "id", folderId);
+
+        DataSource ds = new DataSource();
+        ReflectionTestUtils.setField(ds, "id", dsId);
+        ds.setTitle("A"); ds.setFolder(same);
+
+        when(dataSourceRepository.findById(dsId)).thenReturn(Optional.of(ds));
+        when(folderRepository.findById(folderId)).thenReturn(Optional.of(same));
+
+        DataSourceService.MoveResult rs = dataSourceService.moveDataSource(memberId, dsId, folderId);
+
+        assertThat(rs.folderId()).isEqualTo(folderId);
+        assertThat(ds.getFolder().getId()).isEqualTo(folderId);
+    }
+
+    @Test
+    @DisplayName("단건 이동 실패: 자료 없음 → NoResultException")
+    void moveOne_notFound_data() {
+        when(dataSourceRepository.findById(1)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSource(1, 1, 200))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("존재하지 않는 자료");
+    }
+
+    @Test
+    @DisplayName("단건 이동 실패: 폴더 없음 → NoResultException")
+    void moveOne_notFound_folder() {
+        Folder from = new Folder(); ReflectionTestUtils.setField(from, "id", 100);
+
+        DataSource ds = new DataSource();
+        ReflectionTestUtils.setField(ds, "id", 1);
+        ds.setTitle("A"); ds.setFolder(from);
+
+        when(dataSourceRepository.findById(1)).thenReturn(Optional.of(ds));
+        when(folderRepository.findById(200)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSource(1, 1, 200))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("존재하지 않는 폴더");
+    }
+
+    // 자료 다건 이동
+    @Test
+    @DisplayName("다건: folderId=null → 기본 폴더로 이동")
+    void moveMany_default_ok() {
+        Integer memberId = 7, defaultId = 999;
+
+        Folder from = new Folder(); ReflectionTestUtils.setField(from, "id", 100);
+        Folder defaultFolder = new Folder(); ReflectionTestUtils.setField(defaultFolder, "id", defaultId);
+
+        DataSource a = new DataSource(); ReflectionTestUtils.setField(a, "id", 1); a.setTitle("A"); a.setFolder(from);
+        DataSource b = new DataSource(); ReflectionTestUtils.setField(b, "id", 2); b.setTitle("B"); b.setFolder(from);
+
+        when(folderRepository.findDefaultFolderByMemberId(memberId)).thenReturn(Optional.of(defaultFolder));
+        when(dataSourceRepository.findAllByIdIn(List.of(1,2))).thenReturn(List.of(a,b));
+
+        dataSourceService.moveDataSources(memberId, null, List.of(1,2));
+
+        assertThat(a.getFolder().getId()).isEqualTo(defaultId);
+        assertThat(b.getFolder().getId()).isEqualTo(defaultId);
+        verify(folderRepository).findDefaultFolderByMemberId(memberId);
+    }
+
+    @Test
+    @DisplayName("다건: folderId=null & 기본 폴더 없음 → NoResultException")
+    void moveMany_default_missing() {
+        when(folderRepository.findDefaultFolderByMemberId(7)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(7, null, List.of(1)))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("기본 폴더");
+    }
+
+    @Test
+    @DisplayName("다건: 지정 폴더로 이동")
+    void moveMany_ok() {
+        Integer toId = 200;
+        Folder from = new Folder(); ReflectionTestUtils.setField(from, "id", 100);
+        Folder to   = new Folder(); ReflectionTestUtils.setField(to, "id", toId);
+
+        DataSource a = new DataSource(); ReflectionTestUtils.setField(a, "id", 1); a.setTitle("A"); a.setFolder(from);
+        DataSource b = new DataSource(); ReflectionTestUtils.setField(b, "id", 2); b.setTitle("B"); b.setFolder(from);
+
+        when(folderRepository.findById(toId)).thenReturn(Optional.of(to));
+        when(dataSourceRepository.findAllByIdIn(List.of(1,2))).thenReturn(List.of(a,b));
+
+        dataSourceService.moveDataSources(1, toId, List.of(1,2));
+
+        assertThat(a.getFolder().getId()).isEqualTo(toId);
+        assertThat(b.getFolder().getId()).isEqualTo(toId);
+    }
+
+    @Test
+    @DisplayName("다건: 모두 동일 폴더 → 멱등")
+    void moveMany_idempotent() {
+        Integer toId = 200;
+        Folder to = new Folder(); ReflectionTestUtils.setField(to, "id", toId);
+
+        DataSource a = new DataSource(); ReflectionTestUtils.setField(a, "id", 1); a.setTitle("A"); a.setFolder(to);
+        DataSource b = new DataSource(); ReflectionTestUtils.setField(b, "id", 2); b.setTitle("B"); b.setFolder(to);
+
+        when(folderRepository.findById(toId)).thenReturn(Optional.of(to));
+        when(dataSourceRepository.findAllByIdIn(List.of(1,2))).thenReturn(List.of(a,b));
+
+        dataSourceService.moveDataSources(1, toId, List.of(1,2));
+
+        verify(folderRepository).findById(toId);
+        verify(dataSourceRepository).findAllByIdIn(List.of(1,2));
+        verifyNoMoreInteractions(folderRepository, dataSourceRepository);
+    }
+
+    @Test
+    @DisplayName("다건: 일부 미존재 → NoResultException")
+    void moveMany_someNotFound() {
+        Integer toId = 200;
+        Folder to = new Folder(); ReflectionTestUtils.setField(to, "id", toId);
+
+        DataSource a = new DataSource(); ReflectionTestUtils.setField(a, "id", 1); a.setTitle("A"); a.setFolder(new Folder());
+
+        when(folderRepository.findById(toId)).thenReturn(Optional.of(to));
+        when(dataSourceRepository.findAllByIdIn(List.of(1,2))).thenReturn(List.of(a)); // 2 없음
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(1, toId, List.of(1,2)))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("존재하지 않는 항목");
+    }
+
+    @Test
+    @DisplayName("다건: 폴더 없음 → NoResultException")
+    void moveMany_notFound_folder() {
+        when(folderRepository.findById(200)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(1, 200, List.of(1,2)))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("존재하지 않는 폴더");
+    }
+
+    @Test
+    @DisplayName("다건: 요소 null → IllegalArgumentException")
+    void moveMany_elementNull() {
+        List<Integer> ids = Arrays.asList(1, null, 3); // ← null 허용
+
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(1, 200, ids))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("null");
+    }
+
+    @Test
+    @DisplayName("다건: 요청에 중복된 자료 ID 포함 → IllegalArgumentException")
+    void moveMany_duplicatedIds_illegalArgument() {
+        // given
+        List<Integer> ids = List.of(1, 2, 2, 3); // 2가 중복
+
+        // when & then
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(7, 200, ids))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("같은 자료를 두 번 선택했습니다")
+                .hasMessageContaining("2");
+
+        // 리포지토리 호출 전 단계에서 막혀야 함
+        verifyNoInteractions(folderRepository, dataSourceRepository);
+    }
+
+    @Test
+    @DisplayName("다건: folderId=null + 중복된 자료 ID 포함 → IllegalArgumentException (default 조회 전 차단)")
+    void moveMany_default_withDuplicatedIds_illegalArgument() {
+        // given
+        List<Integer> ids = List.of(5, 5); // 중복
+        // when & then
+        assertThatThrownBy(() -> dataSourceService.moveDataSources(7, null, ids))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("같은 자료를 두 번 선택했습니다")
+                .hasMessageContaining("5");
+
+        verifyNoInteractions(folderRepository, dataSourceRepository);
+    }
+
+    // 자료 수정
+    @Test
+    @DisplayName("수정 성공: 제목과 요약 일부/전체 변경")
+    void update_ok() {
+        DataSource ds = new DataSource();
+        ReflectionTestUtils.setField(ds, "id", 7);
+        ds.setTitle("old");
+        ds.setSummary("old sum");
+
+        when(dataSourceRepository.findById(anyInt()))
+                .thenReturn(Optional.of(ds));
+
+        Integer id = dataSourceService.updateDataSource(7, "new", null);
+
+        assertThat(id).isEqualTo(7);
+        assertThat(ds.getTitle()).isEqualTo("new");
+        assertThat(ds.getSummary()).isEqualTo("old sum"); // summary 미전달 → 유지
+    }
+
+    @Test
+    @DisplayName("수정 실패: 존재하지 않는 자료")
+    void update_notFound() {
+        when(dataSourceRepository.findById(anyInt()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dataSourceService.updateDataSource(1, "t", "s"))
+                .isInstanceOf(NoResultException.class)
+                .hasMessageContaining("존재하지 않는 자료");
     }
 }
