@@ -39,4 +39,8 @@ public class S3Service {
         // 3. 업로드된 파일의 URL 주소 반환
         return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(fileName)).toString();
     }
+
+    public void delete(String fileName) {
+        s3Client.deleteObject(builder -> builder.bucket(bucket).key(fileName).build());
+    }
 }
