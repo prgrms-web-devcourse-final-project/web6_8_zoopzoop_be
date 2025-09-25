@@ -77,7 +77,6 @@ dependencies {
     // Spring AI
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 
-
     // 크롤링
     implementation("org.jsoup:jsoup:1.21.2")
 
@@ -86,6 +85,9 @@ dependencies {
 
     // Mysql driver
     implementation 'mysql:mysql-connector-java:8.0.33'
+
+    // AWS SDK for S3
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.4.0'
 
 }
 
