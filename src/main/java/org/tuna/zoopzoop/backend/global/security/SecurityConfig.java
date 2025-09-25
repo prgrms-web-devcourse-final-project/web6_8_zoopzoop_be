@@ -38,7 +38,8 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/oauth/**",
                                 "/webjars/**",
-                                "/api/v1/**" // API 테스트용으로 모두 허용. 차후 필수로 변경 필요.
+                                "/api/v1/**", // API 테스트용으로 모두 허용. 차후 필수로 변경 필요.
+                                "/actuator/health" // health 체크용
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
