@@ -27,7 +27,7 @@ public class Space extends BaseEntity {
     private SharingArchive sharingArchive;
 
     @Column(nullable = true)
-    private String imageUrl;
+    private String thumbnailUrl;
 
     //연결된 MemberShip
     //Space 삭제시 cascade.all

@@ -40,6 +40,30 @@ public class S3Service {
         return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(fileName)).toString();
     }
 
+    /**
+     * S3에 파일 업로드 (byte[])💡
+     * @param bytes 업로드할 파일의 바이트 배열
+     * @param fileName S3에 저장될 파일 이름
+     * @param contentType 파일의 MIME 타입 (e.g., "image/png")
+     * @return 업로드된 파일의 URL
+     */
+    public String upload(byte[] bytes, String fileName, String contentType) {
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .contentType(contentType)
+                .contentLength((long) bytes.length)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
+
+        return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(fileName)).toString();
+    }
+
+    /**
+     * S3에서 파일 삭제 메서드
+     * @param fileName 삭제할 파일 이름
+     */
     public void delete(String fileName) {
         s3Client.deleteObject(builder -> builder.bucket(bucket).key(fileName).build());
     }
