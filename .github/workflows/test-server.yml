@@ -223,7 +223,7 @@ jobs:
 
             HTTP_CODE=${SWITCH_RESPONSE: -3}
             if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-              echo "✅ Traffic switching completed successfully!"
+              echo "✅ Traffic switching completed successfully!."
               echo "🎯 NPM now points to: $NEW_CONTAINER:8080"
             
               # 최종 확인
