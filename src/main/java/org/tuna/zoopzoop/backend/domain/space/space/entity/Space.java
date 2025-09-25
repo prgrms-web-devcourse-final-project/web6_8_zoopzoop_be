@@ -26,6 +26,9 @@ public class Space extends BaseEntity {
     @OneToOne(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
     private SharingArchive sharingArchive;
 
+    @Column(nullable = true)
+    private String imageUrl;
+
     //연결된 MemberShip
     //Space 삭제시 cascade.all
     @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
