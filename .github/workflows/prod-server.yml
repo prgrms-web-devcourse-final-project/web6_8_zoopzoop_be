@@ -60,7 +60,6 @@ jobs:
             echo "📋 Checking current NPM configuration... 📋"
             CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
               "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
-            echo "Current Config: $CURRENT_CONFIG"
             
             CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_host // .forward_host')
             CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_port // .forward_port')
