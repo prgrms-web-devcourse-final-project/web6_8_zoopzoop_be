@@ -56,6 +56,15 @@ public class HomeController {
                     <input type="text" name="query" placeholder="검색어 입력"/>
                     <input type="submit" value="검색"/>
                 </form>
+                
+                <h2>S3 파일 업로드 테스트</h2>
+                <form action="/test/upload-file" method="post" enctype="multipart/form-data">
+                    <input type="text" name="fileName" placeholder="S3에 저장될 파일명 (예: images/test.jpg)"/>
+                    <br><br>
+                    <input type="file" name="file"/>
+                    <br><br>
+                    <input type="submit" value="업로드"/>
+                </form>
                 """.formatted(localHost.getHostName(), localHost.getHostAddress(), kakaoLoginUrl, googleLoginUrl, logoutUrl);
     }
 }
