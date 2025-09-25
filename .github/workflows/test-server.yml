@@ -202,7 +202,8 @@ jobs:
             echo "🔄 Switching traffic in Nginx Proxy Manager..."
             DOMAIN_NAME=$(echo $CURRENT_CONFIG | jq -r '.domain_names[0]')
             
-            CERT_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" | jq '.certificate.id')
+            CURRNET_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" | jq .)
+            echo "Current NPM Config: $CURRNET_CONFIG"
             
             SWITCH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" \
               -H "Authorization: Bearer $TOKEN" \
