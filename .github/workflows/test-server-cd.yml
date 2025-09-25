@@ -1,0 +1,116 @@
+name: Spring CD (Test Server)
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  cd-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Test Environment
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.TEST_SERVER_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # GHCR 로그인
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+            docker pull ghcr.io/${{ github.repository }}/zoopzoop:latest
+
+            NPM_HOST="localhost:81"
+            NPM_EMAIL="${{ secrets.NPM_ADMIN_EMAIL }}"
+            NPM_PASSWORD="${{ secrets.NPM_ADMIN_PASSWORD }}"
+            PROXY_HOST_ID="${{ secrets.NPM_PROXY_HOST_ID }}"
+
+            # NPM 토큰
+            TOKEN=$(curl -s -X POST "http://${NPM_HOST}/api/tokens" \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASSWORD}\"}" | jq -r '.token')
+            if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
+              echo "❌ Failed to get NPM API token"
+              exit 1
+            fi
+
+            CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+
+            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_host // .forward_host')
+            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_port // .forward_port')
+            echo "Current NPM target: $CURRENT_TARGET:$CURRENT_PORT"
+
+            if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
+              NEW_CONTAINER=zoopzoop-green
+              OLD_CONTAINER=zoopzoop-blue
+              NEW_PORT=8082
+            else
+              NEW_CONTAINER=zoopzoop-blue
+              OLD_CONTAINER=zoopzoop-green
+              NEW_PORT=8081
+            fi
+
+            docker run -d --restart unless-stopped \
+              -p $NEW_PORT:8080 \
+              --name $NEW_CONTAINER \
+              --network common \
+              -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
+              -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
+              -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
+              ghcr.io/${{ github.repository }}/zoopzoop:latest
+
+            # 헬스체크
+            for i in {1..30}; do
+              if curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
+                echo "✅ New container is healthy!"
+                break
+              else
+                echo "Waiting for new container to be healthy..."
+                sleep 5
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Health check failed. Rolling back..."
+                docker stop $NEW_CONTAINER || true
+                docker rm $NEW_CONTAINER || true
+                exit 1
+              fi
+            done
+
+            # NPM 트래픽 스위칭
+            DOMAIN_NAME=$(echo $CURRENT_CONFIG | jq -r '.domain_names[0]')
+            CERT_ID=$(echo "$CURRENT_CONFIG" | jq -r '.certificate_id')
+
+            SWITCH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"domain_names\": [\"$DOMAIN_NAME\"],
+                \"forward_scheme\": \"http\",
+                \"forward_host\": \"$NEW_CONTAINER\",
+                \"forward_port\": 8080,
+                \"caching_enabled\": false,
+                \"block_exploits\": true,
+                \"advanced_config\": \"\",
+                \"locations\": [],
+                \"certificate_id\": $CERT_ID,
+                \"ssl_forced\": 1,
+                \"hsts_enabled\": 1,
+                \"hsts_subdomains\": 1
+              }")
+
+            HTTP_CODE=${SWITCH_RESPONSE: -3}
+            if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+              echo "❌ Traffic switching failed! HTTP Code: $HTTP_CODE"
+              echo "Response: ${SWITCH_RESPONSE%???}"
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
+
+            docker stop $OLD_CONTAINER || true
+            docker rm $OLD_CONTAINER || true
