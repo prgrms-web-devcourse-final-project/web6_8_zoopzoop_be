@@ -123,7 +123,7 @@ public class CrawlerManagerServiceTest {
         assertThat(naverDoc.content()).isEqualTo(content);
         assertThat(naverDoc.dataCreatedDate()).isEqualTo(dataCreatedDate);
         assertThat(naverDoc.imageUrl()).isEqualTo(imageUrl);
-        assertThat(naverDoc.sources()).isEqualTo(sources);
+        assertThat(naverDoc.source()).isEqualTo(sources);
     }
 
     @Test
