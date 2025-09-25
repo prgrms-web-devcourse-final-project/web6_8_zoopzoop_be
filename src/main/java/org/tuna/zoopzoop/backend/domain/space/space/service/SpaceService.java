@@ -9,6 +9,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
@@ -19,6 +21,7 @@ import org.tuna.zoopzoop.backend.global.aws.S3Service;
 public class SpaceService {
     private final SpaceRepository spaceRepository;
     private final S3Service s3Service;
+    private final MembershipService membershipService;
 
     // ======================== 스페이스 조회 ======================== //
 
@@ -116,7 +119,7 @@ public class SpaceService {
      * @throws IllegalArgumentException 스페이스가 존재하지 않을 경우
      */
     @Transactional
-    public void updateSpaceThumbnail(Integer spaceId, MultipartFile image) {
+    public void updateSpaceThumbnail(Integer spaceId, Member requester, MultipartFile image) {
         // 이미지가 null이거나 비어있는 경우 예외 처리
         if(image == null || image.isEmpty()) {
             return;
@@ -128,6 +131,14 @@ public class SpaceService {
 
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+
+        if (requester == null) {
+            throw new IllegalArgumentException("사용자 정보가 없습니다.");
+        }
+
+        if (!membershipService.isMemberJoinedSpace(requester, space)) {
+            throw new IllegalArgumentException("스페이스의 구성원이 아닙니다.");
+        }
 
         try {
             //String fileName = "space/" + spaceId + "/thumbnail/" + System.currentTimeMillis() + "_" +

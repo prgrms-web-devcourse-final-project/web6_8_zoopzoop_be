@@ -137,19 +137,16 @@ public class ApiV1SpaceController {
         );
     }
 
-    @PutMapping("/thumbnail/{spaceId}")
+    @PutMapping(path = "/thumbnail/{spaceId}", consumes = {"multipart/form-data"})
     @Operation(summary = "스페이스 썸네일 이미지 갱신")
     public RsData<Void> updateSpaceThumbnail(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Integer spaceId,
             @RequestPart(value = "image", required = false) MultipartFile image
-    ) throws AccessDeniedException {
-        // ADMIN 권한 체크
+    ) {
         Member member = userDetails.getMember();
-//        if(!membershipService.isMemberJoinedSpace(member, spaceService.findById(spaceId)))
-//            throw new AccessDeniedException("액세스가 거부됐습니다.");
 
-        spaceService.updateSpaceThumbnail(spaceId, image);
+        spaceService.updateSpaceThumbnail(spaceId, member, image);
 
         return new RsData<>(
                 "200",
