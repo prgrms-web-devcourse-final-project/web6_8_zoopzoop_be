@@ -376,7 +376,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    // ======================= Read ======================= //
+    // ======================= Read List ======================= //
 
     @Test
     @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
@@ -494,6 +494,71 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         );
     }
 
+    // ======================= Read ======================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 성공")
+    void getSpace_Success() throws Exception {
+        // Given
+        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Integer spaceId = space.getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 정보가 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(spaceId))
+                .andExpect(jsonPath("$.data.spaceName").value("기존 스페이스 1_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.thumbnailUrl").value("thumbnailUrl1"))
+                .andExpect(jsonPath("$.data.myAuthority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.sharingArchiveId").value(space.getSharingArchive().getId()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 실패 : 존재하지 않는 스페이스")
+    void getSpace_Fail_NotFound() throws Exception {
+        // Given
+        Integer spaceId = 9999; // 존재하지 않는 스페이스 ID
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc3333", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 실패 : 스페이스 멤버가 아닌 사용자")
+    void getSpace_Fail_NotMember() throws Exception {
+        // Given
+        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Integer spaceId = space.getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        resultActions.andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value("403"))
+                .andExpect(jsonPath("$.msg").value("액세스가 거부되었습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+
     // ======================= TEST DATA FACTORIES ======================== //
 
     private String createDefaultSpaceCreateRequestBody() {
@@ -503,6 +568,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 }
                 """;
     }
+
 
 
 }
