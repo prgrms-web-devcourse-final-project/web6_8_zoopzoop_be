@@ -44,9 +44,8 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
     }
 
     void setUpSpace() {
-        spaceService.createSpace("기존 스페이스 1_forInviteControllerTest");
-        spaceService.createSpace("기존 스페이스 2_forInviteControllerTest");
-
+        Space space1 = spaceService.createSpace("기존 스페이스 1_forInviteControllerTest", "dummyUrl1");
+        Space space2 = spaceService.createSpace("기존 스페이스 2_forInviteControllerTest", "dummyUrl2");
     }
 
     void setUpMember() {
@@ -281,8 +280,10 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.spaces.length()").value(2))
                 .andExpect(jsonPath("$.data.spaces[0].id").value(space1.getId()))
                 .andExpect(jsonPath("$.data.spaces[0].name").value(space1.getName()))
+                .andExpect(jsonPath("$.data.spaces[0].thumbnailUrl").value(space1.getThumbnailUrl()))
                 .andExpect(jsonPath("$.data.spaces[1].id").value(space2.getId()))
-                .andExpect(jsonPath("$.data.spaces[1].name").value(space2.getName()));
+                .andExpect(jsonPath("$.data.spaces[1].name").value(space2.getName()))
+                .andExpect(jsonPath("$.data.spaces[1].thumbnailUrl").value(space2.getThumbnailUrl()));
     }
 
 

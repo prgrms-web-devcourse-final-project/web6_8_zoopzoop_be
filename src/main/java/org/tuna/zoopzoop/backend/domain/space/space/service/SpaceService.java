@@ -72,6 +72,28 @@ public class SpaceService {
     }
 
     /**
+     * 스페이스 생성
+     * @param name 스페이스 이름
+     * @param thumbnailUrl 스페이스 썸네일 이미지 URL
+     * @return 생성된 스페이스
+     */
+    @Transactional
+    public Space createSpace(@NotBlank @Length(max = 50) String name, String thumbnailUrl) {
+        Space newSpace = Space.builder()
+                .name(name)
+                .thumbnailUrl(thumbnailUrl)
+                .build();
+
+        try{
+            return spaceRepository.save(newSpace);
+        }catch (DataIntegrityViolationException e) {
+            throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
      * 스페이스 삭제 (hard delete)
      * @param spaceId 스페이스 ID
      * @return 삭제된 스페이스 이름

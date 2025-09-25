@@ -84,7 +84,8 @@ public class ApiV1InviteController {
         List<SpaceMembershipInfoWithoutAuthority> invitationInfos = invitations.stream()
                 .map(membership -> new SpaceMembershipInfoWithoutAuthority(
                         membership.getSpace().getId(),
-                        membership.getSpace().getName()
+                        membership.getSpace().getName(),
+                        membership.getSpace().getThumbnailUrl()
                 ))
                 .toList();
 

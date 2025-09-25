@@ -103,7 +103,7 @@ public class ApiV1SpaceController {
     }
 
     @GetMapping
-    @Operation(summary = "스페이스 목록 조회")
+    @Operation(summary = "나의 스페이스 목록 조회")
     public RsData<ResBodyForSpaceList> getAllSpaces(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) JoinState state
@@ -125,7 +125,8 @@ public class ApiV1SpaceController {
                 .map(membership -> new SpaceMembershipInfo(
                         membership.getSpace().getId(),
                         membership.getSpace().getName(),
-                        membership.getAuthority()
+                        membership.getAuthority(),
+                        membership.getSpace().getThumbnailUrl()
                 ))
                 .collect(Collectors.toList());
         ResBodyForSpaceList resBody = new ResBodyForSpaceList(spaceInfos);
