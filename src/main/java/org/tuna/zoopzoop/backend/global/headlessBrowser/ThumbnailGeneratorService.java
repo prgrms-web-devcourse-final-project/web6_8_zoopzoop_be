@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.space.service;
+package org.tuna.zoopzoop.backend.global.headlessBrowser;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Locator;
@@ -13,7 +13,6 @@ import org.tuna.zoopzoop.backend.global.aws.S3Service;
 @RequiredArgsConstructor
 public class ThumbnailGeneratorService {
     private final S3Service s3Service;
-    private final SpaceService spaceService;
 
     @Async // 비동기 실행
     public void generateAndUploadThumbnail(Integer workspaceId) {
@@ -41,9 +40,6 @@ public class ThumbnailGeneratorService {
             //String fileName = "thumbnails/workspace_" + workspaceId + ".png";
             String fileName = "thumbnails/test_thumbnail.png"; // 테스트용 파일 이름
             String s3Url = s3Service.upload(screenshotBytes, fileName, "image/png");
-
-            // 5. 워크스페이스 정보에 썸네일 URL 업데이트
-            //spaceService.updateThumbnailUrl(workspaceId, s3Url);
 
             browser.close();
         } catch (Exception e) {

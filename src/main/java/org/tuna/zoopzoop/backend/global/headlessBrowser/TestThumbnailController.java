@@ -1,10 +1,9 @@
-package org.tuna.zoopzoop.backend.domain.space.space.controller;
+package org.tuna.zoopzoop.backend.global.headlessBrowser;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.tuna.zoopzoop.backend.domain.space.space.service.ThumbnailGeneratorService;
 
 @RestController
 @RequestMapping("/test") // "/test" 라는 공통 경로를 사용

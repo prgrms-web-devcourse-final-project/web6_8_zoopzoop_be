@@ -5,7 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
@@ -22,6 +24,7 @@ import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -131,6 +134,27 @@ public class ApiV1SpaceController {
                 "200",
                 "스페이스 목록이 조회됐습니다.",
                 resBody
+        );
+    }
+
+    @PutMapping("/thumbnail/{spaceId}")
+    @Operation(summary = "스페이스 썸네일 이미지 갱신")
+    public RsData<Void> updateSpaceThumbnail(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    ) throws AccessDeniedException {
+        // ADMIN 권한 체크
+        Member member = userDetails.getMember();
+//        if(!membershipService.isMemberJoinedSpace(member, spaceService.findById(spaceId)))
+//            throw new AccessDeniedException("액세스가 거부됐습니다.");
+
+        spaceService.updateSpaceThumbnail(spaceId, image);
+
+        return new RsData<>(
+                "200",
+                "스페이스 썸네일 이미지가 갱신됐습니다.",
+                null
         );
     }
 
