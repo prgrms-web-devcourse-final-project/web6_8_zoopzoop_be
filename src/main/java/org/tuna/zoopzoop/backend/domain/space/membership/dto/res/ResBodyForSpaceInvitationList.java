@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.membership.dto;
+package org.tuna.zoopzoop.backend.domain.space.membership.dto.res;
 
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
 

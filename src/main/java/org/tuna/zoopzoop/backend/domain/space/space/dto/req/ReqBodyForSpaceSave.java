@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.space.space.dto;
+package org.tuna.zoopzoop.backend.domain.space.space.dto.req;
 
 
 import jakarta.validation.constraints.NotBlank;

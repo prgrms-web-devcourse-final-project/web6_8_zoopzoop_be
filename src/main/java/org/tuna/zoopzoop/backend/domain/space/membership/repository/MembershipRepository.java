@@ -25,4 +25,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     Optional<Membership> findByMemberAndSpace(Member member, Space space);
 
     List<Membership> findAllBySpaceAndAuthority(Space space, Authority authority);
+
+    List<Membership> findAllBySpaceAndAuthorityIsNot(Space space, Authority authority);
+
+    long countBySpaceAndAuthority(Space space, Authority authority);
 }
