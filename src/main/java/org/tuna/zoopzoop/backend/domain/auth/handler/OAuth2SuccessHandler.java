@@ -64,7 +64,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         if ("server".equals(activeProfile)) {
             // server 환경일 때: URL 파라미터로 토큰 전달
             String redirectUrl = redirect_domain + "/auth/callback"
-                    + "?accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
+                    + "?success=true"
+                    + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
                     + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
             response.sendRedirect(redirectUrl);
         } else {
