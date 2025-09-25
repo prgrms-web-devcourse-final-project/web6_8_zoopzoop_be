@@ -7,6 +7,6 @@ public record SpecificSiteDto(
         LocalDate dataCreatedDate, // 작성일자
         String content, // ai한테 줘야할 내용
         String imageUrl, // 썸네일 이미지 url
-        String sources // 출처
+        String source // 출처
 ) {
 }
