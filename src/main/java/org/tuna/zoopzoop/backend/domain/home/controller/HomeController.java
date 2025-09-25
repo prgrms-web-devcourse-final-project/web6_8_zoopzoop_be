@@ -33,6 +33,8 @@ public class HomeController {
         String kakaoLoginUrl = "/oauth2/authorization/kakao";
         String googleLoginUrl = "/oauth2/authorization/google";
         String logoutUrl = "/api/v1/auth/logout";
+        String testS3UploadUrl = "/test/upload-file";
+        String testThumbnailUrl = "/test/generate-thumbnail";
 
         return """
                 <h1>API 서버</h1>
@@ -58,13 +60,21 @@ public class HomeController {
                 </form>
                 
                 <h2>S3 파일 업로드 테스트</h2>
-                <form action="/test/upload-file" method="post" enctype="multipart/form-data">
+                <form action="%s" method="post" enctype="multipart/form-data">
                     <input type="text" name="fileName" placeholder="S3에 저장될 파일명 (예: images/test.jpg)"/>
                     <br><br>
                     <input type="file" name="file"/>
                     <br><br>
                     <input type="submit" value="업로드"/>
                 </form>
-                """.formatted(localHost.getHostName(), localHost.getHostAddress(), kakaoLoginUrl, googleLoginUrl, logoutUrl);
+                
+                <hr>
+                <h2>썸네일 생성 테스트</h2>
+                <div>
+                    <a href="%s">
+                        <button>썸네일 생성 및 S3 업로드 테스트</button>
+                    </a>
+                </div>
+                """.formatted(localHost.getHostName(), localHost.getHostAddress(), kakaoLoginUrl, googleLoginUrl, logoutUrl, testS3UploadUrl, testThumbnailUrl);
     }
 }

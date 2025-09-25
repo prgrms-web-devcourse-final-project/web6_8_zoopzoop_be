@@ -28,10 +28,12 @@ public class ThumbnailGeneratorService {
             page.navigate(thumbnailUrl);
 
             // 2. 대시보드 컨텐츠가 모두 로드될 때까지 대기
-            page.waitForSelector("#dashboard-container"); // 대시보드 컨테이너의 CSS 선택자
+            //page.waitForSelector("#dashboard-container"); // 대시보드 컨테이너의 CSS 선택자
+            page.waitForSelector("#header");
 
             // 3. 특정 요소만 스크린샷으로 찍기
-            Locator dashboardElement = page.locator("#dashboard-container");
+            //Locator dashboardElement = page.locator("#dashboard-
+            Locator dashboardElement = page.locator("#header");
             byte[] screenshotBytes = dashboardElement.screenshot();
 
             // 4. S3에 업로드
