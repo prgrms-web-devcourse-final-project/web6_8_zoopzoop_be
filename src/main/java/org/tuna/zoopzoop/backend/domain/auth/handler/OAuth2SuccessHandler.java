@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.auth.handler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtProperties jwtProperties;
     private final MemberRepository memberRepository;
     private final MemberService memberService;
+
+    @Value("${front.redirect_domain}")
+    private String redirect_domain;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -77,7 +81,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 로그인 성공 후 리다이렉트.
         // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
-        response.sendRedirect("/login-success");
+        response.sendRedirect("/auth/callback");
 
         // 보안을 좀 더 강화하고자 한다면 CSRF 토큰 같은 걸 생각해볼 수 있겠으나,
         // 일단은 구현하지 않음.(개발 과정 중에 번거로워질 수 있을 듯 함.)
