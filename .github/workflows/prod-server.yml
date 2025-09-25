@@ -1,0 +1,156 @@
+# 워크플로우 이름
+name: Spring CD (Production)
+
+# main 브랜치 PR에서만 실행 (이미 빌드된 Docker 이미지 사용)
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'build.gradle*'
+      - 'settings.gradle*'
+      - 'gradle/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+
+jobs:
+  # ==================================
+  # CD: Deploy to Production Environment
+  # ==================================
+  cd-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Test Environment
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            
+            # GHCR 로그인 (EC2)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{github.repository_owner}}" --password-stdin
+            
+            # 최신 이미지 pull
+            docker pull ghcr.io/${{ github.repository }}/zoopzoop:latest
+            
+            # NPM API 설정
+            NPM_HOST="localhost:81"
+            NPM_EMAIL="${{secrets.NPM_ADMIN_EMAIL}}"
+            NPM_PASSWORD="${{secrets.NPM_ADMIN_PASSWORD}}"
+            PROXY_HOST_ID="${{secrets.NPM_PROXY_HOST_ID}}"
+            
+            # NPM API 토큰 가져오기
+            echo "Getting NPM API token..."
+            TOKEN=$(curl -s -X POST "http://${NPM_HOST}/api/tokens" \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASSWORD}\"}" | \
+              jq -r '.token')
+            if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+              echo "❌ Failed to get NPM API token"
+              exit 1
+            fi
+            
+            # 현재 NPM Proxy Host 설정 확인
+            echo "📋 Checking current NPM configuration... 📋"
+            CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+            
+            CURRENT_TARGET=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_host // .forward_host')
+            CURRENT_PORT=$(echo $CURRENT_CONFIG | jq -r '.[0].forward_port // .forward_port')
+            
+            echo "Current NPM target: $CURRENT_TARGET:$CURRENT_PORT"
+            
+            # Blue-Green 배포
+            if [ "$(docker ps -q -f name=zoopzoop-blue)" ]; then
+              NEW_CONTAINER=zoopzoop-green
+              OLD_CONTAINER=zoopzoop-blue
+              NEW_PORT=8082
+            else
+              NEW_CONTAINER=zoopzoop-blue
+              OLD_CONTAINER=zoopzoop-green
+              NEW_PORT=8081
+            fi
+            
+            echo "Starting new container: $NEW_CONTAINER on port $NEW_PORT"
+            docker run -d --restart unless-stopped \
+              -p $NEW_PORT:8080 \
+              --name $NEW_CONTAINER \
+              --network common \
+              -e SPRING_DATASOURCE_URL="${{secrets.PROD_DB_URL}}" \
+              -e SPRING_DATASOURCE_USERNAME="${{secrets.PROD_DB_USERNAME}}" \
+              -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
+              ghcr.io/${{ github.repository }}/zoopzoop:latest
+            
+            
+            # 헬스체크 (Spring Boot Actuator)
+            for i in {1..30}; do
+              if curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
+                echo "✅New container is healthy!"
+                break
+              else
+                echo "Waiting for new container to be healthy..."
+                sleep 5
+              fi
+            
+            if [ $i -eq 30 ]; then
+                echo "❌ Health check failed. Rolling back..."
+                docker stop $NEW_CONTAINER || true
+                docker rm $NEW_CONTAINER || true
+                exit 1 
+              fi
+            done
+            
+            # NPM에서 트래픽 스위칭
+            echo "🔄 Switching traffic in Nginx Proxy Manager..."
+            DOMAIN_NAME=$(echo $CURRENT_CONFIG | jq -r '.domain_names[0]')
+            
+            SWITCH_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"domain_names\": [\"$DOMAIN_NAME\"],
+                \"forward_scheme\": \"http\",
+                \"forward_host\": \"$NEW_CONTAINER\",
+                \"forward_port\": 8080,
+                \"caching_enabled\": false,
+                \"block_exploits\": true,
+                \"advanced_config\": \"\",
+                \"locations\": [],
+                \"certificate_id\": 0,
+                \"ssl_forced\": 0,
+                \"hsts_enabled\": 0,
+                \"hsts_subdomains\": 0
+              }")
+            
+            HTTP_CODE=${SWITCH_RESPONSE: -3}
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              echo "✅ Traffic switching completed successfully!"
+              echo "🎯 NPM now points to: $NEW_CONTAINER:8080"
+            
+              # 최종 확인
+              sleep 5
+              echo "🔍 Final verification..."
+              VERIFY_CONFIG=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                "http://${NPM_HOST}/api/nginx/proxy-hosts/${PROXY_HOST_ID}")
+              VERIFY_TARGET=$(echo $VERIFY_CONFIG | jq -r '.forward_host')
+              echo "✅ Verified NPM target: $VERIFY_TARGET"
+            
+            else
+              echo "❌ Traffic switching failed! HTTP Code: $HTTP_CODE"
+              echo "Response: ${SWITCH_RESPONSE%???}"
+              echo "🔄 Rolling back new container..."
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
+            
+            # 이전 컨테이너 종료 및 제거
+            echo "Stopping old container: $OLD_CONTAINER"
+            docker stop $OLD_CONTAINER || true
+            docker rm $OLD_CONTAINER || true

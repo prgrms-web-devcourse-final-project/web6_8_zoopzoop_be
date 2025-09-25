@@ -1,10 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.member.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -60,6 +57,12 @@ public class MemberControllerTest {
                 "3333",
                 Provider.GOOGLE
         );
+    }
+
+    @AfterAll
+    void cleanUp() {
+        memberRepository.deleteAll(); // Graph만 삭제
+        // 필요하면 다른 Repository도 순서대로 삭제
     }
 
     @Test

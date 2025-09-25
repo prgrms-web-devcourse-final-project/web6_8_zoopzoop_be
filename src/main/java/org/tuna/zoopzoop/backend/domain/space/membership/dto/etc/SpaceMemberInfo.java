@@ -1,10 +1,11 @@
-package org.tuna.zoopzoop.backend.domain.space.space.dto;
+package org.tuna.zoopzoop.backend.domain.space.membership.dto.etc;
 
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 
-public record SpaceMembershipInfo(
+public record SpaceMemberInfo(
         Integer id,
         String name,
+        String profileUrl,
         Authority authority
 ) {
 }

@@ -1,12 +1,16 @@
 package org.tuna.zoopzoop.backend.global.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.persistence.NoResultException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -17,6 +21,7 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 import javax.naming.AuthenticationException;
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.*;
@@ -35,6 +40,24 @@ public class GlobalExceptionHandler {
                         e.getMessage()
                 ),
                 NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class) // Request Body의 역직렬화에 실패
+    public ResponseEntity<RsData<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String fieldName = getErrorFieldName(e);
+
+        String userFriendlyMessage = String.format(
+                "Invalid value provided for field '%s'. Please check the allowed values.",
+                fieldName
+        );
+
+        return new ResponseEntity<>(
+                new RsData<>(
+                        "400",
+                        userFriendlyMessage
+                ),
+                BAD_REQUEST
         );
     }
 
@@ -164,5 +187,24 @@ public class GlobalExceptionHandler {
                 ),
                 INTERNAL_SERVER_ERROR
         );
+    }
+
+    // =================================== Private Methods ===================================
+
+    private String getErrorFieldName(HttpMessageNotReadableException e) {
+        Throwable cause = e.getCause();
+
+        if (cause instanceof InvalidFormatException) {
+            // InvalidFormatException holds a path of references to the error location.
+            List<JsonMappingException.Reference> path = ((InvalidFormatException) cause).getPath();
+
+            if (path != null && !path.isEmpty()) {
+                // The last reference in the path is typically the field with the error.
+                return path.get(path.size() - 1).getFieldName();
+            }
+        }
+
+        // If the field name cannot be extracted, return a generic placeholder.
+        return "unknown";
     }
 }
