@@ -26,8 +26,11 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         // 프론트로 리다이렉트
         // 필요하면 쿼리 파라미터로 에러 정보 전달
 
-        String redirectUrl = redirect_domain + "/auth/callback?error="
-                + URLEncoder.encode(exception.getMessage(), "UTF-8");
+        String redirectUrl =
+                redirect_domain + "/auth/callback"
+                + "?success=false"
+                + "&error=" + URLEncoder.encode(exception.getMessage(), "UTF-8");
+
         response.sendRedirect(redirectUrl);
     }
 }

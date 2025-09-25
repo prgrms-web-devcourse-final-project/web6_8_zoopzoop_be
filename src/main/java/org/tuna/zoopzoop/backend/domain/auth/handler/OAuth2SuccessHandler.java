@@ -95,7 +95,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
             String redirectUrl = redirect_domain + "/auth/callback"
-                    + "?accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
+                    + "?success=true"
+                    + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
                     + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
 
             // 로그인 성공 후 리다이렉트.
