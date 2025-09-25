@@ -68,7 +68,7 @@ public class NewsSearchService {
         return fetchPageRecursively(query, finalSort, finalDisplay, 0, collected)
                 .map(items -> {
                     List<ResBodyForNaverNews.NewsItem> limited =
-                            items.size() > 12 ? items.subList(0, 12) : items;
+                            items.size() > 100 ? items.subList(0, 100) : items;
                     return new ResBodyForNaverNews(limited.size(), limited);
                 });
     }
@@ -98,9 +98,13 @@ public class NewsSearchService {
                         .toList()
                 )
                 .flatMap(filtered -> {
+                    if (filtered.isEmpty()) {
+                        return Mono.just(collected);
+                    }
+
                     collected.addAll(filtered);
 
-                    if (collected.size() >= 12 || page >= 100) {
+                    if (collected.size() >= 100 || page >= 100) {
                         return Mono.just(collected);
                     } else {
                         return fetchPageRecursively(query, sort, display, page + 1, collected);
