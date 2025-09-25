@@ -55,11 +55,18 @@ jobs:
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secrets.yml
           echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
 
-      # 6. Gradle 테스트 실행
+      # 6. application-secrets-server.yml 생성
+      - name: Generate application-secrets-server.yml
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_SECRET_SERVER_YML }}" > src/main/resources/application-secrets-server.yml
+          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets-server.yml
+
+      # 7. Gradle 테스트 실행
       - name: Test with Gradle
         run: ./gradlew test
 
-      # 7. 테스트 결과 요약 출력
+      # 8. 테스트 결과 요약 출력
       - name: Show test results
         run: |
           echo "==== Test Results ===="
@@ -76,11 +83,11 @@ jobs:
             echo "No test results found."
           fi
 
-      # 8. Gradle 빌드 실행 (테스트 성공 시)
+      # 9. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
         run: ./gradlew build
 
-      # 9. GHCR 로그인
+      # 10. GHCR 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -88,7 +95,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 10. Docker 이미지 빌드 & 푸시
+      # 11. Docker 이미지 빌드 & 푸시
       - name: Build & Push Docker Image
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository }}/zoopzoop

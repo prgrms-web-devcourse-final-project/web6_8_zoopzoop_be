@@ -30,9 +30,9 @@ public class HomeController {
     public String main() {
         InetAddress localHost = getLocalHost();
 
-        String kakaoLoginUrl = "http://localhost:8080/oauth2/authorization/kakao";
-        String googleLoginUrl = "http://localhost:8080/oauth2/authorization/google";
-        String logoutUrl = "http://localhost:8080/api/v1/auth/logout";
+        String kakaoLoginUrl = "/oauth2/authorization/kakao";
+        String googleLoginUrl = "/oauth2/authorization/google";
+        String logoutUrl = "/api/v1/auth/logout";
 
         return """
                 <h1>API 서버</h1>
