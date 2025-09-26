@@ -17,8 +17,8 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchi
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
@@ -33,6 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * FolderService 단위 테스트
+ * - memberRepository 스텁은 필요한 테스트에만 선언
+ */
 @ExtendWith(MockitoExtension.class)
 @Transactional
 @ActiveProfiles("test")
@@ -51,6 +55,7 @@ class FolderServiceTest {
 
     @BeforeEach
     void setUp() {
+        // 공통 테스트 데이터 준비 (스텁은 각 테스트에서 선언)
         this.member = new Member();
         ReflectionTestUtils.setField(member, "id", 1);
 
@@ -67,10 +72,11 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 생성 성공(중복 없음)")
     void createFolder_success() {
-        when(memberRepository.findById(1)).thenReturn(Optional.of(member));
+        // GIVEN
+        when(memberRepository.findById(1)).thenReturn(Optional.of(member)); // <- 반드시 필요
         when(personalArchiveRepository.findByMemberId(1)).thenReturn(Optional.of(personalArchive));
         when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), anyString(), anyString()))
-                .thenReturn(List.of()); // 충돌 없음
+                .thenReturn(List.of());
 
         Folder saved = new Folder();
         saved.setName("보고서");
@@ -79,8 +85,10 @@ class FolderServiceTest {
 
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
+        // WHEN
         FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
 
+        // THEN
         assertThat(result.folderId()).isEqualTo(999);
         assertThat(result.folderName()).isEqualTo("보고서");
     }
@@ -88,29 +96,34 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 이름 중복 시 '(1)' 붙여 생성")
     void createFolder_withConflict() {
-        when(memberRepository.findById(1)).thenReturn(Optional.of(member));
+        // given
+        when(memberRepository.findById(1)).thenReturn(Optional.of(member)); // <- 반드시 필요
         when(personalArchiveRepository.findByMemberId(1)).thenReturn(Optional.of(personalArchive));
         when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), eq("보고서"), anyString()))
                 .thenReturn(List.of("보고서"));
 
         Folder saved = new Folder();
-        saved.setName("보고서(1)");
+        saved.setName("보고서 (1)");
         saved.setArchive(archive);
         ReflectionTestUtils.setField(saved, "id", 1000);
 
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
+        // when
         FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
 
-        assertThat(result.folderName()).isEqualTo("보고서(1)");
+        // then
+        assertThat(result.folderName()).isEqualTo("보고서 (1)");
         assertThat(result.folderId()).isEqualTo(1000);
     }
 
     @Test
     @DisplayName("멤버가 없으면 예외 발생")
     void createFolder_memberNotFound() {
+        // given
         when(memberRepository.findById(2)).thenReturn(Optional.empty());
 
+        // when & then
         assertThrows(IllegalArgumentException.class,
                 () -> folderService.createFolderForPersonal(2, "보고서"));
     }
@@ -119,15 +132,18 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 삭제 성공")
     void deleteFolder_success() {
+        // given
         Folder folder = new Folder();
         folder.setName("보고서");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", 500);
 
-        when(folderRepository.findById(500)).thenReturn(Optional.of(folder));
+        when(folderRepository.findByIdAndMemberId(500, 1)).thenReturn(Optional.of(folder));
 
-        String deletedName = folderService.deleteFolder(500);
+        // when
+        String deletedName = folderService.deleteFolder(1, 500);
 
+        // then
         assertThat(deletedName).isEqualTo("보고서");
         verify(folderRepository, times(1)).delete(folder);
     }
@@ -135,21 +151,25 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 삭제 실패 - 존재하지 않는 폴더")
     void deleteFolder_notFound() {
-        when(folderRepository.findById(999)).thenReturn(Optional.empty());
+        // given
+        when(folderRepository.findByIdAndMemberId(999, 1)).thenReturn(Optional.empty());
 
-        assertThrows(NoResultException.class, () -> folderService.deleteFolder(999));
+        // when & then
+        assertThrows(NoResultException.class, () -> folderService.deleteFolder(1, 999));
         verify(folderRepository, never()).delete(any(Folder.class));
     }
 
     @Test
     @DisplayName("default 폴더는 삭제할 수 없다")
     void deleteFolder_default_forbidden() {
+        // given
         Folder defaultFolder = new Folder("default"); // isDefault=true
         ReflectionTestUtils.setField(defaultFolder, "id", 42);
 
-        when(folderRepository.findById(42)).thenReturn(Optional.of(defaultFolder));
+        when(folderRepository.findByIdAndMemberId(42, 1)).thenReturn(Optional.of(defaultFolder));
 
-        assertThrows(IllegalArgumentException.class, () -> folderService.deleteFolder(42));
+        // when & then
+        assertThrows(IllegalArgumentException.class, () -> folderService.deleteFolder(1, 42));
         verify(folderRepository, never()).delete(any());
     }
 
@@ -157,16 +177,21 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 이름 변경 성공")
     void updateFolderName_success() {
+        // given
         Folder folder = new Folder();
         folder.setName("기존이름");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", 700);
 
-        when(folderRepository.findById(700)).thenReturn(Optional.of(folder));
+        when(folderRepository.findByIdAndMemberId(700, 1)).thenReturn(Optional.of(folder));
+        when(folderRepository.findNamesForConflictCheck(archive.getId(), "새이름", folder.getName()))
+                .thenReturn(List.of());
         when(folderRepository.save(any(Folder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        String updated = folderService.updateFolderName(700, "새이름");
+        // when
+        String updated = folderService.updateFolderName(1, 700, "새이름");
 
+        // then
         assertThat(updated).isEqualTo("새이름");
         assertThat(folder.getName()).isEqualTo("새이름");
         verify(folderRepository, times(1)).save(folder);
@@ -175,26 +200,30 @@ class FolderServiceTest {
     @Test
     @DisplayName("폴더 이름 변경 실패 - 존재하지 않음")
     void updateFolderName_notFound() {
-        when(folderRepository.findById(701)).thenReturn(Optional.empty());
+        // given
+        when(folderRepository.findByIdAndMemberId(701, 1)).thenReturn(Optional.empty());
 
-        assertThrows(NoResultException.class, () -> folderService.updateFolderName(701, "아무거나"));
+        // when & then
+        assertThrows(NoResultException.class, () -> folderService.updateFolderName(1, 701, "아무거나"));
         verify(folderRepository, never()).save(any(Folder.class));
     }
 
     @Test
     @DisplayName("폴더 이름 변경 실패 - 중복 이름 존재")
     void updateFolderName_conflict() {
+        // given
         Folder folder = new Folder();
         folder.setName("기존이름");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", 700);
 
-        when(folderRepository.findById(700)).thenReturn(Optional.of(folder));
+        when(folderRepository.findByIdAndMemberId(700, 1)).thenReturn(Optional.of(folder));
         when(folderRepository.findNamesForConflictCheck(archive.getId(), "보고서", "기존이름"))
                 .thenReturn(List.of("보고서"));
 
+        // when & then
         assertThrows(IllegalArgumentException.class,
-                () -> folderService.updateFolderName(700, "보고서"));
+                () -> folderService.updateFolderName(1, 700, "보고서"));
 
         verify(folderRepository, never()).save(any(Folder.class));
     }
@@ -232,7 +261,8 @@ class FolderServiceTest {
         folder.setName("docs");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", folderId);
-        when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
+
+        when(folderRepository.findByIdAndMemberId(folderId, 1)).thenReturn(Optional.of(folder));
 
         DataSource d1 = new DataSource();
         ReflectionTestUtils.setField(d1, "id", 10);
@@ -242,6 +272,7 @@ class FolderServiceTest {
         d1.setSourceUrl("http://src/a");
         d1.setImageUrl("http://img/a");
         d1.setTags(List.of(new Tag("tag1"), new Tag("tag2")));
+        d1.setCategory(org.tuna.zoopzoop.backend.domain.datasource.entity.Category.IT);
 
         DataSource d2 = new DataSource();
         ReflectionTestUtils.setField(d2, "id", 11);
@@ -251,6 +282,7 @@ class FolderServiceTest {
         d2.setSourceUrl("http://src/b");
         d2.setImageUrl("http://img/b");
         d2.setTags(List.of());
+        d2.setCategory(org.tuna.zoopzoop.backend.domain.datasource.entity.Category.SCIENCE);
 
         when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1, d2));
 
@@ -273,14 +305,11 @@ class FolderServiceTest {
     void getFilesInFolderForPersonal_notFound() {
         // given
         Integer folderId = 999;
-        when(folderRepository.findById(folderId)).thenReturn(Optional.empty());
+        when(folderRepository.findByIdAndMemberId(folderId, 1)).thenReturn(Optional.empty());
 
         // when & then
         assertThrows(NoResultException.class,
                 () -> folderService.getFilesInFolderForPersonal(1, folderId));
-
-        // then(verify)
         verify(dataSourceRepository, never()).findAllByFolder(any());
     }
-
 }

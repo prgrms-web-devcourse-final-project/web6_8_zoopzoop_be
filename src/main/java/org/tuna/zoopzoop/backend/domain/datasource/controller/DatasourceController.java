@@ -3,10 +3,12 @@ package org.tuna.zoopzoop.backend.domain.datasource.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
 import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
-import org.tuna.zoopzoop.backend.global.security.StubAuthUtil;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,10 +26,14 @@ public class DatasourceController {
      * folderId  등록될 폴더 위치(null 이면 default)
      */
     @PostMapping("")
-    public ResponseEntity<?> createDataSource(@Valid @RequestBody reqBodyForCreateDataSource rq) {
+    public ResponseEntity<?> createDataSource(
+            @Valid @RequestBody reqBodyForCreateDataSource rq,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        // 로그인된 멤버 Id 사용
+        Member member = userDetails.getMember();
+        Integer currentMemberId = member.getId();
 
-        //임시 인증 정보
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
         int rs = dataSourceService.createDataSource(currentMemberId, rq.sourceUrl(), rq.folderId());
         return ResponseEntity.ok()
                 .body(
@@ -39,8 +45,12 @@ public class DatasourceController {
      * 자료 단건 삭제
      */
     @DeleteMapping("/{dataSourceId}")
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Integer dataSourceId) {
-        int deletedId = dataSourceService.deleteById(dataSourceId);
+    public ResponseEntity<Map<String, Object>> delete(
+            @PathVariable Integer dataSourceId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+        int deletedId = dataSourceService.deleteById(member.getId(), dataSourceId);
         return ResponseEntity.ok(
                 Map.of(
                         "status", 200,
@@ -55,11 +65,12 @@ public class DatasourceController {
      */
     @PostMapping("/delete")
     public ResponseEntity<Map<String, Object>> deleteMany(
-            @Valid @RequestBody reqBodyForDeleteMany body
+            @Valid @RequestBody reqBodyForDeleteMany body,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        dataSourceService.deleteMany(body.dataSourceId());
+        Member member = userDetails.getMember();
+        dataSourceService.deleteMany(member.getId(), body.dataSourceId());
 
-        // Map.of 는 null 불가 → LinkedHashMap 사용
         Map<String, Object> res = new java.util.LinkedHashMap<>();
         res.put("status", 200);
         res.put("msg", "복수개의 자료가 삭제됐습니다.");
@@ -75,9 +86,11 @@ public class DatasourceController {
     @PatchMapping("/{dataSourceId}/move")
     public ResponseEntity<?> moveDataSource(
             @PathVariable Integer dataSourceId,
-            @Valid @RequestBody reqBodyForMoveDataSource rq
+            @Valid @RequestBody reqBodyForMoveDataSource rq,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
+        Member member = userDetails.getMember();
+        Integer currentMemberId = member.getId();
 
         DataSourceService.MoveResult result =
                 dataSourceService.moveDataSource(currentMemberId, dataSourceId, rq.folderId());
@@ -101,8 +114,12 @@ public class DatasourceController {
      * 자료 다건 이동
      */
     @PatchMapping("/move")
-    public ResponseEntity<?> moveMany(@Valid @RequestBody reqBodyForMoveMany rq) {
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
+    public ResponseEntity<?> moveMany(
+            @Valid @RequestBody reqBodyForMoveMany rq,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+        Integer currentMemberId = member.getId();
 
         dataSourceService.moveDataSources(currentMemberId, rq.folderId(), rq.dataSourceId());
 
@@ -122,7 +139,8 @@ public class DatasourceController {
     @PatchMapping("/{dataSourceId}")
     public ResponseEntity<?> updateDataSource(
             @PathVariable Integer dataSourceId,
-            @Valid @RequestBody reqBodyForUpdateDataSource body
+            @Valid @RequestBody reqBodyForUpdateDataSource body,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         // title, summary 둘 다 비어있으면 의미 없는 요청 → 400
         boolean noTitle = (body.title() == null || body.title().isBlank());
@@ -131,7 +149,8 @@ public class DatasourceController {
             throw new IllegalArgumentException("변경할 값이 없습니다. title 또는 summary 중 하나 이상을 전달하세요.");
         }
 
-        Integer updatedId = dataSourceService.updateDataSource(dataSourceId, body.title(), body.summary());
+        Member member = userDetails.getMember();
+        Integer updatedId = dataSourceService.updateDataSource(member.getId(), dataSourceId, body.title(), body.summary()); // CHANGED
         String msg = updatedId + "번 자료가 수정됐습니다.";
         return ResponseEntity.ok(
                 new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId))
