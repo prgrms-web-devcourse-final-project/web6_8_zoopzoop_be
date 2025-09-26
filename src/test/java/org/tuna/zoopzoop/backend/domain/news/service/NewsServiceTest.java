@@ -12,6 +12,7 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
@@ -69,16 +70,17 @@ public class NewsServiceTest {
     );
     // A = 2회, B = 5회, C = 1회, D = 2회, E = 9회, F = 5회
 
-    private DataSource buildDataSource(Folder folder, String sourceUrl, List<Tag> tags) {
+    private DataSource buildDataSource(String title, Folder folder, String sourceUrl, List<Tag> tags) {
         DataSource ds = new DataSource();
         ds.setFolder(folder);
         ds.setSourceUrl(sourceUrl);
-        ds.setTitle("자료 제목");
+        ds.setTitle(title);
         ds.setSource("www.examplesource.com");
         ds.setSummary("설명");
         ds.setImageUrl("www.example.com/img");
         ds.setDataCreatedDate(LocalDate.now());
         ds.setTags(tags);
+        ds.setCategory(Category.ENVIRONMENT);
         ds.setActive(true);
         return dataSourceRepository.save(ds);
     }
@@ -101,7 +103,7 @@ public class NewsServiceTest {
         Folder folder = folderRepository.findById(folderResponse.folderId()).orElse(null);
 
         for(int i = 1; i <= 10; i++) {
-            buildDataSource(folder, String.valueOf(i), tags.get(i));
+            buildDataSource(String.valueOf(i), folder, String.valueOf(i), tags.get(i));
         }
     }
 
@@ -113,5 +115,7 @@ public class NewsServiceTest {
         List<String> frequency = newsService.getTagFrequencyFromFiles(member.getId(), folderResponses.get(0).folderId());
 
         assertEquals("E", frequency.get(0));
+        assertEquals("B", frequency.get(1));
+        assertEquals("F", frequency.get(2));
     }
 }
