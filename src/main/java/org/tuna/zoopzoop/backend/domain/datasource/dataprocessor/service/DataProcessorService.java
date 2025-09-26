@@ -11,8 +11,10 @@ import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.UnspecificSiteDto
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.CrawlerManagerService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.ArticleData;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +22,7 @@ public class DataProcessorService {
     public final CrawlerManagerService crawlerManagerService;
     public final AiService aiService;
 
-    public DataSourceDto process(String url) throws IOException {
+    public DataSourceDto process(String url, List<Tag> tagList) throws IOException {
         CrawlerResult<?> result = crawlerManagerService.extractContent(url);
 
         ArticleData articleData = switch (result.type()) {
@@ -47,7 +49,7 @@ public class DataProcessorService {
             }
         };
 
-        AnalyzeContentDto analyzeContentDto = aiService.analyzeContent(articleData.content());
+        AnalyzeContentDto analyzeContentDto = aiService.analyzeContent(articleData.content(), tagList);
 
         return new DataSourceDto(
                 articleData.title(),

@@ -6,11 +6,10 @@ import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.dto.AiExtractorDto;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.dto.AnalyzeContentDto;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.prompt.AiPrompt;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,17 +27,12 @@ public class AiService {
         return response;
     }
 
-    public AnalyzeContentDto analyzeContent(String content) {
-        // 모든 태그 가져오기
-        List<String> allTags = tagRepository.findAllTagNames();
-
-        // 중복 제거 (Set → 다시 List or String)
-        Set<String> uniqueTags = new HashSet<>(allTags);
-
+    public AnalyzeContentDto analyzeContent(String content, List<Tag> tagList) {
         // JSON 배열 문자열로 변환
-        String tags = uniqueTags.stream()
-                .map(tag -> "\"" + tag + "\"")   // "tagName"
-                .collect(Collectors.joining(", ", "[", "]")); // ["tag1", "tag2"]
+        String tags = tagList.stream()
+                .map(Tag::getTagName)   // 태그명만 추출
+                .map(tagName -> "\"" + tagName + "\"")
+                .collect(Collectors.joining(", ", "[", "]"));
 
         AnalyzeContentDto response = chatClient.prompt()
                 .user(AiPrompt.SUMMARY_TAG_CATEGORY.formatted(content, tags))
