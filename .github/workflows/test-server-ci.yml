@@ -55,9 +55,11 @@ jobs:
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secrets.yml
           echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
 
-          echo "cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
-          echo "cloud.aws.credentials.access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application-secrets.yml
-          echo "cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
+          echo "spring.cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
+          echo "spring.cloud.aws.credentials.access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application-secrets.yml
+          echo "spring.cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
+          echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
+          echo "spring.cloud.aws.stack : false" >> src/main/resources/application-secrets.yml
       # 6. application-secrets-server.yml 생성
       - name: Generate application-secrets-server.yml
         run: |
