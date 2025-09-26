@@ -1,38 +1,121 @@
 package org.tuna.zoopzoop.backend.domain.news.service;
 
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.tuna.zoopzoop.backend.domain.news.dto.res.ResBodyForNaverNews;
-import reactor.core.publisher.Mono;
+import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
+import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
+import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
+import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
+import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class NewsServiceTest {
+@Transactional
+public class NewsServiceTest {
     @Autowired
-    private NewsSearchService newsSearchService;
+    private NewsService newsService;
+
+    @Autowired
+    private NewsAPIService newsAPIService;
+
+    @Autowired
+    private MemberService memberService;
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
+    private FolderService folderService;
+
+    @Autowired
+    private FolderRepository folderRepository;
+
+    @Autowired
+    private DataSourceService dataSourceService;
+
+    @Autowired
+    private DataSourceRepository dataSourceRepository;
+
+    private final Map<Integer, List<Tag>> tags = Map.ofEntries(
+            Map.entry(1, List.of(new Tag("A"), new Tag("B"), new Tag("E"))),
+            Map.entry(2, List.of(new Tag("B"), new Tag("E"), new Tag("F"))),
+            Map.entry(3, List.of(new Tag("E"), new Tag("F"))),
+            Map.entry(4, List.of(new Tag("A"), new Tag("D"), new Tag("E"))),
+            Map.entry(5, List.of(new Tag("B"), new Tag("F"))),
+            Map.entry(6, List.of(new Tag("E"), new Tag("F"), new Tag("B"))),
+            Map.entry(7, List.of(new Tag("D"), new Tag("E"))),
+            Map.entry(8, List.of(new Tag("B"), new Tag("E"))),
+            Map.entry(9, List.of(new Tag("F"), new Tag("E"))),
+            Map.entry(10, List.of(new Tag("C"), new Tag("E")))
+    );
+    // A = 2회, B = 5회, C = 1회, D = 2회, E = 9회, F = 5회
+
+    private DataSource buildDataSource(String title, Folder folder, String sourceUrl, List<Tag> tags) {
+        DataSource ds = new DataSource();
+        ds.setFolder(folder);
+        ds.setSourceUrl(sourceUrl);
+        ds.setTitle(title);
+        ds.setSource("www.examplesource.com");
+        ds.setSummary("설명");
+        ds.setImageUrl("www.example.com/img");
+        ds.setDataCreatedDate(LocalDate.now());
+        ds.setTags(tags);
+        ds.setCategory(Category.ENVIRONMENT);
+        ds.setActive(true);
+        return dataSourceRepository.save(ds);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        memberRepository.deleteAll();
+    }
+
+    @BeforeEach
+    public void setUp() {
+        Member member = memberService.createMember(
+                "newsServiceTestMember",
+                "url",
+                "newsServiceTestKey",
+                Provider.KAKAO
+        );
+
+        FolderResponse folderResponse = folderService.createFolderForPersonal(member.getId(), "newServiceTestFolder");
+        Folder folder = folderRepository.findById(folderResponse.folderId()).orElse(null);
+
+        for(int i = 1; i <= 10; i++) {
+            buildDataSource(String.valueOf(i), folder, String.valueOf(i), tags.get(i));
+        }
+    }
 
     @Test
-    @DisplayName("뉴스 서비스 테스트 - 정상적인 JSON 구조 반환 여부 확인")
-    void newsJsonStructureTest() {
-        Mono<ResBodyForNaverNews> result = newsSearchService.searchNews("뉴스", "sim");
+    @DisplayName("태그 빈도 수 추출 테스트")
+    void DataSourceExtractTagsTest(){
+        Member member = memberService.findByProviderKey("newsServiceTestKey");
+        List<FolderResponse> folderResponses = folderService.getFoldersForPersonal(member.getId());
+        List<String> frequency = newsService.getTagFrequencyFromFiles(member.getId(), folderResponses.get(0).folderId());
 
-        // JSON 구조 확인
-        result.doOnNext(res -> {
-            assertNotNull(res.total());
-            assertNotNull(res.items());
-
-            res.items().forEach(item -> {
-                assertNotNull(item.title());
-                assertNotNull(item.link());
-                assertNotNull(item.description());
-                assertNotNull(item.pubDate());
-            });
-        }).block(); // Mono 블로킹.
+        assertEquals("E", frequency.get(0));
+        assertEquals("B", frequency.get(1));
+        assertEquals("F", frequency.get(2));
     }
 }

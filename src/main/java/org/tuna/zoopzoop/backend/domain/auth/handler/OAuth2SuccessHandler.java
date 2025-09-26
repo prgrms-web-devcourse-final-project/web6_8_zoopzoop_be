@@ -70,7 +70,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 확장 프로그램에서 로그인 했을 경우.
         if(isExtension){
-            String redirectUrl = redirect_domain + "/extension/callback "
+            String redirectUrl = redirect_domain + "/extension/callback"
                     + "?success=true"
                     + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
                     + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
@@ -80,7 +80,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         if ("http://localhost:3000".equals(redirect_domain)) {
             // server 환경일 때: URL 파라미터로 토큰 전달
-            String redirectUrl = redirect_domain + "/auth/callback"
+            String redirectUrl = redirect_domain + "/api/auth/callback"
                     + "?success=true"
                     + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
                     + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
@@ -115,7 +115,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             // 로그인 성공 후 리다이렉트.
             // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
-            response.sendRedirect(redirect_domain + "/auth/callback");
+            response.sendRedirect(redirect_domain + "/api/auth/callback");
         }
         // 보안을 좀 더 강화하고자 한다면 CSRF 토큰 같은 걸 생각해볼 수 있겠으나,
         // 일단은 구현하지 않음.(개발 과정 중에 번거로워질 수 있을 듯 함.)
