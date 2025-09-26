@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.tuna.zoopzoop.backend.domain.auth.service.KakaoUserInfoService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.global.config.jwt.JwtProperties;
@@ -23,6 +25,8 @@ public class ApiV1AuthController {
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
     private final JwtProperties jwtProperties;
+    private final KakaoUserInfoService kakaoUserInfoService;
+    private final WebClient webClient;
 
     /**
      * 사용자 로그아웃 API
