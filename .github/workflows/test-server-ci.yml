@@ -100,7 +100,7 @@ jobs:
 
       # 9. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build -x test
 
       # 10. GHCR 로그인
       - name: Log in to GHCR
