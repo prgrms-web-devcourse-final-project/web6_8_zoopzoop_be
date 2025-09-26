@@ -4,6 +4,7 @@ import jakarta.persistence.NoResultException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -12,11 +13,18 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -33,13 +41,20 @@ class DataSourceServiceTest {
     @Mock private DataSourceRepository dataSourceRepository;
     @Mock private FolderRepository folderRepository;
     @Mock private PersonalArchiveRepository personalArchiveRepository;
+    @Mock private TagRepository tagRepository;
+    @Mock private DataProcessorService dataProcessorService;
 
     @InjectMocks private DataSourceService dataSourceService;
+
+    private DataSourceDto dataSourceDto(String title, String summary, LocalDate date, String url,
+                              String img, String source, Category cat, List<String> tags) {
+        return new DataSourceDto(title, summary, date, url, img, source, cat, tags);
+    }
 
     // create
     @Test
     @DisplayName("폴더 생성 성공- folderId=null 이면 default 폴더에 자료 생성")
-    void createDataSource_defaultFolder() {
+    void createDataSource_defaultFolder() throws IOException {
         int currentMemberId = 10;
         String sourceUrl = "https://example.com/a";
 
@@ -51,8 +66,22 @@ class DataSourceServiceTest {
                 .thenReturn(Optional.of(pa));
 
         Folder defaultFolder = new Folder("default");
+        ReflectionTestUtils.setField(defaultFolder, "id", 321);
+
         when(folderRepository.findByArchiveIdAndIsDefaultTrue(anyInt()))
                 .thenReturn(Optional.of(defaultFolder));
+
+        when(tagRepository.findDistinctTagNamesByFolderId(eq(321)))
+                .thenReturn(List.of("AI", "Spring"));
+
+        DataSourceDto returnedDto = dataSourceDto(
+                "제목A", "요약A", LocalDate.of(2025, 9, 1), sourceUrl,
+                "https://img.example/a.png", "example.com", Category.IT,
+                List.of("ML", "Infra")
+        );
+        doReturn(returnedDto)
+                .when(dataProcessorService)
+                .process(eq(sourceUrl), anyList());
 
         when(dataSourceRepository.save(any(DataSource.class)))
                 .thenAnswer(inv -> {
@@ -67,7 +96,7 @@ class DataSourceServiceTest {
 
     @Test
     @DisplayName("폴더 생성 성공- folderId가 주어지면 해당 폴더에 자료 생성")
-    void createDataSource_specificFolder() {
+    void createDataSource_specificFolder() throws IOException {
         // given
         int currentMemberId = 10;
         String sourceUrl = "https://example.com/b";
@@ -77,6 +106,18 @@ class DataSourceServiceTest {
         ReflectionTestUtils.setField(target, "id", folderId);
 
         when(folderRepository.findById(eq(folderId))).thenReturn(Optional.of(target));
+
+        when(tagRepository.findDistinctTagNamesByFolderId(eq(folderId)))
+                .thenReturn(List.of("News", "Kotlin"));
+
+        DataSourceDto returnedDto = dataSourceDto(
+                "제목B", "요약B", LocalDate.of(2025, 9, 2), sourceUrl,
+                "https://img.example/2.png", "tistory", Category.SCIENCE,
+                List.of("ML", "Infra")
+        );
+        doReturn(returnedDto)
+                .when(dataProcessorService)
+                .process(eq(sourceUrl), anyList());
 
         when(dataSourceRepository.save(any(DataSource.class)))
                 .thenAnswer(inv -> {
@@ -121,6 +162,149 @@ class DataSourceServiceTest {
                 dataSourceService.createDataSource(currentMemberId, "https://x", null)
         );
     }
+
+    //dataprocess 호출 테스트
+    @Test
+    @DisplayName("자료 생성 성공 - 지정 폴더 + 컨텍스트 태그 수집 + process 호출 + DTO 매핑/태그 영속화")
+    void createDataSource_specificFolder_process_and_tags() throws Exception{
+        // given
+        int currentMemberId = 10;
+        String sourceUrl = "https://example.com/b";
+        Integer folderId = 77;
+
+        Folder target = new Folder("target");
+        ReflectionTestUtils.setField(target, "id", folderId);
+
+        // 폴더 조회
+        when(folderRepository.findById(eq(folderId))).thenReturn(Optional.of(target));
+        // 컨텍스트 태그(distinct)
+        when(tagRepository.findDistinctTagNamesByFolderId(eq(folderId)))
+                .thenReturn(List.of("News", "Kotlin"));
+        // process 결과 DTO
+        DataSourceDto returnedDto = dataSourceDto(
+                "제목B", "요약B", LocalDate.of(2025, 9, 2), sourceUrl,
+                "https://img.example/2.png", "tistory", Category.SCIENCE,
+                List.of("ML", "Infra")
+        );
+        when(dataProcessorService.process(eq(sourceUrl), anyList())).thenReturn(returnedDto);
+
+        // save 캡처
+        ArgumentCaptor<DataSource> dsCaptor = ArgumentCaptor.forClass(DataSource.class);
+        when(dataSourceRepository.save(dsCaptor.capture()))
+                .thenAnswer(inv -> {
+                    DataSource ds = dsCaptor.getValue();
+                    ReflectionTestUtils.setField(ds, "id", 456);
+                    return ds;
+                });
+
+        // when
+        int id = dataSourceService.createDataSource(currentMemberId, sourceUrl, folderId);
+
+        // then
+        assertThat(id).isEqualTo(456);
+
+        DataSource saved = dsCaptor.getValue();
+        assertThat(saved.getFolder().getId()).isEqualTo(folderId);
+        assertThat(saved.getTitle()).isEqualTo("제목B");
+        assertThat(saved.getSummary()).isEqualTo("요약B");
+        assertThat(saved.getSourceUrl()).isEqualTo(sourceUrl);
+        assertThat(saved.getImageUrl()).isEqualTo("https://img.example/2.png");
+        assertThat(saved.getSource()).isEqualTo("tistory");
+        assertThat(saved.getCategory()).isEqualTo(Category.SCIENCE);
+        assertThat(saved.isActive()).isTrue();
+
+        // 태그 매핑 검증
+        assertThat(saved.getTags()).hasSize(2);
+        assertThat(saved.getTags().stream().map(Tag::getTagName).toList())
+                .containsExactlyInAnyOrder("ML", "Infra");
+        assertThat(saved.getTags().stream().allMatch(t -> t.getDataSource() == saved)).isTrue();
+
+        // 컨텍스트 태그가 process 에 전달되었는지 검증
+        ArgumentCaptor<List<Tag>> ctxTagsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(dataProcessorService).process(eq(sourceUrl), ctxTagsCaptor.capture());
+        assertThat(ctxTagsCaptor.getValue().stream().map(Tag::getTagName).toList())
+                .containsExactlyInAnyOrder("News", "Kotlin");
+
+        verify(tagRepository).findDistinctTagNamesByFolderId(folderId);
+        verifyNoInteractions(personalArchiveRepository); // 지정 폴더 경로이므로 호출 X
+    }
+
+    // collectDistinctTagsOfFolder - tag 추출 단위 테스트
+
+    @Test
+    @DisplayName("태그 컨텍스트 수집 성공 - 폴더 하위 자료 태그명 distinct → Tag 리스트 변환")
+    void collectDistinctTagsOfFolder_success() {
+        // given
+        Integer folderId = 321;
+        when(tagRepository.findDistinctTagNamesByFolderId(eq(folderId)))
+                .thenReturn(List.of("AI", "Spring", "JPA"));
+
+        // when (private 메서드 호출)
+        @SuppressWarnings("unchecked")
+        List<Tag> ctxTags = (List<Tag>) ReflectionTestUtils.invokeMethod(
+                dataSourceService, "collectDistinctTagsOfFolder", folderId
+        );
+
+        // then
+        assertThat(ctxTags).hasSize(3);
+        assertThat(ctxTags.stream().map(Tag::getTagName).toList())
+                .containsExactlyInAnyOrder("AI", "Spring", "JPA");
+        assertThat(ctxTags.stream().allMatch(t -> t.getDataSource() == null)).isTrue();
+
+        verify(tagRepository).findDistinctTagNamesByFolderId(folderId);
+    }
+
+    // buildDataSource 단위 테스트
+
+    @Test
+    @DisplayName("엔티티 빌드 성공 - process 호출 결과 DTO를 DataSource에 매핑 + 태그 양방향 세팅")
+    void buildDataSource_maps_dto_and_tags() throws Exception{
+        // given
+        Folder folder = new Folder("f");
+        ReflectionTestUtils.setField(folder, "id", 77);
+        String url = "https://example.com/x";
+
+        // 컨텍스트 태그(폴더 하위) - process 인자로만 사용됨
+        List<Tag> context = List.of(new Tag("Ctx1"), new Tag("Ctx2"));
+
+        // process 결과 DTO
+        DataSourceDto returnedDto = dataSourceDto(
+                "T", "S", LocalDate.of(2025, 9, 1), url,
+                "https://img", "example.com", Category.IT,
+                List.of("A", "B") // DTO 태그
+        );
+        when(dataProcessorService.process(eq(url), anyList())).thenReturn(returnedDto);
+
+        // when (private 메서드 호출)
+        DataSource ds = (DataSource) ReflectionTestUtils.invokeMethod(
+                dataSourceService, "buildDataSource", folder, url, context
+        );
+
+        // then
+        assertThat(ds).isNotNull();
+        assertThat(ds.getFolder().getId()).isEqualTo(77);
+        assertThat(ds.getTitle()).isEqualTo("T");
+        assertThat(ds.getSummary()).isEqualTo("S");
+        assertThat(ds.getSourceUrl()).isEqualTo(url);
+        assertThat(ds.getImageUrl()).isEqualTo("https://img");
+        assertThat(ds.getSource()).isEqualTo("example.com");
+        assertThat(ds.getCategory()).isEqualTo(Category.IT);
+        assertThat(ds.isActive()).isTrue();
+
+        // 태그 매핑 검증
+        assertThat(ds.getTags()).hasSize(2);
+        assertThat(ds.getTags().stream().map(Tag::getTagName).toList())
+                .containsExactlyInAnyOrder("A", "B");
+        assertThat(ds.getTags().stream().allMatch(t -> t.getDataSource() == ds)).isTrue();
+
+        // process 호출시 컨텍스트 태그 전달 검증
+        ArgumentCaptor<List<Tag>> ctxTagsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(dataProcessorService).process(eq(url), ctxTagsCaptor.capture());
+        assertThat(ctxTagsCaptor.getValue().stream().map(Tag::getTagName).toList())
+                .containsExactlyInAnyOrder("Ctx1", "Ctx2");
+    }
+
+
 
     // delete
     @Test
