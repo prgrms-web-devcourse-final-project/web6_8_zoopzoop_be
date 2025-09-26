@@ -2,6 +2,7 @@ package org.tuna.zoopzoop.backend.domain.archive.folder.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 
@@ -45,4 +46,16 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
           and f.isDefault = true
     """)
     Optional<Folder> findDefaultFolderByMemberId(Integer memberId);
+
+    // 한 번의 조인으로 존재 + 소유권(memberId) 검증
+    @Query("""
+        select f
+        from Folder f
+        join f.archive a
+        join PersonalArchive pa on pa.archive = a
+        where f.id = :folderId
+          and pa.member.id = :memberId
+    """)
+    Optional<Folder> findByIdAndMemberId(@Param("folderId") Integer folderId,
+                                         @Param("memberId") Integer memberId);
 }

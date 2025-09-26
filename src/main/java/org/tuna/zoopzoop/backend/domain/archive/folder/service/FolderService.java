@@ -38,9 +38,8 @@ public class FolderService {
      */
     @Transactional
     public FolderResponse createFolderForPersonal(Integer currentMemberId, String folderName) {
-        if (folderName == null || folderName.trim().isEmpty()) {
+        if (folderName == null || folderName.trim().isEmpty())
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
-        }
 
         Member member = memberRepository.findById(currentMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다."));
@@ -115,8 +114,9 @@ public class FolderService {
      *  soft delete 아직 구현 X
      */
     @Transactional
-    public String deleteFolder(Integer folderId) {
-        Folder folder = folderRepository.findById(folderId)
+    public String deleteFolder(Integer currentId, Integer folderId) {
+        // 공격자에게 리소스 존재 여부를 노출 X (존재하지 않음 / 남의 폴더)
+        Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
         if (folder.isDefault())
@@ -131,8 +131,8 @@ public class FolderService {
      *  folderId에 해당하는 이름 변경
      */
     @Transactional
-    public String updateFolderName(Integer folderId, String newName) {
-        Folder folder = folderRepository.findById(folderId)
+    public String updateFolderName(Integer currentId, Integer folderId, String newName) {
+        Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
         // 같은 아카이브 내에서 중복 폴더 이름 확인
@@ -173,18 +173,19 @@ public class FolderService {
      */
     @Transactional(readOnly = true)
     public FolderFilesDto getFilesInFolderForPersonal(Integer memberId, Integer folderId) {
-        Folder folder = folderRepository.findById(folderId)
+        Folder folder = folderRepository.findByIdAndMemberId(folderId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
         var files = dataSourceRepository.findAllByFolder(folder).stream()
                 .map(ds -> new FileSummary(
                         ds.getId(),
                         ds.getTitle(),
-                        ds.getCreateDate(),      // LocalDateTime
+                        ds.getDataCreatedDate(),      // LocalDate
                         ds.getSummary(),
                         ds.getSourceUrl(),
                         ds.getImageUrl(),
-                        ds.getTags() == null ? List.of() : ds.getTags()
+                        ds.getTags() == null ? List.of() : ds.getTags(),
+                        ds.getCategory() == null ? null : ds.getCategory().toString()
                 ))
                 .toList();
 

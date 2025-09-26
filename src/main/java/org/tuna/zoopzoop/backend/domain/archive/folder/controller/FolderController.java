@@ -3,14 +3,16 @@ package org.tuna.zoopzoop.backend.domain.archive.folder.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.resBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
-import org.tuna.zoopzoop.backend.global.security.StubAuthUtil;
+import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,13 +30,13 @@ public class FolderController {
      * @param rq reqBodyForCreateFolder
      * @return resBodyForCreateFolder
      */
-    @PostMapping("")
+    @PostMapping
     public RsData<resBodyForCreateFolder> createFolder(
-            @Valid @RequestBody reqBodyForCreateFolder rq
+            @Valid @RequestBody reqBodyForCreateFolder rq,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        // 임시 인증 정보
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
-        FolderResponse createFile = folderService.createFolderForPersonal(currentMemberId, rq.folderName());
+        Member member = userDetails.getMember();
+        FolderResponse createFile = folderService.createFolderForPersonal(member.getId(), rq.folderName());
 
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
@@ -43,7 +45,6 @@ public class FolderController {
                 rq.folderName() + " 폴더가 생성됐습니다.",
                 rs
         );
-
     }
 
     /**
@@ -51,8 +52,12 @@ public class FolderController {
      * @param folderId  삭제할 folderId
      */
     @DeleteMapping("/{folderId}")
-    public ResponseEntity<Map<String, Object>> deleteFolder(@PathVariable Integer folderId) {
-        String deletedFolderName = folderService.deleteFolder(folderId);
+    public ResponseEntity<Map<String, Object>> deleteFolder(
+            @PathVariable Integer folderId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+        String deletedFolderName = folderService.deleteFolder(member.getId(), folderId);
 
         Map<String, Object> body = new HashMap<>();
         body.put("status", 200);
@@ -70,10 +75,12 @@ public class FolderController {
     @PatchMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> updateFolderName(
             @PathVariable Integer folderId,
-            @RequestBody Map<String, String> body
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
+        Member member = userDetails.getMember();
         String newName = body.get("folderName");
-        String updatedName = folderService.updateFolderName(folderId, newName);
+        String updatedName = folderService.updateFolderName(member.getId(), folderId, newName);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", 200);
@@ -87,13 +94,12 @@ public class FolderController {
      *  개인 아카이브의 폴더 이름 전부 조회
      *  "default", "폴더1", "폴더2"
      */
-    @GetMapping("")
-    public ResponseEntity<?> getFolders() {
-        // 로그인된 멤버 ID 가져오기
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
-
-        // 내 personal archive 안의 폴더 조회
-        List<FolderResponse> folders = folderService.getFoldersForPersonal(currentMemberId);
+    @GetMapping
+    public ResponseEntity<?> getFolders(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+        List<FolderResponse> folders = folderService.getFoldersForPersonal(member.getId());
 
         return ResponseEntity.ok(
                 Map.of(
@@ -108,10 +114,12 @@ public class FolderController {
      * 폴더(내 PersonalArchive 소속) 안의 파일 목록 조회
      */
     @GetMapping("/{folderId}/files")
-    public ResponseEntity<?> getFilesInFolder(@PathVariable Integer folderId) {
-        Integer currentMemberId = StubAuthUtil.currentMemberId();
-
-        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(currentMemberId, folderId);
+    public ResponseEntity<?> getFilesInFolder(
+            @PathVariable Integer folderId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Member member = userDetails.getMember();
+        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(member.getId(), folderId);
 
         return ResponseEntity.ok(
                 Map.of(
