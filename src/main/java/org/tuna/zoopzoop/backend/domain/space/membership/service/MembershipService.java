@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -48,6 +50,22 @@ public class MembershipService {
     public Membership findByMemberAndSpace(Member member, Space space) {
         return membershipRepository.findByMemberAndSpace(member, space)
                 .orElseThrow(() -> new NoResultException("해당 멤버는 스페이스에 속해있지 않습니다."));
+    }
+
+    /**
+     * 멤버가 속한 스페이스 목록 조회
+     * @param member 조회할 멤버
+     * @param state 멤버의 가입 상태로 필터링 (PENDING, JOINED, ALL)
+     * @return 멤버가 속한 스페이스 목록
+     */
+    public Page<Membership> findByMember(Member member, String state, Pageable pageable) {
+        if (state.equalsIgnoreCase("PENDING")) {
+            return membershipRepository.findAllByMemberAndAuthority(member, Authority.PENDING, pageable);
+        } else if (state.equalsIgnoreCase("JOINED")) {
+            return membershipRepository.findAllByMemberAndAuthorityIsNot(member, Authority.PENDING, pageable);
+        } else {
+            return membershipRepository.findAllByMember(member, pageable);
+        }
     }
 
     /**
