@@ -166,9 +166,19 @@ public class ApiV1AuthController {
                 .bodyToMono(KakaoUserInfoResponse.class)
                 .block();
 
+        Map<String, Object> kakaoAccountMap = new HashMap<>();
+
+        Map<String, Object> profileMap = new HashMap<>();
+        profileMap.put("nickname", userInfo.kakao_account().profile().nickname());
+        profileMap.put("profile_image_url", userInfo.kakao_account().profile().profile_image_url());
+
+        kakaoAccountMap.put("profile", profileMap);
+
+        // 4. attributes Map 생성
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", userInfo.id());
-        attributes.put("kakao_account", userInfo.kakao_account());
+        attributes.put("kakao_account", kakaoAccountMap);
+
         return attributes;
     }
 }
