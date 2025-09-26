@@ -4,7 +4,8 @@ import org.jsoup.nodes.Document;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.ArticleData;
+import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.CrawlerResult;
+import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.SpecificSiteDto;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,7 +23,7 @@ public class NaverNewsCrawler implements Crawler {
     }
 
     @Override
-    public ArticleData extract(Document doc) {
+    public CrawlerResult<?> extract(Document doc) {
         // 제목
         String title = doc.selectFirst("h2#title_area").text();
 
@@ -39,9 +40,12 @@ public class NaverNewsCrawler implements Crawler {
         String imageUrl = doc.selectFirst("img#img1._LAZY_LOADING._LAZY_LOADING_INIT_HIDE").attr("data-src");
 
         // 출처
-        String sources = doc.selectFirst("span.media_end_head_top_logo_text").text();
+        String source = doc.selectFirst("span.media_end_head_top_logo_text").text();
 
-        return new ArticleData(title, dataCreatedDate, content, imageUrl, sources, null);
+        return new CrawlerResult<>(
+                CrawlerResult.CrawlerType.SPECIFIC,
+                new SpecificSiteDto(title, dataCreatedDate, content, imageUrl, source)
+        );
     }
 
     @Override

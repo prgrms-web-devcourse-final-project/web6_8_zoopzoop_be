@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record reqBodyForMoveMany(
-        @NotNull Integer folderId,
+        Integer folderId,
         @NotEmpty List<Integer> dataSourceId
 ) {}

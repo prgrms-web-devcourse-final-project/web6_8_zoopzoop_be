@@ -4,7 +4,8 @@ import org.jsoup.nodes.Document;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.ArticleData;
+import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.CrawlerResult;
+import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.UnspecificSiteDto;
 
 import java.time.LocalDate;
 
@@ -17,8 +18,17 @@ public class GenericCrawler implements Crawler {
     }
 
     @Override
-    public ArticleData extract(Document doc) {
-        return new ArticleData(null, null, null, null, null, doc.outerHtml());
+    public CrawlerResult<?> extract(Document doc) {
+        // 불필요한 태그 제거
+        doc.select("script, style, noscript, iframe, nav, header, footer, form, aside, meta, link").remove();
+
+        // 본문만 가져오기 (HTML)
+        String cleanHtml = doc.body().html();
+
+        return new CrawlerResult<>(
+                CrawlerResult.CrawlerType.UNSPECIFIC,
+                new UnspecificSiteDto(cleanHtml)
+        );
     }
 
     @Override

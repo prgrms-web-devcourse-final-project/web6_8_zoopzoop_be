@@ -8,7 +8,6 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.resBodyForMoveDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 
@@ -56,6 +55,7 @@ public class DataSourceService {
         ds.setFolder(folder);
         ds.setSourceUrl(sourceUrl);
         ds.setTitle("자료 제목");
+        ds.setSource("www.examplesource.com");
         ds.setSummary("설명");
         ds.setImageUrl("www.example.com/img");
         ds.setDataCreatedDate(LocalDate.now());
@@ -116,4 +116,119 @@ public class DataSourceService {
 
         dataSourceRepository.deleteAllByIdInBatch(ids);
     }
+
+    /**
+     * 자료 위치 단건 이동
+     */
+    @Transactional
+    public MoveResult moveDataSource(Integer currentMemberId, Integer dataSourceId, Integer targetFolderId) {
+
+        // 자료 확인
+        DataSource ds = dataSourceRepository.findById(dataSourceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+
+        Folder targetFolder = resolveTargetFolder(currentMemberId, targetFolderId);
+
+        // 동일 폴더로 이동 요청 -> 통과
+        if (ds.getFolder().getId() == targetFolder.getId())
+            return  new MoveResult(ds.getId(), targetFolder.getId());
+
+        // 목적지 폴더 내 파일명 중복 확인
+//        if (dataSourceRepository.existsByFolder_IdAndTitle(targetFolderId, ds.getTitle()))
+//            throw new IllegalStateException("해당 폴더에 동일한 제목의 자료가 이미 존재합니다.");
+
+        ds.setFolder(targetFolder);
+
+        return  new MoveResult(ds.getId(), targetFolder.getId());
+    }
+
+
+
+    /**
+     * 자료 위치 다건 이동
+     */
+    @Transactional
+    public void moveDataSources(Integer currentMemberId, Integer targetFolderId, List<Integer> dataSourceIds) {
+        // 1) 요소 null 검증 (서비스 방어)
+        if (dataSourceIds.stream().anyMatch(Objects::isNull))
+            throw new IllegalArgumentException("자료 id 목록에 null이 포함되어 있습니다.");
+
+        // 자료 Id 중복 확인
+        Map<Integer, Long> counts = dataSourceIds.stream()
+                .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
+        List<Integer> duplicates = counts.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+        if (!duplicates.isEmpty()) {
+            throw new IllegalArgumentException("같은 자료를 두 번 선택했습니다: " + duplicates);
+        }
+
+        // 목적지 폴더 확인
+        Folder targetFolder = resolveTargetFolder(currentMemberId, targetFolderId);
+
+        // 목록의 각 자료 확인
+        List<DataSource> list = dataSourceRepository.findAllByIdIn(dataSourceIds);
+        if (list.size() != dataSourceIds.size())
+            throw new NoResultException("요청한 자료 중 존재하지 않는 항목이 있습니다.");
+
+        // 목적지 폴더 추출
+        List<DataSource> needMove = list.stream()
+                .filter(ds -> !Objects.equals(ds.getFolder().getId(), targetFolder.getId()))
+                .toList();
+
+        // 이미 모두 이동한 경우
+        if (needMove.isEmpty())
+            return;
+
+        // 같은 이름의 자료 여러 개 이동 시 충돌
+        /*
+        Map<String, Long> reqTitleCount = needMove.stream()
+                .collect(Collectors.groupingBy(DataSource::getTitle, Collectors.counting()));
+        List<String> internalDup = reqTitleCount.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (!internalDup.isEmpty()) {
+            throw new IllegalStateException("요청 목록 내부에 중복 제목이 포함되어 있습니다: " + internalDup);
+        }
+
+         이동할 폴더에 이미 같은 제목이 존재하는지 확인
+        List<String> titles = needMove.stream().map(DataSource::getTitle).toList();
+        List<String> conflicts = titles.isEmpty()
+                ? List.of()
+                : dataSourceRepository.findExistingTitlesInFolder(targetFolderId, titles);
+
+        if (!conflicts.isEmpty()) {
+            throw new IllegalStateException("대상 폴더에 이미 존재하는 제목이 있어 이동할 수 없습니다: " + conflicts);
+        }
+        */
+        needMove.forEach(ds -> ds.setFolder(targetFolder));
+    }
+
+    // 대상 폴더 해석
+    private Folder resolveTargetFolder(Integer currentMemberId, Integer targetFolderId) {
+        if (targetFolderId == null) {
+            return folderRepository.findDefaultFolderByMemberId(currentMemberId)
+                    .orElseThrow(() -> new NoResultException("기본 폴더가 존재하지 않습니다."));
+        }
+        return folderRepository.findById(targetFolderId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+    }
+
+    public Integer updateDataSource(Integer dataSourceId, String newTitle, String newSummary) {
+        DataSource ds = dataSourceRepository.findById(dataSourceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+
+        if (newTitle != null && !newTitle.isBlank())
+            ds.setTitle(newTitle);
+
+        if (newSummary != null && !newSummary.isBlank())
+            ds.setSummary(newSummary);
+
+        return ds.getId();
+    }
+
+    public record MoveResult(Integer datasourceId, Integer folderId) {}
 }

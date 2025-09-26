@@ -23,10 +23,26 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
           and f.name < :filenameEnd
     """)
     List<String> findNamesForConflictCheck(Integer archiveId, String filename, String filenameEnd);
-
+    // 개인 아카이브의 폴더 조회
     List<Folder> findByArchive(Archive archive);
 
-    Optional<Folder> findByName(String name);
-
+    /**
+     * 아카이브 Id로 default 폴더 조회
+     * @param archiveId  조회할 archive Id
+     */
     Optional<Folder> findByArchiveIdAndIsDefaultTrue(Integer archiveId);
+
+    /**
+     * 회원 Id로 default 폴더 조회
+     * @param memberId  조회할 회원 Id
+     */
+    @Query("""
+        select f
+        from Folder f
+        join f.archive a
+        join PersonalArchive pa on pa.archive = a
+        where pa.member.id = :memberId
+          and f.isDefault = true
+    """)
+    Optional<Folder> findDefaultFolderByMemberId(Integer memberId);
 }
