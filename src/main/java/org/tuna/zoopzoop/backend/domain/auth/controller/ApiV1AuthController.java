@@ -143,8 +143,7 @@ public class ApiV1AuthController {
     @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
     String CLIENT_ID;
 
-    @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
-    String REDIRECT_URI;
+    String REDIRECT_URI = "http://localhost:8080/oauth/kakao";
 
     public Map<String, Object> getAttributesFromCode(String code) {
         KakaoTokenResponse tokenResponse = webClient.post()
