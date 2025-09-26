@@ -23,7 +23,6 @@ import java.net.URLEncoder;
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
     private final MemberRepository memberRepository;
@@ -61,13 +60,26 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtUtil.generateToken(member);
         String refreshToken = jwtUtil.generateRefreshToken(member);
 
-        if ("server".equals(activeProfile)) {
+        String source = request.getParameter("source");
+
+        // 확장 프로그램에서 로그인 했을 경우.
+        if("extension".equals(source)){
+            String redirectUrl = redirect_domain + "/extension/callback "
+                    + "?success=true"
+                    + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
+                    + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
+            response.sendRedirect(redirectUrl);
+            return;
+        }
+
+        if ("http://localhost:3000".equals(redirect_domain)) {
             // server 환경일 때: URL 파라미터로 토큰 전달
             String redirectUrl = redirect_domain + "/auth/callback"
                     + "?success=true"
                     + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
                     + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
             response.sendRedirect(redirectUrl);
+
         } else {
             ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
                     .httpOnly(true)
@@ -94,11 +106,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             // HTTP 응답에서 쿠키 값 추가.
             response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-
-            String redirectUrl = redirect_domain + "/auth/callback"
-                    + "?success=true"
-                    + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
-                    + "&refreshToken=" + URLEncoder.encode(refreshToken, "UTF-8");
 
             // 로그인 성공 후 리다이렉트.
             // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
