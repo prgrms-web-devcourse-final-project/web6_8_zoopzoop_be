@@ -46,7 +46,7 @@ public class DataSourceService {
         ds.setFolder(folder);
         ds.setSourceUrl(sourceUrl);
         ds.setTitle("자료 제목");
-        ds.setSources("www.examplesource.com");
+        ds.setSource("www.examplesource.com");
         ds.setSummary("설명");
         ds.setImageUrl("www.example.com/img");
         ds.setDataCreatedDate(LocalDate.now());
@@ -66,7 +66,7 @@ public class DataSourceService {
     }
 
     /**
-     * 자료 단건 삭제 (소유자 검증 포함)  // CHANGED
+     * 자료 단건 삭제
      */
     @Transactional
     public int deleteById(Integer memberId, Integer dataSourceId) {
@@ -79,7 +79,7 @@ public class DataSourceService {
     }
 
     /**
-     * 자료 다건 삭제 (모든 id가 해당 멤버 소유여야 함) // CHANGED
+     * 자료 다건 삭제
      */
     @Transactional
     public void deleteMany(Integer memberId, List<Integer> ids) {
@@ -99,12 +99,11 @@ public class DataSourceService {
     }
 
     /**
-     * 자료 위치 단건 이동 (현재 로직은 동일하되 이미 소유 확인이 필요한 경우 검증 추가 가능)
+     * 자료 위치 단건 이동
      */
     @Transactional
     public MoveResult moveDataSource(Integer currentMemberId, Integer dataSourceId, Integer targetFolderId) {
 
-        // 자료 확인: 먼저 멤버 소유인지 확인 (안하면 타인 자료 이동 위험)
         DataSource ds = dataSourceRepository.findByIdAndMemberId(dataSourceId, currentMemberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
 
@@ -168,7 +167,7 @@ public class DataSourceService {
     }
 
     /**
-     * 자료 수정 (소유자 검증 포함) // CHANGED
+     * 자료 수정
      */
     public Integer updateDataSource(Integer memberId, Integer dataSourceId, String newTitle, String newSummary) {
         DataSource ds = dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
