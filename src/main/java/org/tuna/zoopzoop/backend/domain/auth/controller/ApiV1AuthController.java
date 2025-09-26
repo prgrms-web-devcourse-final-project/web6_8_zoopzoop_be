@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.tuna.zoopzoop.backend.domain.auth.service.KakaoUserInfoService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.global.config.jwt.JwtProperties;
@@ -23,6 +25,8 @@ public class ApiV1AuthController {
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
     private final JwtProperties jwtProperties;
+    private final KakaoUserInfoService kakaoUserInfoService;
+    private final WebClient webClient;
 
     /**
      * 사용자 로그아웃 API
@@ -63,6 +67,7 @@ public class ApiV1AuthController {
      * @param refreshToken 쿠키에 포함된 현재 로그인한 사용자의 refreshToken
      * @param response Servlet 기반 웹에서 server -> client로 http 응답을 보내기 위한 객체, 자동 주입.
      */
+
     @PostMapping("/refresh")
     @Operation(summary = "사용자 액세스 토큰 재발급 (리프레시 토큰이 유효할 경우)")
     public ResponseEntity<RsData<Void>> refreshToken(@CookieValue(name = "refreshToken", required = false) String refreshToken,

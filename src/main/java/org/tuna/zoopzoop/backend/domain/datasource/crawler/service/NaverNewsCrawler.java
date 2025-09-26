@@ -40,11 +40,11 @@ public class NaverNewsCrawler implements Crawler {
         String imageUrl = doc.selectFirst("img#img1._LAZY_LOADING._LAZY_LOADING_INIT_HIDE").attr("data-src");
 
         // 출처
-        String sources = doc.selectFirst("span.media_end_head_top_logo_text").text();
+        String source = doc.selectFirst("span.media_end_head_top_logo_text").text();
 
         return new CrawlerResult<>(
                 CrawlerResult.CrawlerType.SPECIFIC,
-                new SpecificSiteDto(title, dataCreatedDate, content, imageUrl, sources)
+                new SpecificSiteDto(title, dataCreatedDate, content, imageUrl, source)
         );
     }
 

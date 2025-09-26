@@ -4,16 +4,24 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.req.ReqBodyForSpaceSave;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceList;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceMembershipInfo;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceListPage;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
@@ -22,6 +30,7 @@ import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -99,33 +108,49 @@ public class ApiV1SpaceController {
         );
     }
 
-    @GetMapping
-    @Operation(summary = "스페이스 목록 조회")
-    public RsData<ResBodyForSpaceList> getAllSpaces(
+    @PutMapping(path = "/thumbnail/{spaceId}", consumes = {"multipart/form-data"})
+    @Operation(summary = "스페이스 썸네일 이미지 갱신")
+    public RsData<Void> updateSpaceThumbnail(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(required = false) JoinState state
+            @PathVariable Integer spaceId,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    ) {
+        Member member = userDetails.getMember();
+
+        spaceService.updateSpaceThumbnail(spaceId, member, image);
+
+        return new RsData<>(
+                "200",
+                "스페이스 썸네일 이미지가 갱신됐습니다.",
+                null
+        );
+    }
+
+    @GetMapping
+    @Operation(summary = "나의 스페이스 목록 조회")
+    public RsData<ResBodyForSpaceListPage> getAllSpaces(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) JoinState state,
+            @PageableDefault(size = 10, sort = "createDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         // 현재 로그인한 사용자 정보 가져오기
         Member member = userDetails.getMember();
 
         // 멤버가 속한 스페이스 목록 조회
-        List<Membership> memberships;
-        if (state == null) {
-            memberships = membershipService.findByMember(member, "ALL");
-        }
-        else {
-            memberships = membershipService.findByMember(member, state.name());
-        }
+        String stateStr = (state == null) ? "ALL" : state.name();
+        Page<Membership> membershipsPage = membershipService.findByMember(member, stateStr, pageable);
 
-        // 반환 값 생성
-        List<SpaceMembershipInfo> spaceInfos = memberships.stream()
-                .map(membership -> new SpaceMembershipInfo(
-                        membership.getSpace().getId(),
-                        membership.getSpace().getName(),
-                        membership.getAuthority()
-                ))
-                .collect(Collectors.toList());
-        ResBodyForSpaceList resBody = new ResBodyForSpaceList(spaceInfos);
+        // Page<Membership>를 Page<SpaceMembershipInfo>로 변환
+        // Page 객체의 map() 메서드를 사용하면 페이징 정보는 그대로 유지하면서 내용물만 쉽게 바꿀 수 있습니다.
+        Page<SpaceMembershipInfo> spaceInfosPage = membershipsPage.map(membership -> new SpaceMembershipInfo(
+                membership.getSpace().getId(),
+                membership.getSpace().getName(),
+                membership.getSpace().getThumbnailUrl(),
+                membership.getAuthority()
+        ));
+
+        // 새로운 응답 DTO 생성
+        ResBodyForSpaceListPage resBody = new ResBodyForSpaceListPage(spaceInfosPage);
 
         return new RsData<>(
                 "200",
@@ -134,6 +159,32 @@ public class ApiV1SpaceController {
         );
     }
 
+    @GetMapping("/{spaceId}")
+    @Operation(summary = "스페이스 단건 조회")
+    public RsData<ResBodyForSpaceInfo> getSpace(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId
+    ) {
+        Member member = userDetails.getMember();
+        Space space = spaceService.findById(spaceId);
+
+        // 해당 스페이스에 속한 멤버인지 확인
+        Membership membership = membershipService.findByMemberAndSpace(member, space);
+
+        ResBodyForSpaceInfo resBody = new ResBodyForSpaceInfo(
+                space.getId(),
+                space.getName(),
+                space.getThumbnailUrl(),
+                membership.getAuthority().name(),
+                space.getSharingArchive().getId()
+        );
+
+        return new RsData<>(
+                "200",
+                String.format("%s - 스페이스가 조회됐습니다.", space.getName()),
+                resBody
+        );
+    }
 
 
 }

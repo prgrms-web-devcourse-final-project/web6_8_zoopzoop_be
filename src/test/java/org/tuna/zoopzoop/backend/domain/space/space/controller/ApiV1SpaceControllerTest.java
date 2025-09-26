@@ -14,6 +14,7 @@ import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
@@ -43,8 +44,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     }
 
     void setUpSpace() {
-        spaceService.createSpace("기존 스페이스 1_forSpaceControllerTest");
-        spaceService.createSpace("기존 스페이스 2_forSpaceControllerTest");
+        Space space1 = spaceService.createSpace("기존 스페이스 1_forSpaceControllerTest", "thumbnailUrl1");
+        Space space2 = spaceService.createSpace("기존 스페이스 2_forSpaceControllerTest", "thumbnailUrl2");
     }
 
     void setUpMember() {
@@ -375,7 +376,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    // ======================= Read ======================= //
+    // ======================= Read List ======================= //
 
     @Test
     @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
@@ -401,9 +402,11 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].thumbnailUrl").value("thumbnailUrl1"))
                 .andExpect(jsonPath("$.data.spaces[1].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2_forSpaceControllerTest"))
-                .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"));
+                .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"))
+                .andExpect(jsonPath("$.data.spaces[1].thumbnailUrl").value("thumbnailUrl2"));
     }
 
     @Test
@@ -429,7 +432,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 2_forSpaceControllerTest"))
-                .andExpect(jsonPath("$.data.spaces[0].authority").value("PENDING"));
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("PENDING"))
+                .andExpect(jsonPath("$.data.spaces[0].thumbnailUrl").value("thumbnailUrl2"));
     }
 
     @Test
@@ -455,7 +459,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.spaces[0].id").isNumber())
                 .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
-                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"));
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].thumbnailUrl").value("thumbnailUrl1"));
     }
 
     // TODO : Spring Security 설정 이후 테스트 코드 활성화
@@ -489,6 +494,68 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
         );
     }
 
+    // ======================= Read ======================= //
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 성공")
+    void getSpace_Success() throws Exception {
+        // Given
+        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Integer spaceId = space.getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "기존 스페이스 1_forSpaceControllerTest - 스페이스가 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaceId").value(spaceId))
+                .andExpect(jsonPath("$.data.spaceName").value("기존 스페이스 1_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.thumbnailUrl").value("thumbnailUrl1"))
+                .andExpect(jsonPath("$.data.userAuthority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.sharingArchiveId").value(space.getSharingArchive().getId()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 실패 : 존재하지 않는 스페이스")
+    void getSpace_Fail_NotFound() throws Exception {
+        // Given
+        Integer spaceId = 9999; // 존재하지 않는 스페이스 ID
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        resultActions.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 스페이스입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc3333", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("스페이스 단건 조회 - 실패 : 스페이스 멤버가 아닌 사용자")
+    void getSpace_Fail_NotMember() throws Exception {
+        // Given
+        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Integer spaceId = space.getId();
+        String url = String.format("/api/v1/space/%d", spaceId);
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectNotFound(resultActions, "해당 멤버는 스페이스에 속해있지 않습니다.");
+    }
+
+
     // ======================= TEST DATA FACTORIES ======================== //
 
     private String createDefaultSpaceCreateRequestBody() {
@@ -498,6 +565,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 }
                 """;
     }
+
 
 
 }
