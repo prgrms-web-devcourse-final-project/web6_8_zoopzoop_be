@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.auth.handler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -22,6 +23,7 @@ import java.net.URLEncoder;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
@@ -60,9 +62,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtUtil.generateToken(member);
         String refreshToken = jwtUtil.generateRefreshToken(member);
 
-        String source = (String) request.getSession().getAttribute("loginSource");
-        boolean isExtension = "extension".equals(source);
-
+        String source = request.getParameter("source");
+        String state = request.getParameter("state");
+        log.info("[OAuth2SuccessHandler] Source: {}", source);
+        log.info("[OAuth2SuccessHandler] State: {}", state);
+        boolean isExtension = state != null && state.contains("source:extension");
 
         // 확장 프로그램에서 로그인 했을 경우.
         if(isExtension){

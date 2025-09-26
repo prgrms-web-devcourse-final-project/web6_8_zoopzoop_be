@@ -34,11 +34,7 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
         if ("extension".equals(source)) {
             // state에 source 정보를 안전하게 포함
             builder.state("source:extension;" + req.getState());
-
-            // 필요하다면 redirectUri도 동적으로 변경 가능
-            // builder.redirectUri("https://api.test.zoopzoop.kro.kr/login/oauth2/code/kakao");
         }
-
         return builder.build();
     }
 }
