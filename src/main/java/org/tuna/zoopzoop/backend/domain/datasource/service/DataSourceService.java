@@ -8,10 +8,15 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,6 +27,8 @@ public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final FolderRepository folderRepository;
     private final PersonalArchiveRepository personalArchiveRepository;
+    private final TagRepository tagRepository;
+    private final DataProcessorService dataProcessorService;
 
     /**
      * 지정한 folder 위치에 자료 생성
@@ -35,23 +42,52 @@ public class DataSourceService {
             folder = folderRepository.findById(folderId)
                     .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
-        DataSource ds = buildDataSource(sourceUrl, folder);
-        DataSource saved = dataSourceRepository.save(ds);
+        // 폴더 하위 자료 태그 수집(중복 X)
+        List<Tag> contextTags = collectDistinctTagsOfFolder(folder.getId());
 
+        DataSource ds = buildDataSource(folder, sourceUrl, contextTags);
+
+        // 4) 저장
+        final DataSource saved = dataSourceRepository.save(ds);
         return saved.getId();
     }
 
-    private DataSource buildDataSource(String sourceUrl, Folder folder) {
+    // 폴더 하위 태그 중복없이 list 반환
+    private List<Tag> collectDistinctTagsOfFolder(Integer folderId) {
+        List<String> names = tagRepository.findDistinctTagNamesByFolderId(folderId);
+
+        return names.stream()
+                .map(Tag::new)
+                .toList();
+    }
+
+    private DataSource buildDataSource(Folder folder, String sourceUrl, List<Tag> tagList) {
+        final DataSourceDto dataSourceDto;
+        try {
+            dataSourceDto = dataProcessorService.process(sourceUrl, tagList);
+        } catch (IOException e) {
+            throw new RuntimeException("자료 처리 중 오류가 발생했습니다.", e);
+        }
+
         DataSource ds = new DataSource();
         ds.setFolder(folder);
-        ds.setSourceUrl(sourceUrl);
-        ds.setTitle("자료 제목");
-        ds.setSource("www.examplesource.com");
-        ds.setSummary("설명");
-        ds.setImageUrl("www.example.com/img");
-        ds.setDataCreatedDate(LocalDate.now());
-        ds.setCategory(Category.IT);
+        ds.setSourceUrl(dataSourceDto.sourceUrl());
+        ds.setTitle(dataSourceDto.title());
+        ds.setSummary(dataSourceDto.summary());
+        ds.setDataCreatedDate(dataSourceDto.dataCreatedDate());
+        ds.setImageUrl(dataSourceDto.imageUrl());
+        ds.setSource(dataSourceDto.source());
+        ds.setCategory(dataSourceDto.category());
         ds.setActive(true);
+
+        if (dataSourceDto.tags() != null) {
+            for (String tagName : dataSourceDto.tags()) {
+                Tag tag = new Tag(tagName);
+                tag.setDataSource(ds);
+                ds.getTags().add(tag);
+            }
+        }
+
         return ds;
     }
 
