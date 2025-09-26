@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.tuna.zoopzoop.backend.domain.news.service.NewsSearchService;
+import org.tuna.zoopzoop.backend.domain.news.service.NewsAPIService;
 
 import java.net.InetAddress;
 
@@ -22,7 +22,7 @@ public class HomeController {
 //
 //    @Value("${kakao.redirect_uri}")
 //    private String kakaoRedirectUri;
-    private final NewsSearchService newsSearchService;
+    private final NewsAPIService newsSearchService;
 
     @SneakyThrows
     @GetMapping(produces = TEXT_HTML_VALUE)

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class NewsSearchService {
+public class NewsAPIService {
     private final WebClient webClient;
 
     @Value("${naver.client_id}")
@@ -19,7 +19,7 @@ public class NewsSearchService {
     @Value("${naver.client_secret}")
     private String client_secret;
 
-    public NewsSearchService(WebClient.Builder webClientBuilder) {
+    public NewsAPIService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.baseUrl("https://openapi.naver.com").build();
     }
 
