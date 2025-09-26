@@ -60,8 +60,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtUtil.generateToken(member);
         String refreshToken = jwtUtil.generateRefreshToken(member);
 
-        String state = request.getParameter("state");
-        boolean isExtension = state != null && state.contains("source:extension");
+        String source = (String) request.getSession().getAttribute("loginSource");
+        boolean isExtension = "extension".equals(source);
+
 
         // 확장 프로그램에서 로그인 했을 경우.
         if(isExtension){

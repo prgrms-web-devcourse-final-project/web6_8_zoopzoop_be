@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.auth.resolver;
+package org.tuna.zoopzoop.backend.domain.auth.global;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
