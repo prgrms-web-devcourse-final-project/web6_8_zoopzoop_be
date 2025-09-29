@@ -39,6 +39,7 @@ public class MemberControllerTest {
 
     @BeforeAll
     void setUp() {
+        memberRepository.deleteAll();
         Member member1 = memberService.createMember(
                 "test1",
                 "url",
