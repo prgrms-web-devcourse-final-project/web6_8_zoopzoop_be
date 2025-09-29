@@ -98,6 +98,8 @@ dependencies {
     // Playwright for Java
     implementation 'com.microsoft.playwright:playwright:1.54.0'
 
+    // Apache Commons Codec
+    implementation"commons-codec:commons-codec:1.19.0"
 }
 
 dependencyManagement {

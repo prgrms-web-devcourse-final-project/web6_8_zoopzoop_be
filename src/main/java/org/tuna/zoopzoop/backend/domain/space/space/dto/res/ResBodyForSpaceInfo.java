@@ -5,6 +5,7 @@ public record ResBodyForSpaceInfo (
         String spaceName,
         String thumbnailUrl,
         String userAuthority,
-        Integer sharingArchiveId
+        Integer sharingArchiveId,
+        Integer dashboardId
 ){
 }

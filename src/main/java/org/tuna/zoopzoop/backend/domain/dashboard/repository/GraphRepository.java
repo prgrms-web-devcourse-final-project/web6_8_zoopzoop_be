@@ -1,7 +1,7 @@
-package org.tuna.zoopzoop.backend.domain.graph.repository;
+package org.tuna.zoopzoop.backend.domain.dashboard.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 
 import java.util.Optional;
 
