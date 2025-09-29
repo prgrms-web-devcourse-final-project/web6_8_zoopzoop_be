@@ -17,6 +17,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchi
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
@@ -272,7 +273,7 @@ class FolderServiceTest {
         d1.setSourceUrl("http://src/a");
         d1.setImageUrl("http://img/a");
         d1.setTags(List.of(new Tag("tag1"), new Tag("tag2")));
-        d1.setCategory(org.tuna.zoopzoop.backend.domain.datasource.entity.Category.IT);
+        d1.setCategory(Category.IT);
 
         DataSource d2 = new DataSource();
         ReflectionTestUtils.setField(d2, "id", 11);
@@ -282,7 +283,7 @@ class FolderServiceTest {
         d2.setSourceUrl("http://src/b");
         d2.setImageUrl("http://img/b");
         d2.setTags(List.of());
-        d2.setCategory(org.tuna.zoopzoop.backend.domain.datasource.entity.Category.SCIENCE);
+        d2.setCategory(Category.SCIENCE);
 
         when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1, d2));
 

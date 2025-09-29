@@ -2,9 +2,13 @@ package org.tuna.zoopzoop.backend.domain.datasource.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
@@ -15,11 +19,13 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -28,6 +34,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,7 +45,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DatasourceControllerTest {
-
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
@@ -47,12 +54,46 @@ class DatasourceControllerTest {
     @Autowired private FolderRepository folderRepository;
     @Autowired private DataSourceRepository dataSourceRepository;
 
-    private final String TEST_PROVIDER_KEY = "testUser_sc1111"; // WithUserDetails username -> "KAKAO:testUser_sc1111"
+    private final String TEST_PROVIDER_KEY = "testUser_sc1111";
 
     private Integer testMemberId;
     private Integer docsFolderId;
     private Integer dataSourceId1;
     private Integer dataSourceId2;
+
+    @TestConfiguration
+    static class StubConfig {
+        @Bean
+        @Primary
+        DataProcessorService stubDataProcessorService() throws Exception {
+            return new DataProcessorService(null, null) {
+                @Override
+                public DataSourceDto process(String url, List<Tag> tagList) {
+                    return new DataSourceDto(
+                            "테스트제목",
+                            "테스트요약",
+                            LocalDate.of(2025, 9, 1),
+                            url,
+                            "https://img.example/test.png",
+                            "example.com",
+                            Category.IT,
+                            List.of("ML","Infra")
+                    );
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        TagRepository stubTagRepository() {
+            TagRepository mock = Mockito.mock(TagRepository.class);
+
+            when(mock.findDistinctTagNamesByFolderId(anyInt()))
+                    .thenReturn(java.util.List.of("AI", "Spring"));
+
+            return mock;
+        }
+    }
 
     @BeforeAll
     void beforeAll() {
@@ -110,7 +151,6 @@ class DatasourceControllerTest {
 
     @AfterAll
     void afterAll() {
-        // 생성한 자료/폴더/멤버 삭제
         try {
             if (dataSourceId1 != null) dataSourceRepository.findById(dataSourceId1).ifPresent(dataSourceRepository::delete);
         } catch (Exception ignored) {}
