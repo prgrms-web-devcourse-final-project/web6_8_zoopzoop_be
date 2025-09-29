@@ -518,7 +518,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.spaceName").value("기존 스페이스 1_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.thumbnailUrl").value("thumbnailUrl1"))
                 .andExpect(jsonPath("$.data.userAuthority").value("ADMIN"))
-                .andExpect(jsonPath("$.data.sharingArchiveId").value(space.getSharingArchive().getId()));
+                .andExpect(jsonPath("$.data.sharingArchiveId").value(space.getSharingArchive().getId()))
+                .andExpect(jsonPath("$.data.dashboardId").value(space.getDashboard().getId()));
     }
 
     @Test
