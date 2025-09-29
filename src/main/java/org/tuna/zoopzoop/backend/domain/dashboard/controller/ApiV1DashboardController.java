@@ -25,18 +25,20 @@ public class ApiV1DashboardController {
     private final DashboardService dashboardService;
 
     /**
-     * LiveBlocks를 위한 React-flow 데이터 저장 API (LiveBlocks Webhook 타겟)
-     * @param bodyForReactFlow React-flow 데이터를 가지고 있는 Dto
+     * React-flow 데이터 저장(갱신) API
+     * @param dashboardId React-flow 데이터의 dashboard 식별 id
+     * @param requestBody React-flow 에서 보내주는 body 전체
+     * @param signature Liveblocks-Signature 헤더 값
+     * @return ResponseEntity<RsData<Void>>
      */
     @PutMapping("/{dashboardId}/graph")
     @Operation(summary = "React-flow 데이터 저장(갱신)")
     public ResponseEntity<RsData<Void>> updateGraph(
             @PathVariable Integer dashboardId,
-            @RequestBody BodyForReactFlow bodyForReactFlow
+            @RequestBody String requestBody,
+            @RequestHeader("Liveblocks-Signature") String signature
     ) {
-        // TODO : signature 검증 로직 추가
-
-        dashboardService.updateGraph(dashboardId, bodyForReactFlow);
+        dashboardService.verifyAndUpdateGraph(dashboardId, requestBody, signature);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

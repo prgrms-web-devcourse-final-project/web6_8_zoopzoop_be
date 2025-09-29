@@ -1,7 +1,10 @@
 package org.tuna.zoopzoop.backend.domain.dashboard.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
@@ -13,7 +16,11 @@ import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
+import java.security.MessageDigest;
 import java.util.List;
 
 @Service
@@ -22,6 +29,17 @@ import java.util.List;
 public class DashboardService {
     private final DashboardRepository dashboardRepository;
     private final MembershipService membershipService;
+    private final ObjectMapper objectMapper;
+
+    @Value("${liveblocks.secret-key}")
+    private String liveblocksSecretKey;
+
+    // 5분 (밀리초 단위)
+    private static final long TOLERANCE_IN_MILLIS = 5 * 60 * 1000;
+
+
+    // =========================== Graph 관련 메서드 ===========================
+
     /**
      * 대시보드 ID를 통해 Graph 데이터를 조회하는 메서드
      */
@@ -54,6 +72,32 @@ public class DashboardService {
     }
 
     /**
+     * 서명 검증 후 Graph 업데이트를 수행하는 메서드
+     * @param dashboardId 대시보드 ID
+     * @param requestBody 요청 바디
+     * @param signatureHeader 서명 헤더
+     */
+    public void verifyAndUpdateGraph(Integer dashboardId, String requestBody, String signatureHeader) {
+        // 1. 서명 검증
+        if (!isValidSignature(requestBody, signatureHeader)) {
+            throw new SecurityException("Invalid webhook signature.");
+        }
+
+        // 2. 검증 통과 후, 기존 업데이트 로직 실행
+        try {
+            BodyForReactFlow dto = objectMapper.readValue(requestBody, BodyForReactFlow.class);
+            updateGraph(dashboardId, dto);
+        } catch (NoResultException e) {
+            throw new NoResultException(dashboardId + " ID를 가진 대시보드를 찾을 수 없습니다.");
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to process request body.", e);
+        }
+    }
+
+    // =========================== 권한 관련 메서드 ===========================
+
+    /**
      * 대시보드 접근 권한을 검증하는 메서드
      * @param member 접근을 시도하는 멤버
      * @param dashboardId 접근하려는 대시보드 ID
@@ -68,4 +112,58 @@ public class DashboardService {
             throw new AccessDeniedException("대시보드의 접근 권한이 없습니다.");
         }
     }
+
+
+    /**
+     * LiveBlocks Webhook 요청의 유효성을 검증하는 메서드
+     * @param requestBody 요청 바디
+     * @param signatureHeader LiveBlocks가 제공하는 서명 헤더
+     * @return 서명이 유효하면 true, 그렇지 않으면 false
+     */
+    private boolean isValidSignature(String requestBody, String signatureHeader) {
+        try {
+            // 1. 헤더 파싱
+            String[] parts = signatureHeader.split(",");
+            long timestamp = -1;
+            String signatureHashFromHeader = null;
+
+            for (String part : parts) {
+                String[] pair = part.split("=", 2);
+                if (pair.length == 2) {
+                    if ("t".equals(pair[0])) {
+                        timestamp = Long.parseLong(pair[1]);
+                    } else if ("v1".equals(pair[0])) {
+                        signatureHashFromHeader = pair[1];
+                    }
+                }
+            }
+
+            if (timestamp == -1 || signatureHashFromHeader == null) {
+                return false; // 헤더 형식이 잘못됨
+            }
+
+            // 2. 리플레이 공격 방지를 위한 타임스탬프 검증 (선택사항)
+            long now = System.currentTimeMillis();
+            if (now - timestamp > TOLERANCE_IN_MILLIS) {
+                return false; // 너무 오래된 요청
+            }
+
+            // 3. 서명 재생성
+            String payload = timestamp + "." + requestBody;
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(liveblocksSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] expectedHashBytes = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+
+            // 4. 서명 비교 (타이밍 공격 방지를 위해 MessageDigest.isEqual 사용)
+            byte[] signatureHashBytesFromHeader = Hex.decodeHex(signatureHashFromHeader);
+            return MessageDigest.isEqual(expectedHashBytes, signatureHashBytesFromHeader);
+
+        } catch (Exception e) {
+            // 파싱 실패, 디코딩 실패 등 모든 예외는 검증 실패로 간주
+            return false;
+        }
+    }
+
+
 }

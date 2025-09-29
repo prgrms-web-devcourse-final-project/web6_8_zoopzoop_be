@@ -1,7 +1,9 @@
 package org.tuna.zoopzoop.backend.domain.dashboard.controller;
 
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,10 +24,15 @@ import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +55,9 @@ class DashboardControllerTest extends ControllerTestSupport {
     private Integer authorizedDashboardId;
     private Integer unauthorizedDashboardId;
 
-    // 테스트에 필요한 유저, 스페이스, 멤버십 데이터를 미리 설정합니다.
+    @Value("${liveblocks.secret-key}")
+    private String testSecretKey;
+
     @BeforeAll
     void setUp() {
         // 1. 유저 생성
@@ -145,11 +154,15 @@ class DashboardControllerTest extends ControllerTestSupport {
         // Given
         String url = String.format("/api/v1/dashboard/%d/graph", authorizedDashboardId);
         String requestBody = createReactFlowJsonBody();
+        String validSignature = generateLiveblocksSignature(requestBody);
 
-        // When: 데이터 수정
-        ResultActions updateResult = performPut(url, requestBody);
+        // When: 데이터 저장
+        ResultActions updateResult = mvc.perform(put(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Liveblocks-Signature", validSignature) // ★ 서명 헤더 추가
+                .content(requestBody));
 
-        // Then: 수정 성공 응답 확인
+        // Then: 저장 성공 응답 확인
         expectOk(
                 updateResult,
                 "React-flow 데이터를 저장했습니다."
@@ -174,9 +187,13 @@ class DashboardControllerTest extends ControllerTestSupport {
         Integer nonExistentDashboardId = 9999;
         String url = String.format("/api/v1/dashboard/%d/graph", nonExistentDashboardId);
         String requestBody = createReactFlowJsonBody();
+        String validSignature = generateLiveblocksSignature(requestBody);
 
-        // When
-        ResultActions resultActions = performPut(url, requestBody);
+        // When: 데이터 저장
+        ResultActions resultActions = mvc.perform(put(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Liveblocks-Signature", validSignature) // ★ 서명 헤더 추가
+                .content(requestBody));;
 
         // Then
         expectNotFound(
@@ -185,20 +202,23 @@ class DashboardControllerTest extends ControllerTestSupport {
         );
     }
 
-//    @Test
-//    @DisplayName("대시보드 그래프 데이터 저장 - 실패: 서명 검증 실패")
-//    void updateGraph_Fail_Forbidden() throws Exception {
-//        // Given
-//        String url = String.format("/api/v1/dashboard/%d/graph", authorizedDashboardId);
-//        String requestBody = createReactFlowJsonBody();
-//
-//        // When
-//        ResultActions resultActions = performPut(url, requestBody);
-//
-//        // Then
-//        // TODO: 실제 구현된 권한 체크 로직의 예외 메시지에 따라 "권한이 없습니다." 부분을 수정해야 합니다.
-//        expectForbidden(resultActions, "액세스가 거부되었습니다.");
-//    }
+    @Test
+    @DisplayName("대시보드 그래프 데이터 저장 - 실패: 서명 검증 실패")
+    void updateGraph_Fail_Forbidden() throws Exception {
+        // Given
+        String url = String.format("/api/v1/dashboard/%d/graph", authorizedDashboardId);
+        String requestBody = createReactFlowJsonBody();
+        String invalidSignature = "t=123,v1=invalid_signature"; // 유효하지 않은 서명
+
+        // When
+        ResultActions resultActions = mvc.perform(put(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Liveblocks-Signature", invalidSignature) // ★ 잘못된 서명 헤더 추가
+                .content(requestBody));
+
+        // Then
+        expectForbidden(resultActions, "Invalid webhook signature.");
+    }
 
     // ======================= TEST DATA FACTORIES ======================== //
 
@@ -231,6 +251,22 @@ class DashboardControllerTest extends ControllerTestSupport {
                 ]
             }
             """;
+    }
+
+    // ======================= HELPER METHODS ======================== //
+    private String generateLiveblocksSignature(String requestBody) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeyException {
+        long timestamp = System.currentTimeMillis();
+        String payload = timestamp + "." + requestBody;
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(testSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        mac.init(secretKeySpec);
+        byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+
+        // v1 서명은 해시값의 Hex 인코딩 문자열입니다.
+        String signatureHash = Hex.encodeHexString(hash);
+
+        return String.format("t=%d,v1=%s", timestamp, signatureHash);
     }
 
 }
