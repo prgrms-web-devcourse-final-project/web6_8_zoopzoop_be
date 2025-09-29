@@ -13,7 +13,7 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/v1/graph")
+@RequestMapping("api/v1/dashboard")
 @Tag(name = "ApiV1GraphController", description = "React-flow 데이터 컨트롤러")
 public class ApiV1DashboardController {
     private final GraphService graphService;
@@ -41,19 +41,19 @@ public class ApiV1DashboardController {
 
     /**
      * LiveBlocks를 위한 React-flow 데이터 조회 API
-     * @param id React-flow 데이터의 graph 식별 id
+     * @param dashboardId React-flow 데이터의 dashboard 식별 id
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{dashboardId}")
     @Operation(summary = "React-flow 데이터 조회")
     public ResponseEntity<RsData<BodyForReactFlow>> getGraph(
-            @PathVariable Integer id
+            @PathVariable Integer dashboardId
     ) {
-        Graph graph = graphService.getGraph(id);
+        Graph graph = graphService.getGraph(dashboardId);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>(
                         "200",
-                        "ID: " + id + " 의 React-flow 데이터를 조회했습니다.",
+                        "ID: " + dashboardId + " 의 React-flow 데이터를 조회했습니다.",
                         BodyForReactFlow.from(graph)
                 ));
     }

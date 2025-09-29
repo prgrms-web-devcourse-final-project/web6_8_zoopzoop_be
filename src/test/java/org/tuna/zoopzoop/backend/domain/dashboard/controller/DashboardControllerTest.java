@@ -96,7 +96,7 @@ class DashboardControllerTest {
             """;
 
         // React-flow 데이터 저장
-        mockMvc.perform(post("/api/v1/graph")
+        mockMvc.perform(post("/api/v1/dashboard")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody))
                 .andExpect(status().isOk())
@@ -111,7 +111,7 @@ class DashboardControllerTest {
         assertEquals(1, savedGraph.getEdges().size());
 
         // 저장된 React-flow 데이터 조회
-        mockMvc.perform(get("/api/v1/graph/{id}", savedGraph.getId())
+        mockMvc.perform(get("/api/v1/dashboard/{dashboardId}", savedGraph.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200"))
