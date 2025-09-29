@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.service.DashboardService;
 import org.tuna.zoopzoop.backend.domain.dashboard.service.GraphService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
@@ -16,19 +17,21 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 @RequestMapping("api/v1/dashboard")
 @Tag(name = "ApiV1GraphController", description = "React-flow 데이터 컨트롤러")
 public class ApiV1DashboardController {
-    private final GraphService graphService;
+    private final DashboardService dashboardService;
 
     /**
-     * LiveBlocks를 위한 React-flow 데이터 저장 API
+     * LiveBlocks를 위한 React-flow 데이터 저장 API (LiveBlocks Webhook 타겟)
      * @param bodyForReactFlow React-flow 데이터를 가지고 있는 Dto
      */
-    @PostMapping
-    @Operation(summary = "React-flow 데이터 저장")
-    public ResponseEntity<RsData<Void>> createGraph(
+    @PutMapping("/{dashboardId}/graph")
+    @Operation(summary = "React-flow 데이터 저장(갱신)")
+    public ResponseEntity<RsData<Void>> updateGraph(
+            @PathVariable Integer dashboardId,
             @RequestBody BodyForReactFlow bodyForReactFlow
     ) {
-        Graph graph = bodyForReactFlow.toEntity();
-        graphService.saveGraph(graph);
+        // TODO : signature 검증 로직 추가
+
+        dashboardService.updateGraph(dashboardId, bodyForReactFlow);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -43,12 +46,12 @@ public class ApiV1DashboardController {
      * LiveBlocks를 위한 React-flow 데이터 조회 API
      * @param dashboardId React-flow 데이터의 dashboard 식별 id
      */
-    @GetMapping("/{dashboardId}")
+    @GetMapping("/{dashboardId}/graph")
     @Operation(summary = "React-flow 데이터 조회")
     public ResponseEntity<RsData<BodyForReactFlow>> getGraph(
             @PathVariable Integer dashboardId
     ) {
-        Graph graph = graphService.getGraph(dashboardId);
+        Graph graph = dashboardService.getGraphByDashboardId(dashboardId);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>(
