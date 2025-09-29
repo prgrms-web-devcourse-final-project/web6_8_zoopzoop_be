@@ -8,10 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMember;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
-import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForEditMemberName;
-import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
-import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfoV2;
+import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberProfileImage;
+import org.tuna.zoopzoop.backend.domain.member.dto.res.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -62,14 +62,14 @@ public class ApiV1MemberController {
      * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
      * @param reqBodyForEditMemberName 수정할 닉네임을 받아오는 reqDto
      */
-    @PutMapping("/edit")
+    @PutMapping("/edit/name")
     @Operation(summary = "사용자 닉네임 수정")
     public ResponseEntity<RsData<ResBodyForEditMemberName>> editMemberName(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ReqBodyForEditMemberName reqBodyForEditMemberName
             ) {
         Member member = userDetails.getMember();
-        member.updateName(reqBodyForEditMemberName.newName());
+        memberService.updateMemberName(member, reqBodyForEditMemberName.newName());
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(
@@ -82,11 +82,63 @@ public class ApiV1MemberController {
     }
 
     /**
+     * 현재 로그인한 사용자의 프로필 이미지를 변경하는 API
+     * HTTP METHOD: PUT
+     * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
+     * @param reqBodyForEditMemberProfileImage 수정할 프로필 이미지를 받아오는 dto
+     */
+    @PutMapping("/edit/image")
+    @Operation(summary = "사용자 닉네임 수정")
+    public ResponseEntity<RsData<ResBodyForEditMemberProfileImage>> editMemberProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ReqBodyForEditMemberProfileImage reqBodyForEditMemberProfileImage
+            ) {
+        Member member = userDetails.getMember();
+        memberService.updateMemberProfileUrl(member, reqBodyForEditMemberProfileImage.file());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new RsData<>(
+                                "200",
+                                "사용자의 프로필 이미지를 변경했습니다.",
+                                new ResBodyForEditMemberProfileImage(member.getProfileImageUrl())
+                        )
+                );
+    }
+
+    /**
+     * 현재 로그인한 사용자의 닉네임과 프로필 이미지를 변경하는 API
+     * HTTP METHOD: PUT
+     * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
+     * @param reqBodyForEditMember 수정할 프로필 정보를 받아오는 dto
+     */
+    @PutMapping("/edit")
+    @Operation(summary = "사용자 프로필 수정")
+    public ResponseEntity<RsData<ResBodyForEditMember>> editMemberProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ReqBodyForEditMember reqBodyForEditMember
+    ) {
+        Member member = userDetails.getMember();
+        memberService.updateMemberProfile(member, reqBodyForEditMember.newName(), reqBodyForEditMember.file());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new RsData<>(
+                                "200",
+                                "사용자의 프로필을 변경했습니다.",
+                                new ResBodyForEditMember(member.getName(), member.getProfileImageUrl())
+                        )
+                );
+    }
+
+
+    /**
      * 현재 로그인한 사용자를 삭제하는 API
      * 사용할 지 모르겠음.
      * HTTP METHOD: DELETE
      * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
      */
+
     @DeleteMapping
     @Operation(summary = "사용자 삭제")
     public ResponseEntity<RsData<Void>> deleteMember(
