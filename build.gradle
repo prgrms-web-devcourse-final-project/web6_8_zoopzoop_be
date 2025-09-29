@@ -79,7 +79,9 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // Spring AI
-    implementation "org.springframework.ai:spring-ai-starter-model-openai"
+    implementation ('org.springframework.ai:spring-ai-starter-model-openai'){
+        exclude group: 'io.swagger.core.v3', module: 'swagger-annotations'
+    }
 
     // 크롤링
     implementation("org.jsoup:jsoup:1.21.2")
