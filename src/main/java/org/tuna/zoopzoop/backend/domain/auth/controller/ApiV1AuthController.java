@@ -122,6 +122,11 @@ public class ApiV1AuthController {
                 .body(new RsData<>("200", "액세스 토큰을 재발급 했습니다.", null));
     }
 
+    /**
+     * 확장프로그램의 액세스 토큰 발급을 위한 백그라운드 풀링에 대응하는 API
+     * @param state 확장프로그램 로그인 시 전달한 state 값.
+     */
+
     @GetMapping("/result")
     @Operation(summary = "확장프로그램 백그라운드 풀링 대응 API")
     public ResponseEntity<RsData<AuthResultData>> pullingResult(

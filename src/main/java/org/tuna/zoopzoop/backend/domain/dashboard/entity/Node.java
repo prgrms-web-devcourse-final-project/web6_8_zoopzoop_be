@@ -26,8 +26,8 @@ public class Node extends BaseEntity {
 
     @ElementCollection
     @CollectionTable(name = "node_data", joinColumns = @JoinColumn(name = "node_id"))
-    @MapKeyColumn(name = "key")
-    @Column(name = "value")
+    @MapKeyColumn(name = "data_key")
+    @Column(name = "data_value")
     private Map<String, String> data = new HashMap<>();
 
     @Column

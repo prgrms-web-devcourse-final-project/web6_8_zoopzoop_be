@@ -58,4 +58,8 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
     """)
     Optional<Folder> findByIdAndMemberId(@Param("folderId") Integer folderId,
                                          @Param("memberId") Integer memberId);
+
+    Optional<Folder> findByArchiveIdAndName(Integer archiveId, String name);
+
+    List<Folder> findAllByArchiveId(Integer archiveId);
 }
