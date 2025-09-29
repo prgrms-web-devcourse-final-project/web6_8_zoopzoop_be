@@ -176,7 +176,8 @@ public class ApiV1SpaceController {
                 space.getName(),
                 space.getThumbnailUrl(),
                 membership.getAuthority().name(),
-                space.getSharingArchive().getId()
+                space.getSharingArchive().getId(),
+                space.getDashboard().getId()
         );
 
         return new RsData<>(

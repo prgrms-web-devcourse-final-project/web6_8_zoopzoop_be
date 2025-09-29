@@ -54,9 +54,14 @@ public class Member extends BaseEntity {
 
     //---------- 메소드 ----------//
     public boolean isActive() { return this.active; }
-    public void updateName(String name) { //사용자 이름 수정
+    public String updateName(String name) { //사용자 이름 수정
         this.name = name;
+        return this.name;
     } //사용자 이름 변경
     public void deactivate() { this.active = false; } //soft-delete
     public void activate() { this.active = true; } //restore
+    public String updateProfileUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+        return this.profileImageUrl;
+    }
 }

@@ -16,3 +16,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+sentry:
+  dsn: https://60f1acad189d2994353d59b7895076ee@o4510100579155968.ingest.us.sentry.io/4510100584923136
+  # Add data like request headers and IP for users,
+  # see https://docs.sentry.io/platforms/java/guides/spring-boot/data-management/data-collected/ for more info
+  send-default-pii: true
+  environment: prod
+  traces-sample-rate: 0.2

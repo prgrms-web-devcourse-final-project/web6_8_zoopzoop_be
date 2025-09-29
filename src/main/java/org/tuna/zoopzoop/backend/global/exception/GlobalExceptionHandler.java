@@ -3,15 +3,14 @@ package org.tuna.zoopzoop.backend.global.exception;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import io.sentry.Sentry;
 import jakarta.persistence.NoResultException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +33,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResultException.class) // 자료를 찾지 못했을 경우.
     public ResponseEntity<RsData<Void>> handleNoResultException(NoResultException e) {
+        Sentry.captureException(e);
         return new ResponseEntity<>(
                 new RsData<>(
                         "404",
@@ -175,6 +175,17 @@ public class GlobalExceptionHandler {
                         msg
                 ),
                 BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<RsData<Void>> handleSecurityException(SecurityException e) {
+        return new ResponseEntity<>(
+                new RsData<>(
+                        "403", // 또는 "401"
+                        e.getMessage()
+                ),
+                FORBIDDEN // 또는 UNAUTHORIZED
         );
     }
 

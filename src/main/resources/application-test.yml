@@ -16,3 +16,6 @@ spring:
   sql:
     init:
       mode: never
+
+liveblocks:
+  secret-key: test_dummy_liveblocks_secret_key

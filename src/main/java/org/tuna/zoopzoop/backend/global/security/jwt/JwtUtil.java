@@ -86,15 +86,15 @@ public class JwtUtil {
                     .parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            log.error("JWT 토큰이 만료되었습니다: {}", e.getMessage());
+            log.info("JWT 토큰이 만료되었습니다: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.error("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
+            log.info("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("잘못된 JWT 토큰입니다: {}", e.getMessage());
+            log.info("잘못된 JWT 토큰입니다: {}", e.getMessage());
         } catch (SecurityException e) {
-            log.error("JWT 서명이 잘못되었습니다: {}", e.getMessage());
+            log.info("JWT 서명이 잘못되었습니다: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.error("JWT 토큰이 비어있습니다: {}", e.getMessage());
+            log.info("JWT 토큰이 비어있습니다: {}", e.getMessage());
         }
         return false;
     }

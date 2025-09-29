@@ -20,6 +20,8 @@ jobs:
   # ==================================
   ci:
     runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     steps:
       # 1. 소스 코드 체크아웃
@@ -60,6 +62,8 @@ jobs:
           echo "spring.cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
           echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
           echo "spring.cloud.aws.stack.auto: false" >> src/main/resources/application-secrets.yml
+
+          echo "liveblocks.secret-key: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}" >> src/main/resources/application-secrets.yml
 
       # 6. application-secrets-server.yml 생성
       - name: Generate application-secrets-server.yml
