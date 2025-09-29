@@ -58,31 +58,27 @@ public class PersonalArchiveInitData {
 
         PersonalArchive pa = member.getPersonalArchive();
 
-        // 1) default 폴더를 반드시 "영속" 상태로 확보
         folderRepository.findByArchiveIdAndName(pa.getArchive().getId(), "default")
                 .orElseGet(() -> {
-                    // 메모리 상에만 있는 default가 있으면 재사용, 없으면 새로 생성
                     Folder df = pa.getArchive().getFolders().stream()
                             .filter(Folder::isDefault)
                             .findFirst()
                             .orElse(new Folder("default"));
                     df.setArchive(pa.getArchive());
                     df.setDefault(true);
-                    return folderRepository.save(df);   // ★ 여기서 실제로 persist
+                    return folderRepository.save(df);
                 });
 
-        // 2) 추가 폴더도 영속으로 확보
         for (String name : List.of("inbox","research","ai","reading-list")) {
             folderRepository.findByArchiveIdAndName(pa.getArchive().getId(), name)
                     .orElseGet(() -> {
                         Folder f = new Folder(name);
                         f.setDefault(false);
                         f.setArchive(pa.getArchive());
-                        return folderRepository.save(f); // ★ persist
+                        return folderRepository.save(f);
                     });
         }
 
-        // 3) 항상 "DB에서 다시 읽어온" 폴더들로 DataSource 생성
         List<Folder> persistedFolders = folderRepository.findAllByArchiveId(pa.getArchive().getId());
 
         for (Folder folder : persistedFolders) {
@@ -91,7 +87,7 @@ public class PersonalArchiveInitData {
                 if (dataSourceRepository.findByFolderIdAndTitle(folder.getId(), title).isPresent()) continue;
 
                 DataSource ds = new DataSource();
-                ds.setFolder(folder);                          // ← 이제 영속 폴더
+                ds.setFolder(folder);
                 ds.setTitle(title);
                 ds.setSummary("초기 목데이터");
                 ds.setDataCreatedDate(LocalDate.now().minusDays(i));
