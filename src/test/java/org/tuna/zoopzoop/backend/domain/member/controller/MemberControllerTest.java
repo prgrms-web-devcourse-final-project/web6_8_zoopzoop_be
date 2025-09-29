@@ -16,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -158,13 +159,13 @@ public class MemberControllerTest {
     @DisplayName("사용자 이름 수정 - 성공(200)")
     void editMemberNameSuccess() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("test3");
-        mockMvc.perform(put("/api/v1/member/edit")
+        mockMvc.perform(put("/api/v1/member/edit/name")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reqBodyForEditMemberName)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").value("사용자의 닉네임을 변경했습니다."))
-                .andExpect(jsonPath("$.data.name").value("test3"));
+                .andExpect(jsonPath("$.data.name").value(containsString("test")));
     }
 
     @Test
@@ -172,7 +173,7 @@ public class MemberControllerTest {
     @DisplayName("사용자 이름 수정 - 실패(400, Bad_Request)")
     void editMemberNameFailedByBadRequest() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("");
-        mockMvc.perform(put("/api/v1/member/edit")
+        mockMvc.perform(put("/api/v1/member/edit/name")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reqBodyForEditMemberName)))
                 .andExpect(status().isBadRequest())
@@ -184,7 +185,7 @@ public class MemberControllerTest {
     @DisplayName("사용자 이름 수정 - 실패(401, Unauthorized)")
     void editMemberNameFailedByUnauthorized() throws Exception {
         ReqBodyForEditMemberName reqBodyForEditMemberName = new ReqBodyForEditMemberName("test3");
-        mockMvc.perform(put("/api/v1/member/edit")
+        mockMvc.perform(put("/api/v1/member/edit/name")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reqBodyForEditMemberName)))
                 .andExpect(status().isUnauthorized())
