@@ -20,6 +20,8 @@ jobs:
   # ==================================
   ci:
     runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     steps:
       # 1. 소스 코드 체크아웃

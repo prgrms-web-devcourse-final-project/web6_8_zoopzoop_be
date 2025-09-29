@@ -25,10 +25,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
 
+    // 필터를 적용할 URL 패턴
+    private static final String API_PREFIX = "/api/v1";
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String path = request.getRequestURI();
+
+        // /api/ 로 시작하지 않으면 JWT 검증 건너뜀
+        if (!path.startsWith(API_PREFIX)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = getTokenFromRequest(request); // Authorization 헤더에서 JWT 토큰 추출
         log.info("[JwtFilter] Token from request: {}", token);
         log.info("[JwtFilter] Token valid? {}", jwtUtil.validateToken(token));

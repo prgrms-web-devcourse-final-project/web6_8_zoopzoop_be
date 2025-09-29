@@ -46,7 +46,6 @@ public class SecurityConfig {
                                 "/actuator/health", // health 체크용
                                 "/dev/**" // ← 추가: dev 토큰 발급은 누구나 접근
                         ).permitAll()
-                        .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(authorization -> authorization

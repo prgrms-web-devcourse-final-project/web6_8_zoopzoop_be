@@ -11,6 +11,7 @@ import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -50,5 +51,12 @@ public class RefreshTokenService {
     public void deleteBySessionId(String sessionId) {
         refreshTokenRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new BadCredentialsException("잘못된 요청입니다."));
+    }
+
+    public void deleteByMember(Member member) {
+        List<RefreshToken> tokens = refreshTokenRepository.findAllByMember(member);
+        if (!tokens.isEmpty()) {
+            refreshTokenRepository.deleteAll(tokens);
+        }
     }
 }
