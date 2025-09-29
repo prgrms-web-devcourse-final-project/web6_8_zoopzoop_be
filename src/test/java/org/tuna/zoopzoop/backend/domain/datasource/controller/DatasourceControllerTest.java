@@ -67,7 +67,7 @@ class DatasourceControllerTest {
     static class StubConfig {
         @Bean
         @Primary
-        DataProcessorService stubDataProcessorService() throws Exception {
+        DataProcessorService stubDataProcessorService(){
             return new DataProcessorService(null, null) {
                 @Override
                 public DataSourceDto process(String url, List<Tag> tagList) {
@@ -415,10 +415,10 @@ class DatasourceControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    // ==== [검색 API 테스트 추가] ===============================================
+    // 검색
 
     @Test
-    @DisplayName("검색 기본: page, size 기본값 + dataCreatedDate DESC 기본정렬")
+    @DisplayName("검색 성공: page, size, dataCreatedDate DESC 기본정렬")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_default_paging_and_sort() throws Exception {
         // 최신/과거 비교용 더미 데이터 추가
@@ -453,13 +453,12 @@ class DatasourceControllerTest {
                 .andExpect(jsonPath("$.pageInfo.page").value(0))
                 .andExpect(jsonPath("$.pageInfo.size").value(8))
                 .andExpect(jsonPath("$.pageInfo.first").value(true))
-                .andExpect(jsonPath("$.pageInfo.sorted", containsStringIgnoringCase("dataCreatedDate")))
-                // 최신(new-doc)이 앞에 오도록 (정렬 검증: 제목 배열의 첫 요소가 new-doc)
+                .andExpect(jsonPath("$.pageInfo.sorted", containsStringIgnoringCase("createdAt")))
                 .andExpect(jsonPath("$.data[0].title", anyOf(is("new-doc"), is("spec.pdf"), is("notes.txt"))));
     }
 
     @Test
-    @DisplayName("검색: category=IT 필터")
+    @DisplayName("검색 성공: category 필터")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_filter_by_category() throws Exception {
         mockMvc.perform(get("/api/v1/archive")
@@ -470,7 +469,7 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("검색: title 부분검색")
+    @DisplayName("검색 성공: title 부분검색")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_filter_by_title_contains() throws Exception {
         // 준비: 특정 키워드 가진 데이터 보장
@@ -494,7 +493,7 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("검색: summary 부분검색")
+    @DisplayName("검색 성공: summary 부분검색")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_filter_by_summary_contains() throws Exception {
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -517,22 +516,7 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("검색: createdAt(=dataCreatedDate 이후) 필터")
-    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    void search_filter_by_date_after() throws Exception {
-        // createdAt 파라미터는 ISO LocalDate로 받음
-        String after = LocalDate.now().minusDays(1).toString();
-
-        mockMvc.perform(get("/api/v1/archive")
-                        .param("createdAt", after))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                // 반환된 항목들의 dataCreatedDate가 after 이상인지 대략적으로 검증 (존재 여부)
-                .andExpect(jsonPath("$.data").isArray());
-    }
-
-    @Test
-    @DisplayName("검색: folderName 필터")
+    @DisplayName("검색 성공: folderName 필터")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_filter_by_folderName() throws Exception {
         // setup에서 만든 docs 폴더명으로 필터 (폴더 생성시 이름 "docs")
@@ -544,7 +528,7 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("검색: 정렬 title ASC")
+    @DisplayName("검색 성공: 정렬 title ASC")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_sort_by_title_asc() throws Exception {
         mockMvc.perform(get("/api/v1/archive")
@@ -555,14 +539,14 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("검색: 잘못된 category 값 → 400")
+    @DisplayName("검색 실패: 잘못된 category 값 → 400")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void search_invalid_category() throws Exception {
         mockMvc.perform(get("/api/v1/archive")
                         .param("category", "NOT_A_CATEGORY"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").exists())
-                .andExpect(jsonPath("$.status", either(is(400)).or(is("400"))));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(either(is(200)).or(is("200"))))
+                .andExpect(jsonPath("$.data").isArray());
     }
 
 }

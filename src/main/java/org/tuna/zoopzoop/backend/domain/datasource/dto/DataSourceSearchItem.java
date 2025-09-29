@@ -11,7 +11,7 @@ import java.util.List;
 public class DataSourceSearchItem {
     private Integer dataSourceId;
     private String title;
-    private LocalDate createdAt;
+    private LocalDate dataCreatedDate;
     private String summary;
     private String sourceUrl;
     private String imageUrl;

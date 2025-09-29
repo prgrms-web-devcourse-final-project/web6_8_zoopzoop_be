@@ -1,4 +1,3 @@
-// src/main/java/.../domain/datasource/repository/DataSourceQRepositoryImpl.java
 package org.tuna.zoopzoop.backend.domain.datasource.repository;
 
 import com.querydsl.core.BooleanBuilder;
@@ -15,12 +14,9 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.QPersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.QFolder;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,14 +28,17 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
     @Override
     public Page<DataSourceSearchItem> search(Integer memberId, DataSourceSearchCondition cond, Pageable pageable) {
+        if (memberId == null)
+            throw new IllegalArgumentException("memberId must not be null");
+
         QDataSource ds = QDataSource.dataSource;
         QFolder folder = QFolder.folder;
         QPersonalArchive pa = QPersonalArchive.personalArchive;
         QTag tag = QTag.tag;
 
-        // ===== where 절 구성 =====
+        // where
         BooleanBuilder where = new BooleanBuilder()
-                .and(ds.isActive.isTrue()); // 활성 자료만
+                .and(ds.isActive.isTrue());
 
         if (cond.getTitle() != null && !cond.getTitle().isBlank()) {
             where.and(ds.title.containsIgnoreCase(cond.getTitle()));
@@ -47,26 +46,17 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         if (cond.getSummary() != null && !cond.getSummary().isBlank()) {
             where.and(ds.summary.containsIgnoreCase(cond.getSummary()));
         }
-        if (cond.getCreatedAtAfter() != null) { // 원본 작성일(LocalDate) 기준
-            LocalDate from = cond.getCreatedAtAfter();
-            where.and(ds.dataCreatedDate.goe(from));
+        if (cond.getCategory() != null && !cond.getCategory().isBlank()) {
+            where.and(ds.category.stringValue().containsIgnoreCase(cond.getCategory()));
         }
         if (cond.getFolderName() != null && !cond.getFolderName().isBlank()) {
             where.and(ds.folder.name.eq(cond.getFolderName()));
         }
-        if (cond.getCategory() != null && !cond.getCategory().isBlank()) {
-            try {
-                where.and(ds.category.eq(Category.valueOf(cond.getCategory().toUpperCase())));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("잘못된 category 값입니다: " + cond.getCategory());
-            }
-        }
 
-        // 소유권 제한: 해당 멤버의 아카이브 범위
         BooleanBuilder ownership = new BooleanBuilder()
                 .and(pa.member.id.eq(memberId));
 
-        // ===== count 쿼리 =====
+        // count
         JPAQuery<Long> countQuery = queryFactory
                 .select(ds.id.countDistinct())
                 .from(ds)
@@ -74,7 +64,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .join(pa).on(pa.archive.eq(folder.archive))
                 .where(where.and(ownership));
 
-        // ===== content 쿼리 =====
+        // content
         JPAQuery<Tuple> contentQuery = queryFactory
                 .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.sourceUrl, ds.imageUrl, ds.category)
                 .from(ds)
@@ -82,25 +72,23 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .join(pa).on(pa.archive.eq(folder.archive))
                 .where(where.and(ownership));
 
-        // 정렬 적용
         List<OrderSpecifier<?>> orderSpecifiers = toOrderSpecifiers(pageable.getSort());
         if (!orderSpecifiers.isEmpty()) {
             contentQuery.orderBy(orderSpecifiers.toArray(new OrderSpecifier<?>[0]));
         } else {
-            contentQuery.orderBy(ds.dataCreatedDate.desc()); // 기본 최신순
+            contentQuery.orderBy(ds.dataCreatedDate.desc());
         }
 
-        // ===== 실행: 페이지 데이터 =====
+        // fetch
         List<Tuple> tuples = contentQuery
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // 총 개수
         Long totalCount = countQuery.fetchOne();
         long total = (totalCount == null ? 0L : totalCount);
 
-        // ===== 태그 배치 조회 (응답용) =====
+        // 태그 배치 조회
         List<Integer> ids = tuples.stream().map(t -> t.get(ds.id)).toList();
 
         Map<Integer, List<String>> tagsById = ids.isEmpty() ? Map.of()
@@ -116,39 +104,39 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                         Collectors.mapping(row -> row.get(tag.tagName), Collectors.toList())
                 ));
 
-        // ===== Tuple -> DTO (dataCreatedDate는 LocalDate → atStartOfDay로 LocalDateTime 변환) =====
+        // map to DTO
         List<DataSourceSearchItem> content = tuples.stream()
                 .map(row -> new DataSourceSearchItem(
                         row.get(ds.id),
                         row.get(ds.title),
-                        row.get(ds.dataCreatedDate),
+                        row.get(ds.dataCreatedDate), // LocalDate 그대로 내려줌
                         row.get(ds.summary),
                         row.get(ds.sourceUrl),
                         row.get(ds.imageUrl),
                         tagsById.getOrDefault(row.get(ds.id), List.of()),
-                        Objects.requireNonNull(row.get(ds.category)).name()
+                        row.get(ds.category).name()
                 ))
                 .toList();
 
         return new PageImpl<>(content, pageable, total);
     }
 
-    // Q타입 의존 없이 타입별 Path 지정
+    // createdAt / title 허용. createdAt은 내부적으로 dataCreatedDate로 매핑
     private List<OrderSpecifier<?>> toOrderSpecifiers(Sort sort) {
         if (sort == null || sort.isEmpty()) return List.of();
 
-        // QDataSource.dataSource 의 alias가 "dataSource" 이므로 동일하게 맞춘다.
-        PathBuilder<DataSource> root =
-                new PathBuilder<>(DataSource.class, "dataSource");
+        PathBuilder<org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource> root =
+                new PathBuilder<>(org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource.class, "dataSource");
 
         List<OrderSpecifier<?>> specs = new ArrayList<>();
         for (Sort.Order o : sort) {
             Order dir = o.isAscending() ? Order.ASC : Order.DESC;
             switch (o.getProperty()) {
-                case "title" -> specs.add(new OrderSpecifier<>(dir, root.getString("title")));
-                case "createdAt" -> specs.add(new OrderSpecifier<>(dir, root.getDateTime("createdAt", java.time.LocalDateTime.class)));
-                case "dataCreatedDate" -> specs.add(new OrderSpecifier<>(dir, root.getDate("dataCreatedDate", java.time.LocalDate.class)));
-                default -> { /* 화이트리스트 외 필드는 무시 */ }
+                case "title" ->
+                        specs.add(new OrderSpecifier<>(dir, root.getString("title")));
+                case "createdAt" -> // 요청 키
+                        specs.add(new OrderSpecifier<>(dir, root.getDate("dataCreatedDate", java.time.LocalDate.class)));
+                default -> { }
             }
         }
         return specs;

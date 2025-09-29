@@ -21,7 +21,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceReposito
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -223,7 +222,9 @@ public class DataSourceService {
         return ds.getId();
     }
 
-
+    /**
+     * 자료 검색
+     */
     @Transactional
     public Page<DataSourceSearchItem> search(Integer memberId, DataSourceSearchCondition cond, Pageable pageable) {
         return dataSourceQRepository.search(memberId, cond, pageable);
