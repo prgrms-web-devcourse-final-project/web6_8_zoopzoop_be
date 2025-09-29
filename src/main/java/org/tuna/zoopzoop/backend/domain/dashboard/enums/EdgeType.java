@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.graph.enums;
+package org.tuna.zoopzoop.backend.domain.dashboard.enums;
 
 public enum EdgeType {
     DEFAULT,

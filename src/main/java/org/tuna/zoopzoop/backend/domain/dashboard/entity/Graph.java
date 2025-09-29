@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.graph.entity;
+package org.tuna.zoopzoop.backend.domain.dashboard.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;

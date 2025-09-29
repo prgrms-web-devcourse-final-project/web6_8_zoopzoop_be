@@ -1,11 +1,11 @@
-package org.tuna.zoopzoop.backend.domain.graph.dto;
+package org.tuna.zoopzoop.backend.domain.dashboard.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Edge;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Node;
-import org.tuna.zoopzoop.backend.domain.graph.enums.EdgeType;
-import org.tuna.zoopzoop.backend.domain.graph.enums.NodeType;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Node;
+import org.tuna.zoopzoop.backend.domain.dashboard.enums.EdgeType;
+import org.tuna.zoopzoop.backend.domain.dashboard.enums.NodeType;
 
 import java.util.List;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.graph.controller;
+package org.tuna.zoopzoop.backend.domain.dashboard.controller;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.graph.repository.GraphRepository;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Transactional
-class GraphControllerTest {
+class DashboardControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

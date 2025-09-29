@@ -1,9 +1,9 @@
-package org.tuna.zoopzoop.backend.domain.graph.entity;
+package org.tuna.zoopzoop.backend.domain.dashboard.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.tuna.zoopzoop.backend.domain.graph.enums.NodeType;
+import org.tuna.zoopzoop.backend.domain.dashboard.enums.NodeType;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.util.HashMap;

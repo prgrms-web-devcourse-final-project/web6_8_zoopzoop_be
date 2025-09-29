@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.graph.controller;
+package org.tuna.zoopzoop.backend.domain.dashboard.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -6,16 +6,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.tuna.zoopzoop.backend.domain.graph.dto.BodyForReactFlow;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.graph.service.GraphService;
+import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.service.GraphService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/graph")
 @Tag(name = "ApiV1GraphController", description = "React-flow 데이터 컨트롤러")
-public class ApiV1GraphController {
+public class ApiV1DashboardController {
     private final GraphService graphService;
 
     /**
