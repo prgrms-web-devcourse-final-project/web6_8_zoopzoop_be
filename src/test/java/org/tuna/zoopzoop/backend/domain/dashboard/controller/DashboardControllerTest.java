@@ -152,7 +152,7 @@ class DashboardControllerTest extends ControllerTestSupport {
         // Then: 수정 성공 응답 확인
         expectOk(
                 updateResult,
-                "React-flow 데이터를 저장 했습니다."
+                "React-flow 데이터를 저장했습니다."
         );
 
         // When: 데이터 재조회하여 검증

@@ -42,7 +42,7 @@ public class ApiV1DashboardController {
                 .status(HttpStatus.OK)
                 .body(new RsData<>(
                         "200",
-                        "React-flow 데이터를 저장 했습니다.",
+                        "React-flow 데이터를 저장했습니다.",
                         null
                 ));
     }
