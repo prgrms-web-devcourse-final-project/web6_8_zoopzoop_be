@@ -5,12 +5,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 import org.tuna.zoopzoop.backend.domain.dashboard.service.DashboardService;
 import org.tuna.zoopzoop.backend.domain.dashboard.service.GraphService;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
+import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
+
+import java.nio.file.AccessDeniedException;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,14 +48,19 @@ public class ApiV1DashboardController {
     }
 
     /**
-     * LiveBlocks를 위한 React-flow 데이터 조회 API
+     * React-flow 데이터 조회 API
      * @param dashboardId React-flow 데이터의 dashboard 식별 id
      */
     @GetMapping("/{dashboardId}/graph")
     @Operation(summary = "React-flow 데이터 조회")
     public ResponseEntity<RsData<BodyForReactFlow>> getGraph(
-            @PathVariable Integer dashboardId
-    ) {
+            @PathVariable Integer dashboardId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) throws AccessDeniedException {
+        // TODO : 권한 체크 로직 추가
+        Member member = userDetails.getMember();
+        dashboardService.verifyAccessPermission(member, dashboardId);
+
         Graph graph = dashboardService.getGraphByDashboardId(dashboardId);
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -59,5 +69,6 @@ public class ApiV1DashboardController {
                         "ID: " + dashboardId + " 의 React-flow 데이터를 조회했습니다.",
                         BodyForReactFlow.from(graph)
                 ));
+
     }
 }

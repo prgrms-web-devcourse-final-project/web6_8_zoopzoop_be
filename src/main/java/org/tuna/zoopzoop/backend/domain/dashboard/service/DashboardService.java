@@ -10,7 +10,10 @@ import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Node;
 import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -18,6 +21,7 @@ import java.util.List;
 @Transactional
 public class DashboardService {
     private final DashboardRepository dashboardRepository;
+    private final MembershipService membershipService;
     /**
      * 대시보드 ID를 통해 Graph 데이터를 조회하는 메서드
      */
@@ -47,5 +51,21 @@ public class DashboardService {
         graph.getNodes().addAll(newNodes);
         graph.getEdges().addAll(newEdges);
 
+    }
+
+    /**
+     * 대시보드 접근 권한을 검증하는 메서드
+     * @param member 접근을 시도하는 멤버
+     * @param dashboardId 접근하려는 대시보드 ID
+     */
+    public void verifyAccessPermission(Member member, Integer dashboardId) throws AccessDeniedException {
+        Dashboard dashboard = dashboardRepository.findById(dashboardId)
+                .orElseThrow(() -> new NoResultException(dashboardId + " ID를 가진 대시보드를 찾을 수 없습니다."));
+
+        try{
+            membershipService.findByMemberAndSpace(member, dashboard.getSpace());
+        } catch (NoResultException e) {
+            throw new AccessDeniedException("대시보드의 접근 권한이 없습니다.");
+        }
     }
 }
