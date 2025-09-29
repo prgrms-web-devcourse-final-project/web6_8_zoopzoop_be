@@ -98,9 +98,12 @@ dependencies {
 
     // Playwright for Java
     implementation 'com.microsoft.playwright:playwright:1.54.0'
-
+    
     // Sentry (모니터링 용)
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:8.22.0'
+    
+    // Apache Commons Codec
+    implementation"commons-codec:commons-codec:1.19.0"
 }
 
 dependencyManagement {

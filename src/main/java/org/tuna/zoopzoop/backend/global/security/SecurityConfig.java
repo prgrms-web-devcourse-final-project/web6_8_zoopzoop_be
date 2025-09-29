@@ -43,7 +43,8 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/v1/**", // API 테스트용으로 모두 허용. 차후 필수로 변경 필요.
                                 "/test/**", // 테스트용으로 모두 허용. 차후 삭제 필요.
-                                "/actuator/health" // health 체크용
+                                "/actuator/health", // health 체크용
+                                "/dev/**" // ← 추가: dev 토큰 발급은 누구나 접근
                         ).permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2

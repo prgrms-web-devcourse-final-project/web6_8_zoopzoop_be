@@ -63,6 +63,8 @@ jobs:
           echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
           echo "spring.cloud.aws.stack.auto: false" >> src/main/resources/application-secrets.yml
 
+          echo "liveblocks.secret-key: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}" >> src/main/resources/application-secrets.yml
+
       # 6. application-secrets-server.yml 생성
       - name: Generate application-secrets-server.yml
         run: |

@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.graph.service;
+package org.tuna.zoopzoop.backend.domain.dashboard.service;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,12 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Edge;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Node;
-import org.tuna.zoopzoop.backend.domain.graph.enums.EdgeType;
-import org.tuna.zoopzoop.backend.domain.graph.enums.NodeType;
-import org.tuna.zoopzoop.backend.domain.graph.repository.GraphRepository;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Node;
+import org.tuna.zoopzoop.backend.domain.dashboard.enums.EdgeType;
+import org.tuna.zoopzoop.backend.domain.dashboard.enums.NodeType;
+import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
 
 import java.util.Map;
 

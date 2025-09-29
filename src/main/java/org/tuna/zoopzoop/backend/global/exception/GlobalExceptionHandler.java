@@ -178,6 +178,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<RsData<Void>> handleSecurityException(SecurityException e) {
+        return new ResponseEntity<>(
+                new RsData<>(
+                        "403", // 또는 "401"
+                        e.getMessage()
+                ),
+                FORBIDDEN // 또는 UNAUTHORIZED
+        );
+    }
+
     @ExceptionHandler(Exception.class) // 내부 서버 에러(= 따로 Exception을 지정하지 않은 경우.)
     public ResponseEntity<RsData<Void>> handleException(Exception e) {
         return new ResponseEntity<>(

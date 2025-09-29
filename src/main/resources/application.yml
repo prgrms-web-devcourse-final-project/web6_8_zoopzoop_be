@@ -47,3 +47,8 @@ logging:
 
 server:
   port: 8080
+
+
+app:
+  seed:
+    enabled: true

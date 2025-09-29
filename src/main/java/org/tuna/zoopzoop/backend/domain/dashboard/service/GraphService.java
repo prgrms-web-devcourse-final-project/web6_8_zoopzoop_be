@@ -1,11 +1,11 @@
-package org.tuna.zoopzoop.backend.domain.graph.service;
+package org.tuna.zoopzoop.backend.domain.dashboard.service;
 
 import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.tuna.zoopzoop.backend.domain.graph.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.graph.repository.GraphRepository;
+import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
 
 @Service
 @RequiredArgsConstructor
