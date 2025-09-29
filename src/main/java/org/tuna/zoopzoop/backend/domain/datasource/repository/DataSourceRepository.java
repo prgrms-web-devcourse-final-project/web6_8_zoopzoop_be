@@ -39,5 +39,7 @@ public interface DataSourceRepository extends JpaRepository<DataSource, Integer>
         """)
     List<Integer> findExistingIdsInMember(@Param("memberId") Integer memberId, @Param("ids") Collection<Integer> ids);
 
+    Optional<DataSource> findByFolderIdAndTitle(Integer folderId, String title);
+
 }
 
