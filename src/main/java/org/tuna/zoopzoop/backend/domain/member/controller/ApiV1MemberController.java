@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMember;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberProfileImage;
@@ -25,6 +26,7 @@ import java.util.List;
 @Tag(name = "ApiV1MemberController", description = "사용자 REST API 컨트롤러")
 public class ApiV1MemberController {
     private final MemberService memberService;
+    private final RefreshTokenService refreshTokenService;
     /// api/v1/member/me : 사용자 정보 조회 (GET)
     /// api/v1/member/edit : 사용자 닉네임 수정 (PUT)
     /// api/v1/member : 사용자 탈퇴 (DELETE)
@@ -145,6 +147,7 @@ public class ApiV1MemberController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
+        refreshTokenService.deleteByMember(member);
         memberService.hardDeleteMember(member);
         return ResponseEntity
                 .status(HttpStatus.OK)
