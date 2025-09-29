@@ -193,7 +193,7 @@ class DashboardControllerTest extends ControllerTestSupport {
         ResultActions resultActions = mvc.perform(put(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Liveblocks-Signature", validSignature) // ★ 서명 헤더 추가
-                .content(requestBody));;
+                .content(requestBody));
 
         // Then
         expectNotFound(
@@ -254,7 +254,7 @@ class DashboardControllerTest extends ControllerTestSupport {
     }
 
     // ======================= HELPER METHODS ======================== //
-    private String generateLiveblocksSignature(String requestBody) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeyException {
+    private String generateLiveblocksSignature(String requestBody) throws NoSuchAlgorithmException, InvalidKeyException {
         long timestamp = System.currentTimeMillis();
         String payload = timestamp + "." + requestBody;
 

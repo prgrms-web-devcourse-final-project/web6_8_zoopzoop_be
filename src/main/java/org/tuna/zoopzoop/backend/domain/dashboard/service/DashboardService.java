@@ -102,7 +102,7 @@ public class DashboardService {
         Dashboard dashboard = dashboardRepository.findById(dashboardId)
                 .orElseThrow(() -> new NoResultException(dashboardId + " ID를 가진 대시보드를 찾을 수 없습니다."));
 
-        try{
+        try {
             membershipService.findByMemberAndSpace(member, dashboard.getSpace());
         } catch (NoResultException e) {
             throw new AccessDeniedException("대시보드의 접근 권한이 없습니다.");
