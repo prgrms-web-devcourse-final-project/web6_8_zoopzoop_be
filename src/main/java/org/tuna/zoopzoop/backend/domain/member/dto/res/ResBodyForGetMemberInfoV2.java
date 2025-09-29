@@ -2,16 +2,18 @@ package org.tuna.zoopzoop.backend.domain.member.dto.res;
 
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 
-public record ResBodyForGetMemberInfo(
+public record ResBodyForGetMemberInfoV2(
         Integer id,
         String name,
-        String profileUrl
+        String profileUrl,
+        String provider
 ) {
-    public ResBodyForGetMemberInfo(Member member){
+    public ResBodyForGetMemberInfoV2(Member member){
         this(
                 member.getId(),
                 member.getName(),
-                member.getProfileImageUrl()
+                member.getProfileImageUrl(),
+                member.getProvider().name()
         );
     }
 }

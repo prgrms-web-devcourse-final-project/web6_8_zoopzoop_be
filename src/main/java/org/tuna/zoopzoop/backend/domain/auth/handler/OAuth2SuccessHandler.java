@@ -1,5 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.auth.handler;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.tuna.zoopzoop.backend.domain.auth.entity.AuthResult;
 import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
@@ -21,6 +24,8 @@ import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Base64;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -31,6 +36,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final MemberRepository memberRepository;
     private final MemberService memberService;
     private final RefreshTokenService refreshTokenService;
+    private final AuthResult authResult;
 
     @Value("${front.redirect_domain}")
     private String redirect_domain;
@@ -68,20 +74,26 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("[OAuth2SuccessHandler] Member: {}, SessionId: {}", member.getId(), sessionId);
 
-        String source = request.getParameter("source");
         String state = request.getParameter("state");
-        log.info("[OAuth2SuccessHandler] Source: {}", source);
-        log.info("[OAuth2SuccessHandler] State: {}", state);
-        boolean isExtension = state != null && state.contains("source:extension");
+        if(state != null && state.startsWith("ey")) {
+            Map<String, String> stateData = new ObjectMapper().readValue(
+                    Base64.getUrlDecoder().decode(state),
+                    new TypeReference<Map<String, String>>() {
+                    }
+            );
 
-        // 확장 프로그램에서 로그인 했을 경우.
-        if(isExtension){
-            String redirectUrl = redirect_domain + "/extension/callback"
-                    + "?success=true"
-                    + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")
-                    + "&sessionId=" + URLEncoder.encode(sessionId, "UTF-8");
-            response.sendRedirect(redirectUrl);
-            return;
+            String source = stateData.get("source");
+            String customState = stateData.get("customState");
+
+            log.info("[OAuth2SuccessHandler] Source: {}", source);
+            log.info("[OAuth2SuccessHandler] CustomState: {}", customState);
+
+            // 확장 프로그램에서 로그인 했을 경우.
+            if ("extension".equals(source)) {
+                authResult.put(customState, accessToken, sessionId);
+                response.sendRedirect(redirect_domain + "/extension/success");
+                return;
+            }
         }
 
         if ("http://localhost:3000".equals(redirect_domain)) {

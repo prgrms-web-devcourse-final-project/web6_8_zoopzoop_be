@@ -10,6 +10,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
+import org.tuna.zoopzoop.backend.domain.auth.dto.AuthResultData;
+import org.tuna.zoopzoop.backend.domain.auth.entity.AuthResult;
 import org.tuna.zoopzoop.backend.domain.auth.entity.RefreshToken;
 import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -23,6 +25,7 @@ import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;
 public class ApiV1AuthController {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final AuthResult authResult;
 
     /**
      * 사용자 로그아웃 API
@@ -117,5 +120,30 @@ public class ApiV1AuthController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>("200", "액세스 토큰을 재발급 했습니다.", null));
+    }
+
+    @GetMapping("/result")
+    @Operation(summary = "확장프로그램 백그라운드 풀링 대응 API")
+    public ResponseEntity<RsData<AuthResultData>> pullingResult(
+            @RequestParam String state
+    ) {
+        AuthResultData resultData = authResult.get(state);
+        if(resultData == null) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RsData<>(
+                            "404",
+                            "state에 해당하는 토큰이 준비되지 않았거나, 잘못된 state 입니다.",
+                            null
+                    )
+            );
+        }
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new RsData<>(
+                        "200",
+                        "토큰이 정상적으로 발급되었습니다.",
+                        resultData
+                ));
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfo;
+import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForGetMemberInfoV2;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -40,7 +41,7 @@ public class ApiV1MemberController {
      */
     @GetMapping("/me")
     @Operation(summary = "사용자 정보 조회")
-    public ResponseEntity<RsData<ResBodyForGetMemberInfo>> getMemberInfo(
+    public ResponseEntity<RsData<ResBodyForGetMemberInfoV2>> getMemberInfo(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
@@ -50,7 +51,7 @@ public class ApiV1MemberController {
                         new RsData<>(
                                 "200",
                                 "사용자 정보를 조회했습니다.",
-                                new ResBodyForGetMemberInfo(member)
+                                new ResBodyForGetMemberInfoV2(member)
                         )
                 );
     }
