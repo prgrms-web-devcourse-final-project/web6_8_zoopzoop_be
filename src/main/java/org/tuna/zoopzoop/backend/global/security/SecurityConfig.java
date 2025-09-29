@@ -45,7 +45,6 @@ public class SecurityConfig {
                                 "/test/**", // 테스트용으로 모두 허용. 차후 삭제 필요.
                                 "/actuator/health" // health 체크용
                         ).permitAll()
-                        .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(authorization -> authorization
