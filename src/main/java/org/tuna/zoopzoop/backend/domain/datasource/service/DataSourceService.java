@@ -3,6 +3,8 @@ package org.tuna.zoopzoop.backend.domain.datasource.service;
 import jakarta.persistence.NoResultException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
@@ -10,9 +12,11 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
@@ -29,6 +33,7 @@ public class DataSourceService {
     private final PersonalArchiveRepository personalArchiveRepository;
     private final TagRepository tagRepository;
     private final DataProcessorService dataProcessorService;
+    private final DataSourceQRepository dataSourceQRepository;
 
     /**
      * 지정한 folder 위치에 자료 생성
@@ -216,6 +221,12 @@ public class DataSourceService {
             ds.setSummary(newSummary);
 
         return ds.getId();
+    }
+
+
+    @Transactional
+    public Page<DataSourceSearchItem> search(Integer memberId, DataSourceSearchCondition cond, Pageable pageable) {
+        return dataSourceQRepository.search(memberId, cond, pageable);
     }
 
     public record MoveResult(Integer datasourceId, Integer folderId) {}

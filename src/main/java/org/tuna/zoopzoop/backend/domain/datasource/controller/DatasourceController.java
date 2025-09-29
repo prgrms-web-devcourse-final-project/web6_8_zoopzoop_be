@@ -2,6 +2,11 @@ package org.tuna.zoopzoop.backend.domain.datasource.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +15,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -155,6 +161,47 @@ public class DatasourceController {
         return ResponseEntity.ok(
                 new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId))
         );
+    }
+
+    @GetMapping("")
+    public ResponseEntity<?> search(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String summary,
+            @RequestParam(required = false, name = "createdAt")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtAfter,
+            @RequestParam(required = false) String folderName,
+            @RequestParam(required = false) String category,
+            @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Integer memberId = userDetails.getMember().getId();
+
+        DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
+                .title(title)
+                .summary(summary)
+                .createdAtAfter(createdAtAfter)
+                .folderName(folderName)
+                .category(category)
+                .build();
+
+        Page<DataSourceSearchItem> page = dataSourceService.search(memberId, cond, pageable);
+                dataSourceService.search(memberId, cond, pageable);
+
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("msg", "복수개의 자료가 조회됐습니다.");
+        body.put("data", page.getContent());
+        body.put("pageInfo", Map.of(
+                "page", page.getNumber(),
+                "size", page.getSize(),
+                "totalElements", page.getTotalElements(),
+                "totalPages", page.getTotalPages(),
+                "first", page.isFirst(),
+                "last", page.isLast(),
+                "sorted", pageable.getSort().toString().replace(": ", ",")
+        ));
+        return ResponseEntity.ok(body);
     }
 
     record ApiResponse<T>(int status, String msg, T data) {}
