@@ -15,7 +15,6 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolde
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
@@ -47,8 +46,6 @@ class FolderControllerTest {
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
 
-    @Autowired private PersonalArchiveFolderService personalArchiveFolderService;
-
     @Autowired private FolderService folderService;
     @Autowired private FolderRepository folderRepository;
 
@@ -57,7 +54,6 @@ class FolderControllerTest {
     private final String TEST_PROVIDER_KEY = "sc1111"; // WithUserDetails 에서 사용되는 provider key ("KAKAO:sc1111")
     private Integer testMemberId;
     private Integer docsFolderId;
-
 
     @BeforeAll
     void beforeAll() {
@@ -70,7 +66,7 @@ class FolderControllerTest {
                 .orElseThrow();
 
         // GIVEN: 테스트용 폴더 및 샘플 자료 준비 (docs 폴더 + 2개 자료)
-        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "docs");
+        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -103,9 +99,12 @@ class FolderControllerTest {
 
     @AfterAll
     void afterAll() {
-        // 테스트용 회원 삭제 (cascade에 따라 연결된 엔티티 정리)
-        memberRepository.findByProviderAndProviderKey(Provider.KAKAO, TEST_PROVIDER_KEY)
-                .ifPresent(memberRepository::delete);
+        try {
+            if (docsFolderId != null) {
+                dataSourceRepository.deleteAll(dataSourceRepository.findAllByFolderId(docsFolderId));
+                folderRepository.findById(docsFolderId).ifPresent(folderRepository::delete);
+            }
+        } catch (Exception ignored) {}
     }
 
     // CreateFile
@@ -148,7 +147,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void deleteFolder_ok() throws Exception {
         // Given: 새 폴더 생성 후 삭제 준비
-        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "todelete");
+        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "todelete");
         Integer idToDelete = fr.folderId();
 
         // When & Then
@@ -164,7 +163,7 @@ class FolderControllerTest {
     void deleteDefaultFolder_badRequest() throws Exception {
         mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 0))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.msg").value("default 폴더는 삭제할 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -187,7 +186,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void updateFolder_ok() throws Exception {
         // Given: rename 대상 폴더 생성
-        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "toRename");
+        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "toRename");
         Integer id = fr.folderId();
 
         var body = new java.util.HashMap<String,String>();

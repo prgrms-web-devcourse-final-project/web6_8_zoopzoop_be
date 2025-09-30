@@ -12,7 +12,6 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
@@ -43,9 +42,6 @@ public class NewsServiceTest {
 
     @Autowired
     private FolderService folderService;
-
-    @Autowired
-    private PersonalArchiveFolderService personalArchiveFolderService;
 
     @Autowired
     private FolderRepository folderRepository;
@@ -98,7 +94,7 @@ public class NewsServiceTest {
                 Provider.KAKAO
         );
 
-        FolderResponse folderResponse = personalArchiveFolderService.createFolder(member.getId(), "newServiceTestFolder");
+        FolderResponse folderResponse = folderService.createFolderForPersonal(member.getId(), "newServiceTestFolder");
         newsFolderId = folderResponse.folderId();
 
         Folder folder = folderRepository.findById(folderResponse.folderId()).orElse(null);

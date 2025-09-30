@@ -7,6 +7,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.tuna.zoopzoop.backend.domain.auth.global.CustomOAuth2AuthorizationRequestResolver;
 import org.tuna.zoopzoop.backend.domain.auth.handler.OAuth2SuccessHandler;
 import org.tuna.zoopzoop.backend.domain.auth.service.CustomOAuth2UserService;
@@ -72,5 +74,16 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Configuration
+    public class WebConfig implements WebMvcConfigurer {
+        @Override
+        public void addCorsMappings(CorsRegistry registry) {
+            registry.addMapping("/api/v1/**")
+                    .allowedOrigins("*") // 실제 배포시엔 chrome-extension://<EXTENSION_ID> 로 제한 권장
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedHeaders("*");
+        }
     }
 }

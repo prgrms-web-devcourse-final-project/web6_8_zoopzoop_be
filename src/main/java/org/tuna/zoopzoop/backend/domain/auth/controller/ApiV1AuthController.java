@@ -130,7 +130,6 @@ public class ApiV1AuthController {
      */
     @GetMapping("/result")
     @Operation(summary = "확장프로그램 백그라운드 풀링 대응 API")
-    @CrossOrigin(origins = "*")
     public ResponseEntity<RsData<AuthResultData>> pullingResult(
             @RequestParam String state
     ) {

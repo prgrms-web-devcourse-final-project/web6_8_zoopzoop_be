@@ -1,7 +1,5 @@
 package org.tuna.zoopzoop.backend.domain.datasource.dto;
 
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,6 +10,8 @@ public record FileSummary(
         String summary,
         String sourceUrl,
         String imageUrl,
-        List<Tag> tags,
+        List<String> tags,
         String category
 ) {}
+
+

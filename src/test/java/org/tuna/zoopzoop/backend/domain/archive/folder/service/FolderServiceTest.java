@@ -48,7 +48,6 @@ class FolderServiceTest {
     @Mock private FolderRepository folderRepository;
     @Mock private DataSourceRepository dataSourceRepository;
 
-    @InjectMocks private PersonalArchiveFolderService personalArchiveFolderService;
     @InjectMocks private FolderService folderService;
 
     private Member member;
@@ -75,7 +74,7 @@ class FolderServiceTest {
     @DisplayName("폴더 생성 성공(중복 없음)")
     void createFolder_success() {
         // GIVEN
-        when(memberRepository.findById(1)).thenReturn(Optional.of(member));
+        when(memberRepository.findById(1)).thenReturn(Optional.of(member)); // <- 반드시 필요
         when(personalArchiveRepository.findByMemberId(1)).thenReturn(Optional.of(personalArchive));
         when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), anyString(), anyString()))
                 .thenReturn(List.of());
@@ -88,7 +87,7 @@ class FolderServiceTest {
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
         // WHEN
-        FolderResponse result = personalArchiveFolderService.createFolder(1, "보고서");
+        FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
 
         // THEN
         assertThat(result.folderId()).isEqualTo(999);
@@ -112,7 +111,7 @@ class FolderServiceTest {
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
         // when
-        FolderResponse result = personalArchiveFolderService.createFolder(1, "보고서");
+        FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
 
         // then
         assertThat(result.folderName()).isEqualTo("보고서 (1)");
@@ -127,28 +126,55 @@ class FolderServiceTest {
 
         // when & then
         assertThrows(NoResultException.class,
-                () -> personalArchiveFolderService.createFolder(2, "보고서"));
+                () -> folderService.createFolderForPersonal(2, "보고서"));
     }
 
     // ---------- Delete ----------
     @Test
-    @DisplayName("폴더 삭제 성공")
+    @DisplayName("폴더 삭제 성공 - 자료는 default 폴더로 이관 + soft delete 후 폴더 영구삭제")
     void deleteFolder_success() {
         // given
+        // 삭제 대상 폴더
         Folder folder = new Folder();
         folder.setName("보고서");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", 500);
 
+        // 기본 폴더 스텁 (회원의 default 폴더)
+        Folder defaultFolder = new Folder("default"); // 생성자에서 isDefault=true 설정이라면 그대로 사용
+        defaultFolder.setArchive(archive);
+        ReflectionTestUtils.setField(defaultFolder, "id", 42);
+
+        // 폴더 내 자료들 (이관 + soft delete가 적용될 대상)
+        DataSource d1 = new DataSource(); ReflectionTestUtils.setField(d1, "id", 1); d1.setFolder(folder); d1.setActive(true);
+        DataSource d2 = new DataSource(); ReflectionTestUtils.setField(d2, "id", 2); d2.setFolder(folder); d2.setActive(true);
+
+
         when(folderRepository.findByIdAndMemberId(500, 1)).thenReturn(Optional.of(folder));
+        when(folderRepository.findDefaultByMemberId(1)).thenReturn(Optional.of(defaultFolder));
+
+        when(dataSourceRepository.findAllByFolderId(500)).thenReturn(List.of(d1, d2));
+
 
         // when
         String deletedName = folderService.deleteFolder(1, 500);
 
         // then
         assertThat(deletedName).isEqualTo("보고서");
+
+        // 자료들이 default 폴더로 이관 + soft delete 되었는지 확인
+        assertThat(d1.getFolder().getId()).isEqualTo(defaultFolder.getId());
+        assertThat(d2.getFolder().getId()).isEqualTo(defaultFolder.getId());
+        assertThat(d1.isActive()).isFalse();
+        assertThat(d2.isActive()).isFalse();
+        assertThat(d1.getDeletedAt()).isNotNull();
+        assertThat(d2.getDeletedAt()).isNotNull();
+
+        // 마지막에 폴더 삭제 호출
         verify(folderRepository, times(1)).delete(folder);
     }
+
+
 
     @Test
     @DisplayName("폴더 삭제 실패 - 존재하지 않는 폴더")
@@ -299,7 +325,7 @@ class FolderServiceTest {
         assertThat(f0.summary()).isEqualTo("요약 A");
         assertThat(f0.sourceUrl()).isEqualTo("http://src/a");
         assertThat(f0.imageUrl()).isEqualTo("http://img/a");
-        assertThat(f0.tags()).extracting(Tag::getTagName).containsExactly("tag1", "tag2");
+        assertThat(f0.tags()).containsExactly("tag1", "tag2");
     }
 
     @Test

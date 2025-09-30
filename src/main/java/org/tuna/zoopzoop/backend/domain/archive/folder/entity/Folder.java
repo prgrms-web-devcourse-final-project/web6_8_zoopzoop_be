@@ -42,8 +42,8 @@ public class Folder extends BaseEntity {
     @Column(nullable = false, name = "is_default")
     private boolean isDefault = false;
 
-    // 폴더 삭제 시 데이터 일괄 삭제
-    @OneToMany(mappedBy = "folder", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    // 폴더 삭제 시 데이터 softdelete
+    @OneToMany(mappedBy = "folder")
     private List<DataSource> dataSources = new ArrayList<>();
 
 

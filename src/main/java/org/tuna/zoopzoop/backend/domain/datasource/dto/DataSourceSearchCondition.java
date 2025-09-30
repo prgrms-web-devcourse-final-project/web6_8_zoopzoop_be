@@ -10,4 +10,5 @@ public class DataSourceSearchCondition {
     private final String summary;
     private final String category;
     private final String folderName;
+    private final Boolean isActive;
 }

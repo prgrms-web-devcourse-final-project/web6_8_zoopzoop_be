@@ -13,9 +13,13 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,14 +40,21 @@ public class FolderService {
      * - 동시성 충돌 시(더블 클릭, 브라우저 재전송) 재시도
      */
     @Transactional
-    public FolderResponse createFolder(Archive archive, String folderName) {
-        if (archive == null) throw new NoResultException("아카이브가 존재하지 않습니다.");
+    public FolderResponse createFolderForPersonal(Integer currentMemberId, String folderName) {
         if (folderName == null || folderName.trim().isEmpty())
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
 
-        String requested = folderName.trim();
-        String unique = generateUniqueFolderName(archive.getId(), requested);
+        Member member = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new NoResultException("멤버를 찾을 수 없습니다."));
 
+        Archive archive = personalArchiveRepository.findByMemberId(member.getId())
+                .map(PersonalArchive::getArchive)
+                .orElseThrow(() -> new NoResultException("개인 아카이브가 없습니다."));
+
+        final String requested = folderName.trim();
+
+        // 동시성 춛돌시 2번 재시도
+        String unique = generateUniqueFolderName(archive.getId(), requested);
         for (int attempt = 0; attempt < 2; attempt++) {
             try {
                 Folder folder = new Folder();
@@ -52,7 +63,7 @@ public class FolderService {
                 folder.setDefault(false);
 
                 Folder saved = folderRepository.save(folder);
-                return new FolderResponse(saved.getId(), saved.getName());
+                return new FolderResponse( saved.getId(), saved.getName());
             } catch (DataIntegrityViolationException e) {
                 unique = generateUniqueFolderName(archive.getId(), requested);
             }
@@ -102,20 +113,33 @@ public class FolderService {
     }
 
     /**
-     *  folderId에 해당하는 폴더 삭제
-     *  soft delete 아직 구현 X
+     *  folderId에 해당하는 폴더 영구 삭제
      */
     @Transactional
     public String deleteFolder(Integer currentId, Integer folderId) {
-        // 공격자에게 리소스 존재 여부를 노출 X (존재하지 않음 / 남의 폴더)
+        // 소유한 폴더인지 확인
         Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
-        if (folder.isDefault())
+        if (folder.isDefault()) {
             throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
+        }
+
+        Folder defaultFolder = folderRepository.findDefaultByMemberId(currentId)
+                .orElseThrow(() -> new IllegalStateException("default 폴더가 존재하지 않습니다."));
+
+        // 폴더 내 자료들을 Default로 이관 + soft delete
+        List<DataSource> dataSources = dataSourceRepository.findAllByFolderId(folderId);
+        LocalDate now = LocalDate.now();
+        for (DataSource ds : dataSources) {
+            ds.setFolder(defaultFolder);
+            ds.setActive(false);
+            ds.setDeletedAt(now);
+        }
 
         String name = folder.getName();
         folderRepository.delete(folder);
+
         return name;
     }
 
@@ -176,8 +200,11 @@ public class FolderService {
                         ds.getSummary(),
                         ds.getSourceUrl(),
                         ds.getImageUrl(),
-                        ds.getTags() == null ? List.of() : ds.getTags(),
-                        ds.getCategory() == null ? null : ds.getCategory().toString()
+                        ds.getTags() == null ? List.of()
+                                : ds.getTags().stream()
+                                .map(Tag::getTagName)
+                                .toList(),
+                        ds.getCategory() == null ? null : ds.getCategory().name()
                 ))
                 .toList();
 

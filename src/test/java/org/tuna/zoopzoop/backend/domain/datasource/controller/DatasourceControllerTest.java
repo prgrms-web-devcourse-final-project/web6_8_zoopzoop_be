@@ -283,6 +283,78 @@ class DatasourceControllerTest {
                 .andExpect(jsonPath("$.status").value("404"));
     }
 
+    // soft delete
+    @Test
+    @DisplayName("소프트삭제 실패: 존재하지 않는 ID 포함 -> 404")
+    @WithUserDetails("KAKAO:testUser_sc1111")
+    void softDelete_notFoundIds() throws Exception {
+        String body = "{\"ids\":[999999]}";
+
+        mockMvc.perform(patch("/api/v1/archive/soft-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("소프트삭제 실패: 빈 배열 -> 400")
+    @WithUserDetails("KAKAO:testUser_sc1111")
+    void softDelete_emptyIds_badRequest() throws Exception {
+        String body = "{\"ids\":[]}";
+
+        mockMvc.perform(patch("/api/v1/archive/soft-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+
+    // restore
+    @Test
+    @DisplayName("복구: 단건 -> 200")
+    @WithUserDetails("KAKAO:testUser_sc1111")
+    void restore_one_ok() throws Exception {
+        String body = String.format("{\"ids\":[%d]}", dataSourceId1);
+
+        mockMvc.perform(patch("/api/v1/archive/restore")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("자료들이 복구됐습니다."))
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("복구: 다건 -> 200")
+    @WithUserDetails("KAKAO:testUser_sc1111")
+    void restore_many_ok() throws Exception {
+        String body = String.format("{\"ids\":[%d,%d]}", dataSourceId1, dataSourceId2);
+
+        mockMvc.perform(patch("/api/v1/archive/restore")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("자료들이 복구됐습니다."))
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("복구 실패: 존재하지 않는 ID 포함 -> 404")
+    @WithUserDetails("KAKAO:testUser_sc1111")
+    void restore_notFoundIds() throws Exception {
+        String body = "{\"ids\":[99999]}";
+
+        mockMvc.perform(patch("/api/v1/archive/restore")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
     // 자료 단건 이동
     @Test
     @DisplayName("단건 이동 성공 -> 200")
@@ -418,7 +490,6 @@ class DatasourceControllerTest {
     }
 
     // 검색
-
     @Test
     @DisplayName("검색 성공: page, size, dataCreatedDate DESC 기본정렬")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
@@ -550,5 +621,4 @@ class DatasourceControllerTest {
                 .andExpect(jsonPath("$.status").value(either(is(200)).or(is("200"))))
                 .andExpect(jsonPath("$.data").isArray());
     }
-
 }

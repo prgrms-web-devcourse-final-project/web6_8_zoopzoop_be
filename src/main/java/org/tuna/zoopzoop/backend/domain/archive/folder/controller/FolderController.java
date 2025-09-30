@@ -11,7 +11,6 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.resBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -26,7 +25,6 @@ import java.util.Map;
 @Tag(name = "ApiV1Folder", description = "개인 아카이브의 폴더 CRUD")
 public class FolderController {
 
-    private final PersonalArchiveFolderService personalArchiveFolderService;
     private final FolderService folderService;
 
     /**
@@ -40,8 +38,8 @@ public class FolderController {
             @Valid @RequestBody reqBodyForCreateFolder rq,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Integer memberId = userDetails.getMember().getId();
-        FolderResponse createFile = personalArchiveFolderService.createFolder(memberId, rq.folderName());
+        Member member = userDetails.getMember();
+        FolderResponse createFile = folderService.createFolderForPersonal(member.getId(), rq.folderName());
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
         return new RsData<>(
@@ -62,9 +60,9 @@ public class FolderController {
     ) {
         if (folderId == 0) {
             var body = new java.util.HashMap<String, Object>();
-            body.put("status", 400);
+            body.put("status", 409);
             body.put("msg", "default 폴더는 삭제할 수 없습니다.");
-            body.put("data", null); // HashMap은 null 허용
+            body.put("data", null);
             return ResponseEntity.badRequest().body(body);
         }
 
@@ -74,7 +72,7 @@ public class FolderController {
         var body = new java.util.HashMap<String, Object>();
         body.put("status", 200);
         body.put("msg", deletedFolderName + " 폴더가 삭제됐습니다.");
-        body.put("data", null); // <- 여기도 Map.of 쓰면 NPE 납니다
+        body.put("data", null);
         return ResponseEntity.ok(body);
     }
 

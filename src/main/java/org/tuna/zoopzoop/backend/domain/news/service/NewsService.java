@@ -22,8 +22,10 @@ public class NewsService {
         List<FileSummary> files = folderFilesDto.files();
 
         Map<String, Long> tags = files.stream()
-                .flatMap(file -> file.tags().stream())
-                .map(tag -> tag.getTagName())
+                .flatMap(file -> {
+                    List<String> ts = file.tags();
+                    return (ts == null ? List.<String>of() : ts).stream();
+                })
                 .collect(Collectors.groupingBy(
                         tagName -> tagName,
                         Collectors.counting()

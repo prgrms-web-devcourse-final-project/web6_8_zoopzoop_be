@@ -68,4 +68,8 @@ public class DataSource extends BaseEntity {
     // 활성화 여부
     @Column(nullable = false)
     private boolean isActive = true;
+
+    // 삭제 일자
+    @Column
+    private LocalDate deletedAt;
 }
