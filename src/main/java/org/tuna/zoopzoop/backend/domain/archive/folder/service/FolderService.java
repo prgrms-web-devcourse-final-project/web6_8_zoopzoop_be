@@ -16,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 
 import java.util.HashSet;
 import java.util.List;
@@ -184,8 +185,11 @@ public class FolderService {
                         ds.getSummary(),
                         ds.getSourceUrl(),
                         ds.getImageUrl(),
-                        ds.getTags() == null ? List.of() : ds.getTags(),
-                        ds.getCategory() == null ? null : ds.getCategory().toString()
+                        ds.getTags() == null ? List.of()
+                                : ds.getTags().stream()
+                                .map(Tag::getTagName)
+                                .toList(),
+                        ds.getCategory() == null ? null : ds.getCategory().name()
                 ))
                 .toList();
 
