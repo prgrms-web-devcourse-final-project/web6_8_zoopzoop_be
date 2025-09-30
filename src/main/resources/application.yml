@@ -37,15 +37,15 @@ spring:
           temperature: 0
   data: #RedisTemplate 등을 사용하기 위한 직접 연결용
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
       timeout: 6000
+      password: zoopzoopRedisTest!
   cache: #Spring Cache를 사용하기 위한 Redis
     type: redis
     redis:
       time-to-live: 300000
       cache-null-values: false
-      key-prefix:
 
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
