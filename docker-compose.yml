@@ -1,0 +1,15 @@
+# Docker Compose 파일 형식 버전 지정
+version: '3.8'
+
+# 실행할 서비스 목록
+services:
+  # RabbitMQ 서비스 정의
+  rabbitmq:
+    image: rabbitmq:3-management      # 관리자 UI가 포함된 공식 RabbitMQ 이미지
+    container_name: local-rabbitmq  # 컨테이너에 고정된 이름을 부여
+    ports:
+      - "5672:5672"   # AMQP 포트: Spring Boot 앱이 연결할 포트
+      - "15672:15672"  # 관리자 UI 포트: 웹 브라우저로 접속할 포트
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest # 기본 사용자 ID
+      - RABBITMQ_DEFAULT_PASS=guest # 기본 비밀번호

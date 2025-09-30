@@ -46,6 +46,11 @@ spring:
       time-to-live: 300000
       cache-null-values: false
       key-prefix:
+  rabbitmq: # RabbitMQ 연결 설정
+    host: ${SPRING_RABBITMQ_HOST:localhost} # 환경 변수(SPRING_RABBITMQ_HOST)가 있으면 그 값을 쓰고, 없으면 기본값(localhost)을 사용
+    port: 5672
+    username: guest
+    password: guest
 
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
