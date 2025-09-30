@@ -60,11 +60,11 @@ public class MembershipService {
      */
     public Page<Membership> findByMember(Member member, String state, Pageable pageable) {
         if (state.equalsIgnoreCase("PENDING")) {
-            return membershipRepository.findAllByMemberAndAuthority(member, Authority.PENDING, pageable);
+            return membershipRepository.findAllByMemberAndAuthorityOrderById(member, Authority.PENDING, pageable);
         } else if (state.equalsIgnoreCase("JOINED")) {
-            return membershipRepository.findAllByMemberAndAuthorityIsNot(member, Authority.PENDING, pageable);
+            return membershipRepository.findAllByMemberAndAuthorityIsNotOrderById(member, Authority.PENDING, pageable);
         } else {
-            return membershipRepository.findAllByMember(member, pageable);
+            return membershipRepository.findAllByMemberOrderById(member, pageable);
         }
     }
 
@@ -76,11 +76,12 @@ public class MembershipService {
      */
     public List<Membership> findByMember(Member member, String state) {
         if (state.equalsIgnoreCase("PENDING")) {
-            return membershipRepository.findAllByMemberAndAuthority(member, Authority.PENDING);
+            return membershipRepository.findAllByMemberAndAuthorityOrderById(member, Authority.PENDING);
         } else if (state.equalsIgnoreCase("JOINED")) {
-            return membershipRepository.findAllByMemberAndAuthorityIsNot(member, Authority.PENDING);
+            return membershipRepository.findAllByMemberAndAuthorityIsNotOrderById(member, Authority.PENDING);
         } else {
-            return membershipRepository.findAllByMember(member);
+            List<Membership> memberships = membershipRepository.findAllByMemberOrderById(member);
+            return memberships;
         }
     }
 
@@ -90,7 +91,7 @@ public class MembershipService {
      * @return 해당 스페이스에 속한 초대 상태(PENDING)인 멤버십 목록
      */
     public List<Membership> findInvitationsBySpace(Space space) {
-        return membershipRepository.findAllBySpaceAndAuthority(space, Authority.PENDING);
+        return membershipRepository.findAllBySpaceAndAuthorityOrderById(space, Authority.PENDING);
     }
 
     /**
@@ -99,7 +100,7 @@ public class MembershipService {
      * @return 해당 스페이스에 속한 가입 상태(JOINED)인 멤버십 목록
      */
     public List<Membership> findMembersBySpace(Space space) {
-        return membershipRepository.findAllBySpaceAndAuthorityIsNot(space, Authority.PENDING);
+        return membershipRepository.findAllBySpaceAndAuthorityIsNotOrderById(space, Authority.PENDING);
     }
 
     // ======================== 권한 조회 ======================== //
