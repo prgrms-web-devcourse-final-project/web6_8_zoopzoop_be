@@ -23,6 +23,20 @@ jobs:
     env:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+
+    # CI 작업이 실행되는 동안 RabbitMQ 서비스 컨테이너를 함께 실행
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+        # RabbitMQ가 완전히 준비될 때까지 기다리는 상태 확인 옵션
+        options: >-
+          --health-cmd "rabbitmq-diagnostics check_running"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # 1. 소스 코드 체크아웃
       - name: Checkout source code
@@ -74,6 +88,12 @@ jobs:
 
       # 7. Gradle 테스트 실행
       - name: Test with Gradle
+        # 테스트 단계에서 RabbitMQ 연결을 위한 환경 변수 설정
+        env:
+          SPRING_RABBITMQ_HOST: localhost
+          SPRING_RABBITMQ_PORT: 5672
+          SPRING_RABBITMQ_USERNAME: guest
+          SPRING_RABBITMQ_PASSWORD: guest
         run: ./gradlew test
 
       # 8. 테스트 결과 요약 출력
