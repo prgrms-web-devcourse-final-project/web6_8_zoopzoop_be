@@ -92,6 +92,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             if ("extension".equals(source)) {
                 authResult.put(customState, accessToken, sessionId);
                 response.sendRedirect(redirect_domain + "/extension/success");
+                response.flushBuffer();
                 return;
             }
         }
