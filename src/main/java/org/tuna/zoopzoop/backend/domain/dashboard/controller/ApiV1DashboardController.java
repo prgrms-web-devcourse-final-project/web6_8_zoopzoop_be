@@ -41,9 +41,9 @@ public class ApiV1DashboardController {
         dashboardService.queueGraphUpdate(dashboardId, requestBody, signature);
 
         return ResponseEntity
-                .status(HttpStatus.OK)
+                .status(HttpStatus.ACCEPTED)
                 .body(new RsData<>(
-                        "200",
+                        "202",
                         "데이터 업데이트 요청이 성공적으로 접수되었습니다.",
                         null
                 ));
