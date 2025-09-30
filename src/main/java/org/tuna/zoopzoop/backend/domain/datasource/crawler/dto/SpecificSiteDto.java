@@ -9,4 +9,14 @@ public record SpecificSiteDto(
         String imageUrl, // 썸네일 이미지 url
         String source // 출처
 ) {
+    @Override
+    public String toString() {
+        return "SpecificSiteDto {\n" +
+                "  title='" + title + "',\n" +
+                "  dataCreatedDate=" + dataCreatedDate + ",\n" +
+                "  content='" + content + "',\n" +
+                "  imageUrl='" + imageUrl + "',\n" +
+                "  source='" + source + "'\n" +
+                "}";
+    }
 }
