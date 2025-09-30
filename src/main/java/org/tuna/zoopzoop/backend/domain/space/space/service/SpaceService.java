@@ -3,7 +3,6 @@ package org.tuna.zoopzoop.backend.domain.space.space.service;
 import jakarta.persistence.NoResultException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.service.spi.ServiceException;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -99,6 +98,7 @@ public class SpaceService {
      * @return 삭제된 스페이스 이름
      * @throws IllegalArgumentException 스페이스가 존재하지 않을 경우
      */
+
     @Transactional
     public String deleteSpace(Integer spaceId) {
         Space space = spaceRepository.findById(spaceId)
@@ -118,6 +118,7 @@ public class SpaceService {
      * @throws IllegalArgumentException 스페이스가 존재하지 않을 경우
      * @throws DuplicateSpaceNameException 새로운 스페이스 이름이 중복될 경우
      */
+
     @Transactional
     public Space updateSpaceName(Integer spaceId, @NotBlank @Length(max = 50) String name) {
         Space space = spaceRepository.findById(spaceId)
