@@ -116,7 +116,7 @@ public class DashboardService {
      * @param requestBody 요청 바디
      * @param signatureHeader 서명 헤더
      */
-    public void queueGraphUdate(Integer dashboardId, String requestBody, String signatureHeader){
+    public void queueGraphUpdate(Integer dashboardId, String requestBody, String signatureHeader){
         // 서명 검증은 동기적으로 즉시 처리
         if (!signatureService.isValidSignature(requestBody, signatureHeader)) {
             throw new SecurityException("Invalid webhook signature.");
