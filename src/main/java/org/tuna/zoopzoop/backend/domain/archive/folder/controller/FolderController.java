@@ -60,9 +60,9 @@ public class FolderController {
     ) {
         if (folderId == 0) {
             var body = new java.util.HashMap<String, Object>();
-            body.put("status", 400);
+            body.put("status", 409);
             body.put("msg", "default 폴더는 삭제할 수 없습니다.");
-            body.put("data", null); // HashMap은 null 허용
+            body.put("data", null);
             return ResponseEntity.badRequest().body(body);
         }
 
@@ -72,7 +72,7 @@ public class FolderController {
         var body = new java.util.HashMap<String, Object>();
         body.put("status", 200);
         body.put("msg", deletedFolderName + " 폴더가 삭제됐습니다.");
-        body.put("data", null); // <- 여기도 Map.of 쓰면 NPE 납니다
+        body.put("data", null);
         return ResponseEntity.ok(body);
     }
 

@@ -99,9 +99,12 @@ class FolderControllerTest {
 
     @AfterAll
     void afterAll() {
-        // 테스트용 회원 삭제 (cascade에 따라 연결된 엔티티 정리)
-        memberRepository.findByProviderAndProviderKey(Provider.KAKAO, TEST_PROVIDER_KEY)
-                .ifPresent(memberRepository::delete);
+        try {
+            if (docsFolderId != null) {
+                dataSourceRepository.deleteAll(dataSourceRepository.findAllByFolderId(docsFolderId));
+                folderRepository.findById(docsFolderId).ifPresent(folderRepository::delete);
+            }
+        } catch (Exception ignored) {}
     }
 
     // CreateFile
@@ -160,7 +163,7 @@ class FolderControllerTest {
     void deleteDefaultFolder_badRequest() throws Exception {
         mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 0))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.msg").value("default 폴더는 삭제할 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }

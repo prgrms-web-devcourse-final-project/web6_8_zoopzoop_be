@@ -13,11 +13,13 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -111,20 +113,33 @@ public class FolderService {
     }
 
     /**
-     *  folderId에 해당하는 폴더 삭제
-     *  soft delete 아직 구현 X
+     *  folderId에 해당하는 폴더 영구 삭제
      */
     @Transactional
     public String deleteFolder(Integer currentId, Integer folderId) {
-        // 공격자에게 리소스 존재 여부를 노출 X (존재하지 않음 / 남의 폴더)
+        // 소유한 폴더인지 확인
         Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
-        if (folder.isDefault())
+        if (folder.isDefault()) {
             throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
+        }
+
+        Folder defaultFolder = folderRepository.findDefaultByMemberId(currentId)
+                .orElseThrow(() -> new IllegalStateException("default 폴더가 존재하지 않습니다."));
+
+        // 폴더 내 자료들을 Default로 이관 + soft delete
+        List<DataSource> dataSources = dataSourceRepository.findAllByFolderId(folderId);
+        LocalDate now = LocalDate.now();
+        for (DataSource ds : dataSources) {
+            ds.setFolder(defaultFolder);
+            ds.setActive(false);
+            ds.setDeletedAt(now);
+        }
 
         String name = folder.getName();
         folderRepository.delete(folder);
+
         return name;
     }
 

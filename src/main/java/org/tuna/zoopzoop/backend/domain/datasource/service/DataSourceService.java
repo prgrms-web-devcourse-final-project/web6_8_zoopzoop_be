@@ -21,6 +21,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceReposito
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -123,9 +124,31 @@ public class DataSourceService {
      */
     @Transactional
     public void deleteMany(Integer memberId, List<Integer> ids) {
-        if (ids == null || ids.isEmpty()) {
+        checkOwnership(memberId, ids);
+        dataSourceRepository.deleteAllByIdInBatch(ids);
+    }
+
+    /**
+     * 자료 소프트 삭제
+     */
+    @Transactional
+    public int softDelete(Integer memberId, List<Integer> ids) {
+        checkOwnership(memberId, ids);
+        return dataSourceRepository.softDeleteAllByIds(ids, LocalDateTime.now());
+    }
+
+    /**
+     * 자료 복원
+     */
+    @Transactional
+    public int restore(Integer memberId, List<Integer> ids) {
+        checkOwnership(memberId, ids);
+        return dataSourceRepository.restoreAllByIds(ids);
+    }
+
+    private void checkOwnership(Integer memberId, List<Integer> ids) {
+        if (ids == null || ids.isEmpty())
             throw new IllegalArgumentException("삭제할 자료 id 배열이 비어있습니다.");
-        }
 
         // 해당 멤버가 소유한 id만 조회
         List<Integer> existing = dataSourceRepository.findExistingIdsInMember(memberId, ids);
@@ -134,8 +157,6 @@ public class DataSourceService {
             missing.removeAll(new HashSet<>(existing));
             throw new NoResultException("존재하지 않거나 소유자가 다른 자료 ID 포함: " + missing);
         }
-
-        dataSourceRepository.deleteAllByIdInBatch(ids);
     }
 
     /**

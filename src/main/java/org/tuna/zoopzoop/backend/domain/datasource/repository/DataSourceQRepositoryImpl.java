@@ -37,9 +37,13 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         QTag tag = QTag.tag;
 
         // where
-        BooleanBuilder where = new BooleanBuilder()
-                .and(ds.isActive.isTrue());
+        BooleanBuilder where = new BooleanBuilder();
 
+        if (cond.getIsActive() == null || Boolean.TRUE.equals(cond.getIsActive())) {
+            where.and(ds.isActive.isTrue());
+        } else {
+            where.and(ds.isActive.isFalse());
+        }
         if (cond.getTitle() != null && !cond.getTitle().isBlank()) {
             where.and(ds.title.containsIgnoreCase(cond.getTitle()));
         }

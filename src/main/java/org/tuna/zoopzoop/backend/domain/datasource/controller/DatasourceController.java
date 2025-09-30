@@ -51,7 +51,7 @@ public class DatasourceController {
     }
 
     /**
-     * 자료 단건 삭제
+     * 자료 단건 완전 삭제
      */
     @Operation(summary = "자료 단건 삭제", description = "내 PersonalArchive 안에 자료를 단건 삭제합니다.")
     @DeleteMapping("/{dataSourceId}")
@@ -71,7 +71,7 @@ public class DatasourceController {
     }
 
     /**
-     * 자료 다건 삭제
+     * 자료 다건 완전 삭제
      */
     @Operation(summary = "자료 다건 삭제", description = "내 PersonalArchive 안에 자료를 다건 삭제합니다.")
     @PostMapping("/delete")
@@ -90,6 +90,38 @@ public class DatasourceController {
         return ResponseEntity.ok(res);
     }
 
+    /**
+     * 자료 다건 소프트 삭제
+     */
+    @Operation(summary = "자료 다건 임시 삭제", description = "내 PersonalArchive 안에 자료들을 임시 삭제합니다.")
+    @PatchMapping("/soft-delete")
+    public ResponseEntity<?> softDelete(
+            @RequestBody @Valid IdsRequest req,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        int cnt = dataSourceService.softDelete(user.getMember().getId(), req.ids());
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("status", 200);
+        res.put("msg", "자료들이 임시 삭제됐습니다.");
+        res.put("data", null);
+        return ResponseEntity.ok(res);
+    }
+    /**
+     * 자료 다건 복원
+     */
+    @Operation(summary = "자료 다건 복원", description = "내 PersonalArchive 안에 자료들을 복원합니다.")
+    @PatchMapping("/restore")
+    public ResponseEntity<?> restore(
+            @RequestBody @Valid IdsRequest req,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        int cnt = dataSourceService.restore(user.getMember().getId(), req.ids());
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("status", 200);
+        res.put("msg", "자료들이 복구됐습니다.");
+        res.put("data", null);
+        return ResponseEntity.ok(res);
+    }
     /**
      * 자료 단건 이동
      *  folderId=null 이면 default 폴더
@@ -172,7 +204,7 @@ public class DatasourceController {
     }
 
     /**
-     * 자료 검색 
+     * 자료 검색
      */
     @Operation(summary = "자료 검색", description = "내 PersonalArchive 안에 자료들을 검색합니다.")
     @GetMapping("")
@@ -181,6 +213,7 @@ public class DatasourceController {
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String folderName,
+            @RequestParam(required = false, defaultValue = "true") Boolean isActive,
             @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -192,6 +225,7 @@ public class DatasourceController {
                 .summary(summary)
                 .folderName(folderName)
                 .category(category)
+                .isActive(isActive)
                 .build();
 
         Page<DataSourceSearchItem> page = dataSourceService.search(memberId, cond, pageable);
