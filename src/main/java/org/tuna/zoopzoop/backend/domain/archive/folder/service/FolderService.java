@@ -14,7 +14,6 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderReposito
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
 import java.util.HashSet;
@@ -37,21 +36,14 @@ public class FolderService {
      * - 동시성 충돌 시(더블 클릭, 브라우저 재전송) 재시도
      */
     @Transactional
-    public FolderResponse createFolderForPersonal(Integer currentMemberId, String folderName) {
+    public FolderResponse createFolder(Archive archive, String folderName) {
+        if (archive == null) throw new NoResultException("아카이브가 존재하지 않습니다.");
         if (folderName == null || folderName.trim().isEmpty())
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
 
-        Member member = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> new NoResultException("멤버를 찾을 수 없습니다."));
-
-        Archive archive = personalArchiveRepository.findByMemberId(member.getId())
-                .map(PersonalArchive::getArchive)
-                .orElseThrow(() -> new NoResultException("개인 아카이브가 없습니다."));
-
-        final String requested = folderName.trim();
-
-        // 동시성 춛돌시 2번 재시도
+        String requested = folderName.trim();
         String unique = generateUniqueFolderName(archive.getId(), requested);
+
         for (int attempt = 0; attempt < 2; attempt++) {
             try {
                 Folder folder = new Folder();
@@ -60,7 +52,7 @@ public class FolderService {
                 folder.setDefault(false);
 
                 Folder saved = folderRepository.save(folder);
-                return new FolderResponse( saved.getId(), saved.getName());
+                return new FolderResponse(saved.getId(), saved.getName());
             } catch (DataIntegrityViolationException e) {
                 unique = generateUniqueFolderName(archive.getId(), requested);
             }

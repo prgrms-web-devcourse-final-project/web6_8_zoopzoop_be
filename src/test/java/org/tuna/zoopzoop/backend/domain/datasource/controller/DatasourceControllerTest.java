@@ -28,6 +28,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceReposito
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 
 import java.time.LocalDate;
@@ -55,6 +56,7 @@ class DatasourceControllerTest {
     @Autowired private FolderService folderService;
     @Autowired private FolderRepository folderRepository;
     @Autowired private DataSourceRepository dataSourceRepository;
+    @Autowired private PersonalArchiveFolderService personalArchiveFolderService;
 
     private final String TEST_PROVIDER_KEY = "testUser_sc1111";
 
@@ -108,7 +110,7 @@ class DatasourceControllerTest {
         testMemberId = member.getId();
 
         // docs 폴더 생성
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "docs");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -286,7 +288,7 @@ class DatasourceControllerTest {
     @DisplayName("단건 이동 성공 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveOne_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolderForPersonal(testMemberId, "moveTarget");
+        FolderResponse newFolder = personalArchiveFolderService.createFolder(testMemberId, "moveTarget");
         Integer toId = newFolder.folderId();
 
         var body = new reqBodyForMoveDataSource(toId);
@@ -345,7 +347,7 @@ class DatasourceControllerTest {
     @DisplayName("자료 다건 이동 성공: 지정 폴더 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveMany_specific_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolderForPersonal(testMemberId, "moveManyTarget");
+        FolderResponse newFolder = personalArchiveFolderService.createFolder(testMemberId, "moveManyTarget");
         Integer toId = newFolder.folderId();
 
         String body = String.format("{\"folderId\":%d,\"dataSourceId\":[%d,%d]}", toId, dataSourceId1, dataSourceId2);

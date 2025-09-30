@@ -48,6 +48,7 @@ class FolderServiceTest {
     @Mock private FolderRepository folderRepository;
     @Mock private DataSourceRepository dataSourceRepository;
 
+    @InjectMocks private PersonalArchiveFolderService personalArchiveFolderService;
     @InjectMocks private FolderService folderService;
 
     private Member member;
@@ -74,7 +75,7 @@ class FolderServiceTest {
     @DisplayName("폴더 생성 성공(중복 없음)")
     void createFolder_success() {
         // GIVEN
-        when(memberRepository.findById(1)).thenReturn(Optional.of(member)); // <- 반드시 필요
+        when(memberRepository.findById(1)).thenReturn(Optional.of(member));
         when(personalArchiveRepository.findByMemberId(1)).thenReturn(Optional.of(personalArchive));
         when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), anyString(), anyString()))
                 .thenReturn(List.of());
@@ -87,7 +88,7 @@ class FolderServiceTest {
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
         // WHEN
-        FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
+        FolderResponse result = personalArchiveFolderService.createFolder(1, "보고서");
 
         // THEN
         assertThat(result.folderId()).isEqualTo(999);
@@ -111,7 +112,7 @@ class FolderServiceTest {
         when(folderRepository.save(any(Folder.class))).thenReturn(saved);
 
         // when
-        FolderResponse result = folderService.createFolderForPersonal(1, "보고서");
+        FolderResponse result = personalArchiveFolderService.createFolder(1, "보고서");
 
         // then
         assertThat(result.folderName()).isEqualTo("보고서 (1)");
@@ -126,7 +127,7 @@ class FolderServiceTest {
 
         // when & then
         assertThrows(NoResultException.class,
-                () -> folderService.createFolderForPersonal(2, "보고서"));
+                () -> personalArchiveFolderService.createFolder(2, "보고서"));
     }
 
     // ---------- Delete ----------

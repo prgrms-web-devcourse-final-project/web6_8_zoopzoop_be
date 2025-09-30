@@ -15,6 +15,7 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolde
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
@@ -46,6 +47,8 @@ class FolderControllerTest {
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
 
+    @Autowired private PersonalArchiveFolderService personalArchiveFolderService;
+
     @Autowired private FolderService folderService;
     @Autowired private FolderRepository folderRepository;
 
@@ -54,6 +57,7 @@ class FolderControllerTest {
     private final String TEST_PROVIDER_KEY = "sc1111"; // WithUserDetails 에서 사용되는 provider key ("KAKAO:sc1111")
     private Integer testMemberId;
     private Integer docsFolderId;
+
 
     @BeforeAll
     void beforeAll() {
@@ -66,7 +70,7 @@ class FolderControllerTest {
                 .orElseThrow();
 
         // GIVEN: 테스트용 폴더 및 샘플 자료 준비 (docs 폴더 + 2개 자료)
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "docs");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -144,7 +148,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void deleteFolder_ok() throws Exception {
         // Given: 새 폴더 생성 후 삭제 준비
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "todelete");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "todelete");
         Integer idToDelete = fr.folderId();
 
         // When & Then
@@ -183,7 +187,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void updateFolder_ok() throws Exception {
         // Given: rename 대상 폴더 생성
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "toRename");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "toRename");
         Integer id = fr.folderId();
 
         var body = new java.util.HashMap<String,String>();
