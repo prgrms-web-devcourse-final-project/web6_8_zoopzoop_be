@@ -3,8 +3,6 @@ package org.tuna.zoopzoop.backend.domain.dashboard.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.binary.Hex;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
@@ -16,11 +14,7 @@ import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
-import java.security.MessageDigest;
 import java.util.List;
 
 @Service

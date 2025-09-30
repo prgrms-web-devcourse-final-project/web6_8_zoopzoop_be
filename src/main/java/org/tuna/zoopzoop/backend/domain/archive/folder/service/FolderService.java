@@ -42,11 +42,11 @@ public class FolderService {
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
 
         Member member = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NoResultException("멤버를 찾을 수 없습니다."));
 
         Archive archive = personalArchiveRepository.findByMemberId(member.getId())
                 .map(PersonalArchive::getArchive)
-                .orElseThrow(() -> new IllegalStateException("개인 아카이브가 없습니다."));
+                .orElseThrow(() -> new NoResultException("개인 아카이브가 없습니다."));
 
         final String requested = folderName.trim();
 
