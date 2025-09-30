@@ -20,7 +20,7 @@ public class AuthResult {
 
     public AuthResultData get(String state) {
         AuthResultData data = redisTemplate.opsForValue().get(PREFIX + state);
-        if (data != null) redisTemplate.delete("auth:" + state);
+        if (data != null) redisTemplate.delete(PREFIX + state);
         return data;
     }
 }
