@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
@@ -30,7 +30,8 @@ import java.util.List;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @ActiveProfiles("test")
@@ -46,7 +47,7 @@ class FolderControllerTest {
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
 
-    @Autowired private FolderService folderService;
+    @Autowired private PersonalArchiveFolderService folderService;
     @Autowired private FolderRepository folderRepository;
 
     @Autowired private DataSourceRepository dataSourceRepository;
@@ -66,7 +67,7 @@ class FolderControllerTest {
                 .orElseThrow();
 
         // GIVEN: 테스트용 폴더 및 샘플 자료 준비 (docs 폴더 + 2개 자료)
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "docs");
+        FolderResponse fr = folderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -147,7 +148,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void deleteFolder_ok() throws Exception {
         // Given: 새 폴더 생성 후 삭제 준비
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "todelete");
+        FolderResponse fr = folderService.createFolder(testMemberId, "todelete");
         Integer idToDelete = fr.folderId();
 
         // When & Then
@@ -186,7 +187,7 @@ class FolderControllerTest {
     @WithUserDetails("KAKAO:sc1111")
     void updateFolder_ok() throws Exception {
         // Given: rename 대상 폴더 생성
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "toRename");
+        FolderResponse fr = folderService.createFolder(testMemberId, "toRename");
         Integer id = fr.folderId();
 
         var body = new java.util.HashMap<String,String>();

@@ -49,7 +49,7 @@ class DataSourceServiceTest {
     @InjectMocks private DataSourceService dataSourceService;
 
     private DataSourceDto dataSourceDto(String title, String summary, LocalDate date, String url,
-                              String img, String source, Category cat, List<String> tags) {
+                                        String img, String source, Category cat, List<String> tags) {
         return new DataSourceDto(title, summary, date, url, img, source, cat, tags);
     }
 
@@ -242,7 +242,7 @@ class DataSourceServiceTest {
                 .thenReturn(List.of("AI", "Spring", "JPA"));
 
         @SuppressWarnings("unchecked")
-        List<Tag> ctxTags = (List<Tag>) ReflectionTestUtils.invokeMethod(
+        List<Tag> ctxTags = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "collectDistinctTagsOfFolder", folderId
         );
 
@@ -276,7 +276,7 @@ class DataSourceServiceTest {
         when(dataProcessorService.process(eq(url), anyList())).thenReturn(returnedDto);
 
         // when (private 메서드 호출)
-        DataSource ds = (DataSource) ReflectionTestUtils.invokeMethod(
+        DataSource ds = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "buildDataSource", folder, url, context
         );
 

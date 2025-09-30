@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.resBodyForCreateFolder;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Tag(name = "ApiV1Folder", description = "개인 아카이브의 폴더 CRUD")
 public class FolderController {
 
-    private final FolderService folderService;
+    private final PersonalArchiveFolderService personalService;
 
     /**
      * 내 PersonalArchive 안에 새 폴더 생성
@@ -39,19 +39,13 @@ public class FolderController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
-        FolderResponse createFile = folderService.createFolderForPersonal(member.getId(), rq.folderName());
-        resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
-
-        return new RsData<>(
-                "200",
-                rq.folderName() + " 폴더가 생성됐습니다.",
-                rs
-        );
+        FolderResponse r = personalService.createFolder(member.getId(), rq.folderName());
+        var rs = new resBodyForCreateFolder(r.folderName(), r.folderId());
+        return new RsData<>("200", rq.folderName() + " 폴더가 생성됐습니다.", rs);
     }
 
     /**
      * 내 PersonalArchive 안의 folder 삭제
-     * @param folderId  삭제할 folderId
      */
     @DeleteMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> deleteFolder(
@@ -65,21 +59,17 @@ public class FolderController {
             body.put("data", null);
             return ResponseEntity.badRequest().body(body);
         }
-
-        Member member = userDetails.getMember();
-        String deletedFolderName = folderService.deleteFolder(member.getId(), folderId);
+        String name = personalService.deleteFolder(userDetails.getMember().getId(), folderId);
 
         var body = new java.util.HashMap<String, Object>();
         body.put("status", 200);
-        body.put("msg", deletedFolderName + " 폴더가 삭제됐습니다.");
+        body.put("msg", name + " 폴더가 삭제됐습니다.");
         body.put("data", null);
         return ResponseEntity.ok(body);
     }
 
     /**
      * 폴더 이름 수정
-     * @param folderId 수정할 폴더 Id
-     * @param body  수정할 폴더 값
      */
     @PatchMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> updateFolderName(
@@ -97,7 +87,7 @@ public class FolderController {
 
         Member member = userDetails.getMember();
         String newName = body.get("folderName");
-        String updatedName = folderService.updateFolderName(member.getId(), folderId, newName);
+        String updatedName = personalService.updateFolderName(member.getId(), folderId, newName);
 
         return ResponseEntity.ok(java.util.Map.of(
                 "status", 200,
@@ -116,7 +106,7 @@ public class FolderController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
-        List<FolderResponse> folders = folderService.getFoldersForPersonal(member.getId());
+        List<FolderResponse> folders = personalService.listFolders(member.getId());
 
         return ResponseEntity.ok(
                 Map.of(
@@ -138,10 +128,10 @@ public class FolderController {
         int memberId = userDetails.getMember().getId();
 
         Integer targetFolderId = (folderId == 0)
-                ? folderService.getDefaultFolderId(memberId)
+                ? personalService.getDefaultFolderId(memberId)
                 : folderId;
 
-        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(memberId, targetFolderId);
+        FolderFilesDto rs = personalService.getFilesInFolder(memberId, targetFolderId);
 
         return ResponseEntity.ok(Map.of(
                 "status", 200,
