@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.test.context.ActiveProfiles;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.dto.AnalyzeContentDto;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.service.AiService;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
@@ -17,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class AiServiceTest {
     @Mock
