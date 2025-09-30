@@ -189,6 +189,17 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(IllegalStateException.class) // 동시성 에러
+    public ResponseEntity<RsData<Void>> handleIllegalStateException(IllegalStateException e) {
+        return new ResponseEntity<>(
+                new RsData<>(
+                        "409",
+                        e.getMessage()
+                ),
+                CONFLICT
+        );
+    }
+
     @ExceptionHandler(Exception.class) // 내부 서버 에러(= 따로 Exception을 지정하지 않은 경우.)
     public ResponseEntity<RsData<Void>> handleException(Exception e) {
         return new ResponseEntity<>(

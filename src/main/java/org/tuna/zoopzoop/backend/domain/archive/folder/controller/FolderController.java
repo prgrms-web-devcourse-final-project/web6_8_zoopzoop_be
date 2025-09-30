@@ -37,7 +37,6 @@ public class FolderController {
     ) {
         Member member = userDetails.getMember();
         FolderResponse createFile = folderService.createFolderForPersonal(member.getId(), rq.folderName());
-
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
         return new RsData<>(
