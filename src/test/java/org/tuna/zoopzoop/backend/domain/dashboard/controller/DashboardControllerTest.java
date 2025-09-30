@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
+import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository;
 import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -29,7 +30,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -51,6 +55,9 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @Autowired
     private MembershipService membershipService;
+
+    @Autowired
+    private DashboardRepository dashboardRepository;
 
     private Integer authorizedDashboardId;
     private Integer unauthorizedDashboardId;
@@ -149,35 +156,29 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @Test
     @WithUserDetails(value = "KAKAO:dc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    @DisplayName("대시보드 그래프 데이터 저장 - 성공")
+    @DisplayName("대시보드 그래프 데이터 저장 요청 - 성공")
     void updateGraph_Success() throws Exception {
         // Given
         String url = String.format("/api/v1/dashboard/%d/graph", authorizedDashboardId);
         String requestBody = createReactFlowJsonBody();
         String validSignature = generateLiveblocksSignature(requestBody);
 
-        // When: 데이터 저장
+        // When: 데이터 저장 요청 (메세지 발행)
         ResultActions updateResult = mvc.perform(put(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Liveblocks-Signature", validSignature) // ★ 서명 헤더 추가
                 .content(requestBody));
 
-        // Then: 저장 성공 응답 확인
-        expectOk(
-                updateResult,
-                "React-flow 데이터를 저장했습니다."
-        );
+        // Then: 요청 접수 성공 응답 확인
+        expectAccepted(updateResult, "데이터 업데이트 요청이 성공적으로 접수되었습니다.");
 
-        // When: 데이터 재조회하여 검증
-        ResultActions getResult = performGet(url);
-
-        // Then: 재조회 결과가 수정한 데이터와 일치하는지 확인
-        getResult
-                .andExpect(jsonPath("$.data.nodes", hasSize(2)))
-                .andExpect(jsonPath("$.data.edges", hasSize(1)))
-                .andExpect(jsonPath("$.data.nodes[0].id").value("1"))
-                .andExpect(jsonPath("$.data.nodes[0].data.title").value("노드1"))
-                .andExpect(jsonPath("$.data.edges[0].id").value("e1-2"));
+        // Then: (비동기 검증) 최종적으로 DB에 데이터가 반영될 때까지 최대 5초간 기다립니다.
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            Graph updatedGraph = dashboardRepository.findById(authorizedDashboardId).get().getGraph();
+            assertThat(updatedGraph.getNodes()).hasSize(2);
+            assertThat(updatedGraph.getEdges()).hasSize(1);
+            assertThat(updatedGraph.getNodes().get(0).getData().get("title")).isEqualTo("노드1");
+        });
     }
 
     @Test
