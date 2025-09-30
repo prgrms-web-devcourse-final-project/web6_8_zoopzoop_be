@@ -125,7 +125,7 @@ class FolderServiceTest {
         when(memberRepository.findById(2)).thenReturn(Optional.empty());
 
         // when & then
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NoResultException.class,
                 () -> folderService.createFolderForPersonal(2, "보고서"));
     }
 
@@ -292,7 +292,7 @@ class FolderServiceTest {
 
         // then
         assertThat(dto.files()).hasSize(2);
-        FileSummary f0 = dto.files().get(0);
+        FileSummary f0 = dto.files().getFirst();
         assertThat(f0.dataSourceId()).isEqualTo(10);
         assertThat(f0.title()).isEqualTo("spec.pdf");
         assertThat(f0.summary()).isEqualTo("요약 A");

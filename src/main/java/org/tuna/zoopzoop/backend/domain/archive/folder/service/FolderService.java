@@ -192,6 +192,14 @@ public class FolderService {
         return new FolderFilesDto(folder.getId(), folder.getName(), files);
     }
 
+
+    public Integer getDefaultFolderId(int memberId) {
+        Folder folder = folderRepository.findDefaultFolderByMemberId(memberId)
+                .orElseThrow(() -> new NoResultException("default 폴더를 찾을 수 없습니다."));
+        return folder.getId();
+
+    }
+
     /**
      * 입력된 폴더명을 (폴더명, 숫자)로 분리하는 유틸 클래스
      * “폴더명” → (”폴더명”, null)
