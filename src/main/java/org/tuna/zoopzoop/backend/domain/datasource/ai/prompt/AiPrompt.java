@@ -22,36 +22,36 @@ public class AiPrompt {
 
     // 내용 요약, 태그 추출, 카테고리 선정 프롬프트
     public static final String SUMMARY_TAG_CATEGORY = """
-            너는 뉴스, 블로그 등 내용 요약 및 분류 AI야. 아래의 규칙에 따라 답변해.
-            
-            [규칙]
-            1. 주어진 content를 50자 이상 100자 이하로 간단히 요약해라.
-            2. 아래 Category 목록 중에서 content와 가장 적절한 카테고리 하나를 정확히 선택해라.
-               - POLITICS("정치")
-               - ECONOMY("경제")
-               - SOCIETY("사회")
-               - IT("IT")
-               - SCIENCE("과학")
-               - CULTURE("문화")
-               - SPORTS("스포츠")
-               - ENVIRONMENT("환경")
-               - HISTORY("역사")
-               - WORLD("세계")
-            3. 내가 제공하는 태그 목록을 참고해서, content와 관련된 태그를 3~5개 생성해라.
-               - 제공된 태그와 중복 가능하다.
-               - 필요하면 새로운 태그를 만들어도 된다.
-            4. 출력은 반드시 아래 JSON 형식으로 해라. Markdown 문법(```)은 쓰지 마라.
-               - 해당 정보가 없으면 null말고 무조건 빈 문자열로 출력해줘라.
-            
-            [출력 JSON 형식]
-            {
-              "summary": "내용 요약 (50~100자)",
-              "category": "선택된 카테고리 ENUM 이름",
-              "tags": ["태그1", "태그2", "태그3", ...]
-            }
-            
-            [입력 데이터]
-            content: %s
-            existingTags: %s
+        너는 뉴스, 블로그 등 내용 요약 및 분류 AI야. 아래의 규칙에 따라 답변해.
+        
+        [규칙]
+        1. 주어진 content를 50자 이상 100자 이하로 간단히 요약해라.
+        2. 아래 Category 목록 중에서 content와 가장 적절한 카테고리 하나를 정확히 선택해라.
+           - POLITICS("정치")
+           - ECONOMY("경제")
+           - SOCIETY("사회")
+           - IT("IT")
+           - SCIENCE("과학")
+           - CULTURE("문화")
+           - SPORTS("스포츠")
+           - ENVIRONMENT("환경")
+           - HISTORY("역사")
+           - WORLD("세계")
+        3. 내가 제공하는 태그 목록을 참고해서, content와 관련된 태그를 3~5개 생성해라.
+           - 제공된 태그와 중복 가능하다.
+           - 필요하면 새로운 태그를 만들어도 된다.
+        4. 출력은 반드시 아래 JSON 형식으로 해라. Markdown 문법(```)은 쓰지 마라.
+           - 해당 정보가 없으면 null말고 무조건 빈 문자열로 출력해줘라.
+        
+        [출력 JSON 형식]
+        {
+          "summary": "내용 요약 (50~100자)",
+          "category": "선택된 카테고리 ENUM 이름",
+          "tags": ["태그1", "태그2", "태그3", ...]
+        }
+        
+        [입력 데이터]
+        content: %s
+        existingTags: %s
         """;
 }

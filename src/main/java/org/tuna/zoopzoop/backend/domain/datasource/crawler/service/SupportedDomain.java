@@ -1,7 +1,8 @@
 package org.tuna.zoopzoop.backend.domain.datasource.crawler.service;
 
 public enum SupportedDomain {
-    NAVERNEWS("n.news.naver.com");
+    NAVERNEWS("n.news.naver.com"),
+    NAVERBLOG("blog.naver.com");
 
     private final String domain;
 
