@@ -10,19 +10,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository;
-import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
+import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
+import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
@@ -35,11 +37,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -48,23 +47,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DashboardControllerTest extends ControllerTestSupport {
-    @Autowired
-    private SpaceService spaceService;
+    @Autowired private SpaceService spaceService;
+    @Autowired private MemberService memberService;
+    @Autowired private MembershipService membershipService;
 
-    @Autowired
-    private MemberService memberService;
+    @Autowired SpaceRepository spaceRepository;
+    @Autowired MemberRepository memberRepository;
+    @Autowired MembershipRepository membershipRepository;
 
-    @Autowired
-    private MembershipService membershipService;
+    @Autowired private TransactionTemplate transactionTemplate;
 
-    @Autowired
-    private DashboardRepository dashboardRepository;
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
-
-    private Integer authorizedDashboardId;
     private Integer unauthorizedDashboardId;
+    private Integer authorizedDashboardId;
+
+    private String authorizedSpaceName = "TestSpace1_forDashboardControllerTest";
+    private String unauthorizedSpaceName = "TestSpace2_forDashboardControllerTest";
 
     @Value("${liveblocks.secret-key}")
     private String testSecretKey;
@@ -76,8 +73,8 @@ class DashboardControllerTest extends ControllerTestSupport {
         memberService.createMember("tester2_forDashboardControllerTest", "url", "dc2222", Provider.KAKAO);
 
         // 2. 스페이스 생성 (생성과 동시에 대시보드도 생성됨)
-        Space space1 = spaceService.createSpace("TestSpace1_forDashboardControllerTest", "thumb1");
-        Space space2 = spaceService.createSpace("TestSpace2_forDashboardControllerTest", "thumb2");
+        Space space1 = spaceService.createSpace(authorizedSpaceName, "thumb1");
+        Space space2 = spaceService.createSpace(unauthorizedSpaceName, "thumb2");
 
         // 테스트에서 사용할 대시보드 ID 저장
         this.authorizedDashboardId = space1.getDashboard().getId();
@@ -96,6 +93,14 @@ class DashboardControllerTest extends ControllerTestSupport {
                 space2,
                 Authority.ADMIN
         );
+    }
+
+    @AfterAll
+    void tearDown() {
+        // 멤버십, 스페이스, 멤버 모두 삭제
+        membershipRepository.deleteAll();
+        spaceRepository.deleteAll();
+        memberRepository.deleteAll();
     }
 
     // ============================= GET GRAPH ============================= //
@@ -180,7 +185,8 @@ class DashboardControllerTest extends ControllerTestSupport {
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             // [수정] transactionTemplate을 사용하여 트랜잭션 내에서 검증 로직을 실행
             transactionTemplate.execute(status -> {
-                Graph updatedGraph = dashboardRepository.findById(authorizedDashboardId).get().getGraph();
+                Space space = spaceService.findByName(authorizedSpaceName);
+                Graph updatedGraph = space.getDashboard().getGraph();
                 assertThat(updatedGraph.getNodes()).hasSize(2);
                 assertThat(updatedGraph.getEdges()).hasSize(1);
                 assertThat(updatedGraph.getNodes().get(0).getData().get("title")).isEqualTo("노드1");
