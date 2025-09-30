@@ -104,6 +104,9 @@ dependencies {
     
     // Apache Commons Codec
     implementation"commons-codec:commons-codec:1.19.0"
+
+    // Redis (Spring starter)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 dependencyManagement {

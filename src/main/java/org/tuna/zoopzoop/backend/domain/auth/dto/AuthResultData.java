@@ -1,19 +1,15 @@
 package org.tuna.zoopzoop.backend.domain.auth.dto;
 
-public class AuthResultData {
-    private final String accessToken;
-    private final String sessionId;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-    public AuthResultData(String accessToken, String sessionId) {
-        this.accessToken = accessToken;
-        this.sessionId = sessionId;
-    }
+import java.io.Serializable;
 
-    public String getAccessToken() {
-        return accessToken;
-    }
-
-    public String getSessionId() {
-        return sessionId;
-    }
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuthResultData implements Serializable {
+    private String accessToken;
+    private String sessionId;
 }
