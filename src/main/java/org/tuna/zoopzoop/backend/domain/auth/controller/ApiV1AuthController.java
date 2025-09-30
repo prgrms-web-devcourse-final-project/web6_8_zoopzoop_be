@@ -69,7 +69,6 @@ public class ApiV1AuthController {
      * @param sessionId 쿠키에 포함된 현재 로그인한 사용자의 sessionId.
      * @param response Servlet 기반 웹에서 server -> client로 http 응답을 보내기 위한 객체, 자동 주입.
      */
-
     @PostMapping("/refresh")
     @Operation(summary = "사용자 액세스 토큰 재발급 (서버 저장 RefreshToken 사용)")
     public ResponseEntity<RsData<Void>> refreshToken(
@@ -77,7 +76,6 @@ public class ApiV1AuthController {
             String sessionId,
             HttpServletResponse response
     ) {
-
         if (sessionId == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -91,7 +89,11 @@ public class ApiV1AuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(new RsData<>("401", e.getMessage(), null));
+                    .body(new RsData<>(
+                            "401",
+                            e.getMessage(),
+                            null
+                    ));
         }
 
         String refreshToken = refreshTokenEntity.getRefreshToken();
@@ -126,7 +128,6 @@ public class ApiV1AuthController {
      * 확장프로그램의 액세스 토큰 발급을 위한 백그라운드 풀링에 대응하는 API
      * @param state 확장프로그램 로그인 시 전달한 state 값.
      */
-
     @GetMapping("/result")
     @Operation(summary = "확장프로그램 백그라운드 풀링 대응 API")
     public ResponseEntity<RsData<AuthResultData>> pullingResult(
