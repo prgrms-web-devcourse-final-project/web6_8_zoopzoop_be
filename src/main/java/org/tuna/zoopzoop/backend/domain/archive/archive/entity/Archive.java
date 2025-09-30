@@ -22,7 +22,7 @@ public class Archive extends BaseEntity {
     private ArchiveType archiveType;
 
     //아카이브 삭제(아마도 계정 탈퇴) 시 폴더 일괄 삭제
-    @OneToMany(mappedBy = "archive", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "archive", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Folder> folders = new ArrayList<>();
 
     public Archive(ArchiveType archiveType) {

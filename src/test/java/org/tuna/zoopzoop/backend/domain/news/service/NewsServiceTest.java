@@ -16,7 +16,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
-import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
@@ -36,9 +35,6 @@ public class NewsServiceTest {
     private NewsService newsService;
 
     @Autowired
-    private NewsAPIService newsAPIService;
-
-    @Autowired
     private MemberService memberService;
 
     @Autowired
@@ -51,10 +47,9 @@ public class NewsServiceTest {
     private FolderRepository folderRepository;
 
     @Autowired
-    private DataSourceService dataSourceService;
-
-    @Autowired
     private DataSourceRepository dataSourceRepository;
+
+    private Integer newsFolderId;
 
     private final Map<Integer, List<Tag>> tags = Map.ofEntries(
             Map.entry(1, List.of(new Tag("A"), new Tag("B"), new Tag("E"))),
@@ -100,6 +95,8 @@ public class NewsServiceTest {
         );
 
         FolderResponse folderResponse = folderService.createFolderForPersonal(member.getId(), "newServiceTestFolder");
+        newsFolderId = folderResponse.folderId();
+
         Folder folder = folderRepository.findById(folderResponse.folderId()).orElse(null);
 
         for(int i = 1; i <= 10; i++) {
@@ -111,8 +108,7 @@ public class NewsServiceTest {
     @DisplayName("태그 빈도 수 추출 테스트")
     void DataSourceExtractTagsTest(){
         Member member = memberService.findByProviderKey("newsServiceTestKey");
-        List<FolderResponse> folderResponses = folderService.getFoldersForPersonal(member.getId());
-        List<String> frequency = newsService.getTagFrequencyFromFiles(member.getId(), folderResponses.get(0).folderId());
+        List<String> frequency = newsService.getTagFrequencyFromFiles(member.getId(), newsFolderId);
 
         assertEquals("E", frequency.get(0));
         assertEquals("B", frequency.get(1));

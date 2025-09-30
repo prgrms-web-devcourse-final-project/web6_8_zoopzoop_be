@@ -1,5 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.datasource.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/archive")
 @RequiredArgsConstructor
+@Tag(name = "ApiV1DataSource", description = "개인 아카이브의 파일 CRUD")
 public class DatasourceController {
 
     private final DataSourceService dataSourceService;
@@ -30,6 +33,7 @@ public class DatasourceController {
      * sourceUrl 등록할 자료 url
      * folderId  등록될 폴더 위치(null 이면 default)
      */
+    @Operation(summary = "자료 등록", description = "내 PersonalArchive 안에 자료를 등록합니다.")
     @PostMapping("")
     public ResponseEntity<?> createDataSource(
             @Valid @RequestBody reqBodyForCreateDataSource rq,
@@ -49,6 +53,7 @@ public class DatasourceController {
     /**
      * 자료 단건 삭제
      */
+    @Operation(summary = "자료 단건 삭제", description = "내 PersonalArchive 안에 자료를 단건 삭제합니다.")
     @DeleteMapping("/{dataSourceId}")
     public ResponseEntity<Map<String, Object>> delete(
             @PathVariable Integer dataSourceId,
@@ -68,6 +73,7 @@ public class DatasourceController {
     /**
      * 자료 다건 삭제
      */
+    @Operation(summary = "자료 다건 삭제", description = "내 PersonalArchive 안에 자료를 다건 삭제합니다.")
     @PostMapping("/delete")
     public ResponseEntity<Map<String, Object>> deleteMany(
             @Valid @RequestBody reqBodyForDeleteMany body,
@@ -88,6 +94,7 @@ public class DatasourceController {
      * 자료 단건 이동
      *  folderId=null 이면 default 폴더
      */
+    @Operation(summary = "자료 단건 이동", description = "내 PersonalArchive 안에 자료를 단건 이동합니다.")
     @PatchMapping("/{dataSourceId}/move")
     public ResponseEntity<?> moveDataSource(
             @PathVariable Integer dataSourceId,
@@ -118,6 +125,7 @@ public class DatasourceController {
     /**
      * 자료 다건 이동
      */
+    @Operation(summary = "자료 다건 이동", description = "내 PersonalArchive 안에 자료들를 다건 이동합니다..")
     @PatchMapping("/move")
     public ResponseEntity<?> moveMany(
             @Valid @RequestBody reqBodyForMoveMany rq,
@@ -141,6 +149,7 @@ public class DatasourceController {
      * @param dataSourceId  수정할 파일 Id
      * @param body          수정할 내용
      */
+    @Operation(summary = "자료 수정", description = "내 PersonalArchive 안에 자료를 수정합니다.")
     @PatchMapping("/{dataSourceId}")
     public ResponseEntity<?> updateDataSource(
             @PathVariable Integer dataSourceId,
@@ -162,6 +171,10 @@ public class DatasourceController {
         );
     }
 
+    /**
+     * 자료 검색 
+     */
+    @Operation(summary = "자료 검색", description = "내 PersonalArchive 안에 자료들을 검색합니다.")
     @GetMapping("")
     public ResponseEntity<?> search(
             @RequestParam(required = false) String title,

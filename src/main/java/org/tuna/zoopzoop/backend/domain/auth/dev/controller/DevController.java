@@ -23,8 +23,8 @@ public class DevController {
 
     @GetMapping("/token")
     public Map<String, String> issueToken(
-            @RequestParam Provider provider,
-            @RequestParam String key
+            @RequestParam(name = "provider") Provider provider,
+            @RequestParam(name = "key") String key
     ) {
         Member m = memberRepository.findByProviderAndProviderKey(provider, key)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "member not found"));
