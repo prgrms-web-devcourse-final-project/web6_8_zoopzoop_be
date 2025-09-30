@@ -20,7 +20,7 @@ public class GenericCrawler implements Crawler {
     @Override
     public CrawlerResult<?> extract(Document doc) {
         // 불필요한 태그 제거
-        doc.select("script, style, noscript, iframe, nav, header, footer, form, aside, meta, link").remove();
+        doc.select("script, style, noscript, meta, link").remove();
 
         // 본문만 가져오기 (HTML)
         String cleanHtml = doc.body().html();

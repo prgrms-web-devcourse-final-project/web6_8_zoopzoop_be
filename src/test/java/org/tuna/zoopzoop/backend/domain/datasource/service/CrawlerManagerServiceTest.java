@@ -16,10 +16,12 @@ import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.SpecificSiteDto;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.UnspecificSiteDto;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.CrawlerManagerService;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.GenericCrawler;
+import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.NaverBlogCrawler;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.service.NaverNewsCrawler;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -40,11 +42,14 @@ public class CrawlerManagerServiceTest {
     @Mock
     private GenericCrawler genericCrawler;
 
+    @Mock
+    private NaverBlogCrawler naverBlogCrawler;
+
     @BeforeEach
     void setUp() {
         // 직접 리스트를 생성자에 주입
         crawlerManagerService = new CrawlerManagerService(
-                List.of(naverNewsCrawler, genericCrawler)
+                List.of(naverNewsCrawler, naverBlogCrawler, genericCrawler)
         );
     }
 
@@ -82,7 +87,7 @@ public class CrawlerManagerServiceTest {
     }
 
     @Test
-    void NaverCrawlerTest() throws IOException {
+    void NaverNewsCrawlerTest() throws IOException {
         // given
         String url = "https://n.news.naver.com/mnews/article/008/0005254080"; // 원하는 URL 넣기
 
@@ -129,16 +134,87 @@ public class CrawlerManagerServiceTest {
     }
 
     @Test
-    void GenericCrawlerTest() throws IOException {
+    void NaverBlogCrawlerTest() throws IOException {
         // given
-        String url = "https://bcuts.tistory.com/421"; // 원하는 URL 넣기
+        String url = "https://blog.naver.com/rainbow-brain/223387331292"; // 원하는 URL 넣기
+//        String url = "https://blog.naver.com/smhrd_official/223078242394";
 
         Document doc = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0")  // 크롤링 차단 방지를 위해 user-agent 설정 권장
                 .timeout(10 * 1000)        // 타임아웃 (10초)
                 .get();
 
-        doc.select("script, style, noscript, iframe, nav, header, footer, form, aside, meta, link").remove();
+        Element iframe = doc.selectFirst("iframe#mainFrame");
+        String iframeUrl = iframe.absUrl("src");
+
+        Document iframeDoc = Jsoup.connect(iframeUrl)
+                .userAgent("Mozilla/5.0")  // 크롤링 차단 방지를 위해 user-agent 설정 권장
+                .timeout(10 * 1000)        // 타임아웃 (10초)
+                .get();
+
+        // 제목
+        Element titleSpans = iframeDoc.selectFirst("div.se-module.se-module-text.se-title-text");
+        String title = titleSpans.text();
+        System.out.println(title);
+
+        // 작성일자
+        String publishedAt = iframeDoc.selectFirst("span.se_publishDate.pcol2").text();
+        LocalDateTime rawDate = LocalDateTime.parse(publishedAt, DateTimeFormatter.ofPattern("yyyy. M. d. HH:mm"));
+        LocalDate dataCreatedDate = rawDate.toLocalDate();
+        System.out.println(dataCreatedDate);
+
+        // 내용
+        Elements spans = iframeDoc.select(".se-main-container span");
+        StringBuilder sb = new StringBuilder();
+        for (Element span : spans) {
+            sb.append(span.text()); // 태그 안 텍스트만
+        }
+        String content = sb.toString();
+        System.out.println(content);
+
+        // 썸네일 이미지 URL
+        Element img = iframeDoc.select("div.se-main-container img").first();
+
+        String imageUrl = "";
+        if (img != null) {
+            if (!img.attr("data-lazy-src").isEmpty()) {
+                imageUrl = img.attr("data-lazy-src");
+            }
+        }
+        System.out.println(imageUrl);
+
+        // 출처
+        String source = "네이버 블로그";
+
+
+        when(naverBlogCrawler.supports(url)).thenReturn(true);
+        given(naverBlogCrawler.extract(any(Document.class))).willCallRealMethod(); // 실제 메소드 실행
+//        given(naverBlogCrawler.transLocalDate(any(String.class))).willCallRealMethod();
+
+        // when
+        CrawlerResult<?> result = crawlerManagerService.extractContent(url);
+        SpecificSiteDto naverDoc = (SpecificSiteDto) result.data();
+
+        // then
+        assertThat(result.type()).isEqualTo(CrawlerResult.CrawlerType.SPECIFIC);
+        assertThat(naverDoc.title()).isEqualTo(title);
+        assertThat(naverDoc.content()).isEqualTo(content);
+        assertThat(naverDoc.dataCreatedDate()).isEqualTo(dataCreatedDate);
+        assertThat(naverDoc.imageUrl()).isEqualTo(imageUrl);
+        assertThat(naverDoc.source()).isEqualTo(source);
+    }
+
+    @Test
+    void GenericCrawlerTest() throws IOException {
+        // given
+        String url = "https://blog.naver.com/rainbow-brain/223387331292"; // 원하는 URL 넣기
+
+        Document doc = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0")  // 크롤링 차단 방지를 위해 user-agent 설정 권장
+                .timeout(10 * 1000)        // 타임아웃 (10초)
+                .get();
+
+        doc.select("script, style, noscript, meta, link").remove();
 
         String cleanHtml = doc.body().html();
 
@@ -149,10 +225,9 @@ public class CrawlerManagerServiceTest {
         CrawlerResult<?> result = crawlerManagerService.extractContent(url);
         UnspecificSiteDto genericDoc = (UnspecificSiteDto) result.data();
 
-        System.out.println(genericDoc.rawHtml());
-
         // then
         assertThat(result.type()).isEqualTo(CrawlerResult.CrawlerType.UNSPECIFIC);
-        assertThat(genericDoc.rawHtml()).contains("<!-- warp / 테마 변경시 thema_xxx 변경 -->");
+//        assertThat(genericDoc.rawHtml()).contains("<html");
+        assertThat(genericDoc.rawHtml()).isEqualTo(cleanHtml);
     }
 }
