@@ -10,6 +10,10 @@ spring:
       ddl-auto: create-drop
     show-sql: true
 
+app:
+  seed:
+    enabled: true
+
 sentry:
   dsn: https://60f1acad189d2994353d59b7895076ee@o4510100579155968.ingest.us.sentry.io/4510100584923136
   # Add data like request headers and IP for users,

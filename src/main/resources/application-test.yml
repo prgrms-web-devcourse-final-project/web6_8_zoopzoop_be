@@ -17,5 +17,9 @@ spring:
     init:
       mode: never
 
+app:
+  seed:
+    enabled: false
+
 liveblocks:
   secret-key: test_dummy_liveblocks_secret_key

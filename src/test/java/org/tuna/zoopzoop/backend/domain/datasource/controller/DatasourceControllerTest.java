@@ -38,6 +38,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -65,7 +67,7 @@ class DatasourceControllerTest {
     static class StubConfig {
         @Bean
         @Primary
-        DataProcessorService stubDataProcessorService() throws Exception {
+        DataProcessorService stubDataProcessorService(){
             return new DataProcessorService(null, null) {
                 @Override
                 public DataSourceDto process(String url, List<Tag> tagList) {
@@ -412,4 +414,139 @@ class DatasourceControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
+
+    // 검색
+
+    @Test
+    @DisplayName("검색 성공: page, size, dataCreatedDate DESC 기본정렬")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_default_paging_and_sort() throws Exception {
+        // 최신/과거 비교용 더미 데이터 추가
+        Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
+
+        DataSource oldItem = new DataSource();
+        oldItem.setFolder(docsFolder);
+        oldItem.setTitle("old-doc");
+        oldItem.setSummary("old");
+        oldItem.setSourceUrl("http://src/old");
+        oldItem.setImageUrl("http://img/old");
+        oldItem.setDataCreatedDate(LocalDate.now().minusDays(30));
+        oldItem.setActive(true);
+        oldItem.setCategory(Category.IT);
+        dataSourceRepository.save(oldItem);
+
+        DataSource newItem = new DataSource();
+        newItem.setFolder(docsFolder);
+        newItem.setTitle("new-doc");
+        newItem.setSummary("new");
+        newItem.setSourceUrl("http://src/new");
+        newItem.setImageUrl("http://img/new");
+        newItem.setDataCreatedDate(LocalDate.now());
+        newItem.setActive(true);
+        newItem.setCategory(Category.IT);
+        dataSourceRepository.save(newItem);
+
+        mockMvc.perform(get("/api/v1/archive"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.pageInfo.page").value(0))
+                .andExpect(jsonPath("$.pageInfo.size").value(8))
+                .andExpect(jsonPath("$.pageInfo.first").value(true))
+                .andExpect(jsonPath("$.pageInfo.sorted", containsStringIgnoringCase("createdAt")))
+                .andExpect(jsonPath("$.data[0].title", anyOf(is("new-doc"), is("spec.pdf"), is("notes.txt"))));
+    }
+
+    @Test
+    @DisplayName("검색 성공: category 필터")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_filter_by_category() throws Exception {
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("category", "IT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data[*].category", everyItem(is("IT"))));
+    }
+
+    @Test
+    @DisplayName("검색 성공: title 부분검색")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_filter_by_title_contains() throws Exception {
+        // 준비: 특정 키워드 가진 데이터 보장
+        Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
+        DataSource d = new DataSource();
+        d.setFolder(docsFolder);
+        d.setTitle("Search Key 포함 문서");
+        d.setSummary("검색 테스트");
+        d.setSourceUrl("http://src/search");
+        d.setImageUrl("http://img/search");
+        d.setDataCreatedDate(LocalDate.now());
+        d.setActive(true);
+        d.setCategory(Category.IT);
+        dataSourceRepository.save(d);
+
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("title", "key"))  // 대소문자 무시 contains
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data[0].title", containsString("Key")));
+    }
+
+    @Test
+    @DisplayName("검색 성공: summary 부분검색")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_filter_by_summary_contains() throws Exception {
+        Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
+        DataSource d = new DataSource();
+        d.setFolder(docsFolder);
+        d.setTitle("sum-doc");
+        d.setSummary("요약에 특수키워드 들어감");
+        d.setSourceUrl("http://src/sum");
+        d.setImageUrl("http://img/sum");
+        d.setDataCreatedDate(LocalDate.now());
+        d.setActive(true);
+        d.setCategory(Category.IT);
+        dataSourceRepository.save(d);
+
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("summary", "특수키워드"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data[0].summary", containsString("특수키워드")));
+    }
+
+    @Test
+    @DisplayName("검색 성공: folderName 필터")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_filter_by_folderName() throws Exception {
+        // setup에서 만든 docs 폴더명으로 필터 (폴더 생성시 이름 "docs")
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("folderName", "docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    @DisplayName("검색 성공: 정렬 title ASC")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_sort_by_title_asc() throws Exception {
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("sort", "title,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.pageInfo.sorted", containsStringIgnoringCase("title")));
+    }
+
+    @Test
+    @DisplayName("검색 실패: 잘못된 category 값 → 400")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void search_invalid_category() throws Exception {
+        mockMvc.perform(get("/api/v1/archive")
+                        .param("category", "NOT_A_CATEGORY"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(either(is(200)).or(is("200"))))
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
 }

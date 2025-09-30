@@ -2,6 +2,10 @@ package org.tuna.zoopzoop.backend.domain.datasource.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +15,7 @@ import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -155,6 +160,44 @@ public class DatasourceController {
         return ResponseEntity.ok(
                 new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId))
         );
+    }
+
+    @GetMapping("")
+    public ResponseEntity<?> search(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String summary,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String folderName,
+            @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Integer memberId = userDetails.getMember().getId();
+
+        DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
+                .title(title)
+                .summary(summary)
+                .folderName(folderName)
+                .category(category)
+                .build();
+
+        Page<DataSourceSearchItem> page = dataSourceService.search(memberId, cond, pageable);
+        String sorted = pageable.getSort().toString().replace(": ", ",");
+
+        Map<String, Object> res  = new LinkedHashMap<>();
+        res.put("status", 200);
+        res.put("msg", "복수개의 자료가 조회됐습니다.");
+        res.put("data", page.getContent());
+        res.put("pageInfo", Map.of(
+                "page", page.getNumber(),
+                "size", page.getSize(),
+                "totalElements", page.getTotalElements(),
+                "totalPages", page.getTotalPages(),
+                "first", page.isFirst(),
+                "last", page.isLast(),
+                "sorted", sorted
+        ));
+        return ResponseEntity.ok(res);
     }
 
     record ApiResponse<T>(int status, String msg, T data) {}
