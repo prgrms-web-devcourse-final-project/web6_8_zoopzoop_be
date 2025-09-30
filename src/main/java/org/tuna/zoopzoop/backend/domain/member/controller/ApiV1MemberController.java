@@ -8,10 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMember;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
-import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberProfileImage;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -87,16 +87,16 @@ public class ApiV1MemberController {
      * 현재 로그인한 사용자의 프로필 이미지를 변경하는 API
      * HTTP METHOD: PUT
      * @param userDetails @AuthenticationPrincipal로 받아오는 현재 사용자 정보
-     * @param reqBodyForEditMemberProfileImage 수정할 프로필 이미지를 받아오는 dto
+     * @param file 수정할 프로필 이미지를 받아오는 MultipartFile
      */
     @PutMapping("/edit/image")
     @Operation(summary = "사용자 닉네임 수정")
     public ResponseEntity<RsData<ResBodyForEditMemberProfileImage>> editMemberProfileImage(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody ReqBodyForEditMemberProfileImage reqBodyForEditMemberProfileImage
+            @RequestPart("file") MultipartFile file
             ) {
         Member member = userDetails.getMember();
-        memberService.updateMemberProfileUrl(member, reqBodyForEditMemberProfileImage.file());
+        memberService.updateMemberProfileUrl(member, file);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(
