@@ -14,13 +14,16 @@ import java.util.Optional;
 public interface MembershipRepository extends JpaRepository<Membership, Integer> {
     boolean existsByMemberAndSpace(Member member, Space space);
 
-    Page<Membership> findAllByMemberAndAuthority(Member member, Authority authority, Pageable pageable);
-    Page<Membership> findAllByMemberAndAuthorityIsNot(Member member, Authority authority, Pageable pageable);
-    Page<Membership> findAllByMember(Member member, Pageable pageable);
+    Page<Membership> findAllByMemberAndAuthorityOrderById(Member member, Authority authority, Pageable pageable);
+    Page<Membership> findAllByMemberAndAuthorityIsNotOrderById(Member member, Authority authority, Pageable pageable);
+    Page<Membership> findAllByMemberOrderById(Member member, Pageable pageable);
 
     List<Membership> findAllByMemberAndAuthority(Member member, Authority authority);
+    List<Membership> findAllByMemberAndAuthorityOrderById(Member member, Authority authority);
     List<Membership> findAllByMemberAndAuthorityIsNot(Member member, Authority authority);
+    List<Membership> findAllByMemberAndAuthorityIsNotOrderById(Member member, Authority authority);
     List<Membership> findAllByMember(Member member);
+    List<Membership> findAllByMemberOrderById(Member member);
 
     boolean existsByMemberAndSpaceAndAuthorityIsNot(Member member, Space space, Authority authority);
 
@@ -29,8 +32,12 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     Optional<Membership> findByMemberAndSpace(Member member, Space space);
 
     List<Membership> findAllBySpaceAndAuthority(Space space, Authority authority);
+    List<Membership> findAllBySpaceAndAuthorityOrderById(Space space, Authority authority);
 
     List<Membership> findAllBySpaceAndAuthorityIsNot(Space space, Authority authority);
+    List<Membership> findAllBySpaceAndAuthorityIsNotOrderById(Space space, Authority authority);
 
     long countBySpaceAndAuthority(Space space, Authority authority);
+
+
 }
