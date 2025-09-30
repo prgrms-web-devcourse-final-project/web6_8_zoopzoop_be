@@ -298,7 +298,7 @@ class FolderServiceTest {
         assertThat(f0.summary()).isEqualTo("요약 A");
         assertThat(f0.sourceUrl()).isEqualTo("http://src/a");
         assertThat(f0.imageUrl()).isEqualTo("http://img/a");
-        assertThat(f0.tags()).extracting(Tag::getTagName).containsExactly("tag1", "tag2");
+        assertThat(f0.tags()).containsExactly("tag1", "tag2");
     }
 
     @Test
