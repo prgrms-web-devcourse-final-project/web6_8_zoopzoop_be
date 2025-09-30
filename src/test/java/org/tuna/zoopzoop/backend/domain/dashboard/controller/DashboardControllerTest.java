@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository;
 import org.tuna.zoopzoop.backend.domain.dashboard.repository.GraphRepository;
@@ -58,6 +59,9 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @Autowired
     private DashboardRepository dashboardRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private Integer authorizedDashboardId;
     private Integer unauthorizedDashboardId;
@@ -174,10 +178,14 @@ class DashboardControllerTest extends ControllerTestSupport {
 
         // Then: (비동기 검증) 최종적으로 DB에 데이터가 반영될 때까지 최대 5초간 기다립니다.
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            Graph updatedGraph = dashboardRepository.findById(authorizedDashboardId).get().getGraph();
-            assertThat(updatedGraph.getNodes()).hasSize(2);
-            assertThat(updatedGraph.getEdges()).hasSize(1);
-            assertThat(updatedGraph.getNodes().get(0).getData().get("title")).isEqualTo("노드1");
+            // [수정] transactionTemplate을 사용하여 트랜잭션 내에서 검증 로직을 실행
+            transactionTemplate.execute(status -> {
+                Graph updatedGraph = dashboardRepository.findById(authorizedDashboardId).get().getGraph();
+                assertThat(updatedGraph.getNodes()).hasSize(2);
+                assertThat(updatedGraph.getEdges()).hasSize(1);
+                assertThat(updatedGraph.getNodes().get(0).getData().get("title")).isEqualTo("노드1");
+                return null; // execute 메서드는 반환값이 필요
+            });
         });
     }
 
