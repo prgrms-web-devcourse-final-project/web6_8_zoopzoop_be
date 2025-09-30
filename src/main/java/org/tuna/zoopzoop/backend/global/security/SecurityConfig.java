@@ -3,7 +3,6 @@ package org.tuna.zoopzoop.backend.global.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,7 +32,6 @@ public class SecurityConfig {
 
                 // 모든 요청 허용
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/member", "/api/v1/member/**").authenticated()
                         .requestMatchers(
                                 "/",
