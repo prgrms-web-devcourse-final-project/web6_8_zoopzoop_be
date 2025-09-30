@@ -1,5 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.archive.folder.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/archive/folder")
 @RequiredArgsConstructor
+@Tag(name = "ApiV1Folder", description = "개인 아카이브의 폴더 CRUD")
 public class FolderController {
 
     private final FolderService folderService;
@@ -30,6 +33,7 @@ public class FolderController {
      * @param rq reqBodyForCreateFolder
      * @return resBodyForCreateFolder
      */
+    @Operation(summary = "폴더 생성", description = "내 PersonalArchive 안에 새 폴더를 생성합니다.")
     @PostMapping
     public RsData<resBodyForCreateFolder> createFolder(
             @Valid @RequestBody reqBodyForCreateFolder rq,
@@ -50,6 +54,7 @@ public class FolderController {
      * 내 PersonalArchive 안의 folder 삭제
      * @param folderId  삭제할 folderId
      */
+    @Operation(summary = "폴더 삭제", description = "내 PersonalArchive 안에 폴더를 삭제합니다.")
     @DeleteMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> deleteFolder(
             @PathVariable Integer folderId,
@@ -71,6 +76,7 @@ public class FolderController {
      * @param folderId 수정할 폴더 Id
      * @param body  수정할 폴더 값
      */
+    @Operation(summary = "폴더 수정", description = "내 PersonalArchive 안에 폴더를 수정합니다.")
     @PatchMapping("/{folderId}")
     public ResponseEntity<Map<String, Object>> updateFolderName(
             @PathVariable Integer folderId,
@@ -93,6 +99,7 @@ public class FolderController {
      *  개인 아카이브의 폴더 이름 전부 조회
      *  "default", "폴더1", "폴더2"
      */
+    @Operation(summary = "폴더 이름 조회", description = "내 PersonalArchive 안에 이름을 전부 조회합니다.")
     @GetMapping
     public ResponseEntity<?> getFolders(
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -112,6 +119,7 @@ public class FolderController {
     /**
      * 폴더(내 PersonalArchive 소속) 안의 파일 목록 조회
      */
+    @Operation(summary = "폴더 내 파일 목록 조회", description = "내 PersonalArchive의 폴더 속 파일 목록을 조회합니다.")
     @GetMapping("/{folderId}/files")
     public ResponseEntity<?> getFilesInFolder(
             @PathVariable Integer folderId,
