@@ -1,14 +1,19 @@
 package org.tuna.zoopzoop.backend.domain.datasource.ai.service;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.dto.AiExtractorDto;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.dto.AnalyzeContentDto;
 import org.tuna.zoopzoop.backend.domain.datasource.ai.prompt.AiPrompt;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
-import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,17 +21,39 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiService {
     private final ChatClient chatClient;
-    private final TagRepository tagRepository;
 
+    @Retryable(
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500),
+        retryFor = {JsonParseException.class, JsonProcessingException.class}
+    )
     public AiExtractorDto extract(String rawHtml) {
+        System.out.println("AI 추출 시도");
         AiExtractorDto response = chatClient.prompt()
                 .user(AiPrompt.EXTRACTION.formatted(rawHtml))
                 .call()
                 .entity(AiExtractorDto.class);
 
+        System.out.println("AI 추출 성공!");
         return response;
     }
 
+    @Recover
+    public AiExtractorDto extractRecover(Exception e, String rawHtml) {
+        return new AiExtractorDto(
+                "",
+                null,
+                "",
+                "",
+                ""
+        );
+    }
+
+    @Retryable(
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500),
+        retryFor = {JsonParseException.class, JsonProcessingException.class}
+    )
     public AnalyzeContentDto analyzeContent(String content, List<Tag> tagList) {
         // JSON 배열 문자열로 변환
         String tags = tagList.stream()
@@ -41,4 +68,14 @@ public class AiService {
 
         return response;
     }
+
+    @Recover
+    public AnalyzeContentDto analyzeContentRecover(Exception e, String content, List<Tag> tagList) {
+        return new AnalyzeContentDto(
+                "",
+                null,
+                new ArrayList<>()
+        );
+    }
+
 }

@@ -24,7 +24,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQReposit
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -77,11 +76,8 @@ public class DataSourceService {
 
     private DataSource buildDataSource(Folder folder, String sourceUrl, List<Tag> tagList) {
         final DataSourceDto dataSourceDto;
-        try {
-            dataSourceDto = dataProcessorService.process(sourceUrl, tagList);
-        } catch (IOException e) {
-            throw new RuntimeException("자료 처리 중 오류가 발생했습니다.", e);
-        }
+
+        dataSourceDto = dataProcessorService.process(sourceUrl, tagList);
 
         DataSource ds = new DataSource();
         ds.setFolder(folder);
