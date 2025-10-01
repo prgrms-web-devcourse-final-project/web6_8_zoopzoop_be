@@ -26,6 +26,11 @@ public class SignatureService {
      * @return 서명이 유효하면 true, 그렇지 않으면 false
      */
     public boolean isValidSignature(String requestBody, String signatureHeader) {
+        // [임시 코드] 로컬 테스트를 위해 무조건 true 반환
+//        if ("true".equals(System.getProperty("local.test.skip.signature"))) {
+//            return true;
+//        }
+
         try {
             // 1. 헤더 파싱
             String[] parts = signatureHeader.split(",");
