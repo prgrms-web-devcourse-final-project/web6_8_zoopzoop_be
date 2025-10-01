@@ -81,6 +81,12 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
                 Authority.PENDING
         );
+        // test3 -> 스페이스 1 가입 (READ_ONLY)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("sc3333"),
+                spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
+                Authority.READ_ONLY
+        );
         // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
                 memberService.findByKakaoKey("sc1111"),
@@ -406,6 +412,45 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2_forSpaceControllerTest"))
                 .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"))
                 .andExpect(jsonPath("$.data.spaces[1].thumbnailUrl").value("thumbnailUrl2"));
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("나의 스페이스 전체 조회 (멤버 포함) - 성공")
+    void getMySpaces_withMembers_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space?includeMembers=true";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 목록이 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(2));
+
+        // 첫 번째 스페이스 (기존 스페이스 1) 검증
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].members").isArray())
+                .andExpect(jsonPath("$.data.spaces[0].members.length()").value(2)) // PENDING 제외 2명
+                .andExpect(jsonPath("$.data.spaces[0].members[0].name").value("spaceControllerTester1"))
+                .andExpect(jsonPath("$.data.spaces[0].members[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].members[1].name").value("spaceControllerTester3"))
+                .andExpect(jsonPath("$.data.spaces[0].members[1].authority").value("READ_ONLY"));
+
+
+        // 두 번째 스페이스 (기존 스페이스 2) 검증
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"))
+                .andExpect(jsonPath("$.data.spaces[1].members").isArray())
+                .andExpect(jsonPath("$.data.spaces[1].members.length()").value(0)); // 가입된 멤버 없음
     }
 
     @Test
