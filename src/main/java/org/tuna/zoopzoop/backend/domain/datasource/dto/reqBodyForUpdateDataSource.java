@@ -1,8 +1,13 @@
 package org.tuna.zoopzoop.backend.domain.datasource.dto;
 
-import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public record reqBodyForUpdateDataSource(
-        @NotNull String title,
-        @NotNull String summary
+        String title,
+        String summary,
+        String sourceUrl,
+        String imageUrl,
+        String source,
+        List<String> tags,
+        String category
 ) {}

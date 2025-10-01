@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
@@ -15,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataPro
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
@@ -236,17 +238,83 @@ public class DataSourceService {
     /**
      * 자료 수정
      */
-    public Integer updateDataSource(Integer memberId, Integer dataSourceId, String newTitle, String newSummary) {
+    @Transactional
+    public Integer updateDataSource(
+            Integer memberId,
+            Integer dataSourceId,
+            String newTitle,
+            String newSummary,
+            String newSourceUrl,
+            String newImageUrl,
+            String newSource,
+            List<String> newTags,
+            String newCategory // enum 이름 string
+    ) {
         DataSource ds = dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
 
-        if (newTitle != null && !newTitle.isBlank())
-            ds.setTitle(newTitle);
+        if (StringUtils.hasText(newTitle))
+            ds.setTitle(newTitle.trim());
 
-        if (newSummary != null && !newSummary.isBlank())
-            ds.setSummary(newSummary);
+        if (StringUtils.hasText(newSummary))
+            ds.setSummary(newSummary.trim());
+
+        if (newSourceUrl != null) {
+            if (!StringUtils.hasText(newSourceUrl))
+                throw new IllegalArgumentException("sourceUrl은 빈 값일 수 없습니다.");
+
+            ds.setSourceUrl(newSourceUrl.trim());
+        }
+
+        if (newImageUrl != null) {
+            String v = newImageUrl.trim();
+            ds.setImageUrl(v.isEmpty() ? null : v);
+        }
+
+        if (newSource != null) {
+            String v = newSource.trim();
+            ds.setSource(v.isEmpty() ? null : v);
+        }
+
+        if (newCategory != null) {
+            ds.setCategory(parseCategoryOrThrow(newCategory));
+        }
+
+        if (newTags != null) {
+            replaceTags(ds, newTags);
+        }
 
         return ds.getId();
+    }
+
+    private Category parseCategoryOrThrow(String raw) {
+        String key = raw.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("category는 빈 값일 수 없습니다.");
+        }
+        // 대소문자 관대 처리 (IT, Science, science 등)
+        try {
+            return Category.valueOf(key.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("지원하지 않는 category 값입니다: " + raw);
+        }
+    }
+
+    private void replaceTags(DataSource ds, List<String> names) {
+        ds.getTags().clear();
+
+        if (names == null) return;
+
+        for (String name : names) {
+            if (name == null || name.isBlank()) continue;
+
+            Tag tag = Tag.builder()
+                    .tagName(name.trim())
+                    .dataSource(ds)
+                    .build();
+
+            ds.getTags().add(tag);
+        }
     }
 
     /**

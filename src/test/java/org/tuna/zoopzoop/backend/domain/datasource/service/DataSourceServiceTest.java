@@ -241,7 +241,6 @@ class DataSourceServiceTest {
         when(tagRepository.findDistinctTagNamesByFolderId(eq(folderId)))
                 .thenReturn(List.of("AI", "Spring", "JPA"));
 
-        @SuppressWarnings("unchecked")
         List<Tag> ctxTags = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "collectDistinctTagsOfFolder", folderId
         );
@@ -681,24 +680,81 @@ class DataSourceServiceTest {
     }
 
     // 자료 수정
-    @Test
-    @DisplayName("수정 성공: 제목과 요약 일부/전체 변경")
-    void update_ok() {
-        Integer memberId = 3;
+    private DataSource baseDs(Folder folder) {
         DataSource ds = new DataSource();
-        ReflectionTestUtils.setField(ds, "id", 7);
-        ds.setTitle("old");
-        ds.setSummary("old sum");
+        ds.setFolder(folder);
+        ds.setTitle("old-title");
+        ds.setSummary("old-summary");
+        ds.setSourceUrl("http://old.src");
+        ds.setImageUrl("http://old.img");
+        ds.setSource("old-source");
+        ds.setCategory(Category.IT);
+        ds.setActive(true);
+        ds.setTags(new java.util.ArrayList<>(List.of(new Tag("x"), new Tag("y"))));
+        // 태그의 dataSource 역방향 세팅
+        ds.getTags().forEach(t -> t.setDataSource(ds));
+        ReflectionTestUtils.setField(ds, "id", 77);
+        return ds;
+    }
 
-        when(dataSourceRepository.findByIdAndMemberId(eq(7), eq(memberId)))
+
+    @Test
+    @DisplayName("수정 성공: 확장 필드 정상 반영(imageUrl '', source '' 처리, category case-insensitive, tags 전량 교체)")
+    void update_expand_all_fields_ok() {
+        Integer memberId = 1;
+        Folder f = new Folder("f"); ReflectionTestUtils.setField(f, "id", 10);
+        DataSource ds = baseDs(f);
+
+        when(dataSourceRepository.findByIdAndMemberId(eq(77), eq(memberId)))
                 .thenReturn(Optional.of(ds));
 
-        Integer id = dataSourceService.updateDataSource(memberId, 7, "new", null);
+        Integer id = dataSourceService.updateDataSource(
+                memberId,
+                77,
+                "new-title",           // title
+                "new-summary",         // summary
+                "https://new.src",     // sourceUrl
+                "",                    // imageUrl -> null 처리
+                "",                    // source   -> null 처리
+                List.of("A","B"),      // tags 교체
+                "science"              // category (대소문자 허용)
+        );
 
-        assertThat(id).isEqualTo(7);
-        assertThat(ds.getTitle()).isEqualTo("new");
-        assertThat(ds.getSummary()).isEqualTo("old sum"); // summary 미전달 → 유지
+        assertThat(id).isEqualTo(77);
+        assertThat(ds.getTitle()).isEqualTo("new-title");
+        assertThat(ds.getSummary()).isEqualTo("new-summary");
+        assertThat(ds.getSourceUrl()).isEqualTo("https://new.src");
+        assertThat(ds.getImageUrl()).isNull();               // '' → null
+        assertThat(ds.getSource()).isNull();                 // '' → null
+        assertThat(ds.getCategory()).isEqualTo(Category.SCIENCE);
+
+        assertThat(ds.getTags()).extracting(Tag::getTagName)
+                .containsExactlyInAnyOrder("A","B");
+        assertThat(ds.getTags().stream().allMatch(t -> t.getDataSource() == ds)).isTrue();
     }
+
+    @Test
+    @DisplayName("수정: tags=[] → 모든 태그 삭제")
+    void update_tags_empty_clear() {
+        Integer memberId = 1;
+        Folder f = new Folder("f"); ReflectionTestUtils.setField(f, "id", 10);
+        DataSource ds = baseDs(f);
+
+        when(dataSourceRepository.findByIdAndMemberId(eq(77), eq(memberId)))
+                .thenReturn(Optional.of(ds));
+
+        dataSourceService.updateDataSource(
+                memberId, 77,
+                null, null, null, null, null,
+                List.of(),   // 빈 리스트
+                null
+        );
+
+        assertThat(ds.getTags()).isEmpty();
+    }
+
+
+
 
     @Test
     @DisplayName("수정 실패: 존재하지 않는 자료")
@@ -707,7 +763,7 @@ class DataSourceServiceTest {
         when(dataSourceRepository.findByIdAndMemberId(anyInt(), eq(memberId)))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> dataSourceService.updateDataSource(memberId, 1, "t", "s"))
+        assertThatThrownBy(() -> dataSourceService.updateDataSource(memberId, 123, null, null, null, null, null, null, null))
                 .isInstanceOf(NoResultException.class)
                 .hasMessageContaining("존재하지 않는 자료");
     }

@@ -446,15 +446,31 @@ class DatasourceControllerTest {
     }
 
     // 자료 수정
+
+    private String updateJson(
+            String title, String summary, String sourceUrl,
+            String imageUrl, String source, List<String> tags, String category
+    ) throws Exception {
+        var map = new java.util.LinkedHashMap<String, Object>();
+        if (title != null) map.put("title", title);
+        if (summary != null) map.put("summary", summary);
+        if (sourceUrl != null) map.put("sourceUrl", sourceUrl);
+        if (imageUrl != null) map.put("imageUrl", imageUrl);
+        if (source != null) map.put("source", source);
+        if (tags != null) map.put("tags", tags);
+        if (category != null) map.put("category", category);
+        return objectMapper.writeValueAsString(map);
+    }
+
     @Test
-    @DisplayName("자료 수정 성공 -> 200")
+    @DisplayName("자료 수정 성공: title+summary만 부분 수정 → 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    void update_ok() throws Exception {
-        var body = new reqBodyForUpdateDataSource("새 제목", "짧은 요약");
+    void update_ok_title_summary_only() throws Exception {
+        String body = updateJson("새 제목", "짧은 요약", null, null, null, null, null);
 
         mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", dataSourceId1)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").exists())
@@ -462,31 +478,56 @@ class DatasourceControllerTest {
     }
 
     @Test
-    @DisplayName("자료 수정 실패: 요청 바디가 모두 공백 -> 400")
+    @DisplayName("자료 수정 성공: 확장 필드 전부(대소문자 category 허용, imageUrl='', source='') → 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    void update_badRequest_whenEmpty() throws Exception {
-        var body = new reqBodyForUpdateDataSource("  ", null);
+    void update_ok_all_fields() throws Exception {
+        String body = updateJson(
+                "T2",              // title
+                "S2",                  // summary
+                "https://new.src",     // sourceUrl
+                "",                    // imageUrl
+                "",                    // source
+                List.of("A","B"),      // tags 리스트
+                "science"              // category
+        );
 
         mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", dataSourceId1)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.dataSourceId").value(dataSourceId1));
+    }
+
+
+    @Test
+    @DisplayName("자료 수정 실패: sourceUrl가 빈 문자열 → 400")
+    @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    void update_badRequest_sourceUrl_blank() throws Exception {
+        String body = updateJson(null, null, "  ", null, null, null, null);
+
+        mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", dataSourceId1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.msg").exists());
     }
 
     @Test
-    @DisplayName("자료 수정 실패: 존재하지 않는 자료 -> 404")
+    @DisplayName("자료 수정 실패: 모든 필드 미전달(null) → 400")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    void update_notFound() throws Exception {
-        var body = new reqBodyForUpdateDataSource("제목", "요약");
+    void update_badRequest_all_null() throws Exception {
+        // 빈 JSON 객체 {}
+        String body = "{}";
 
-        mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", 999999)
+        mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", dataSourceId1)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
+
 
     // 검색
     @Test

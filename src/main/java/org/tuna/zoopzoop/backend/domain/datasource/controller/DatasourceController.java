@@ -189,18 +189,42 @@ public class DatasourceController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         // title, summary 둘 다 비어있으면 의미 없는 요청 → 400
-        boolean noTitle = (body.title() == null || body.title().isBlank());
-        boolean noSummary = (body.summary() == null || body.summary().isBlank());
-        if (noTitle && noSummary) {
-            throw new IllegalArgumentException("변경할 값이 없습니다. title 또는 summary 중 하나 이상을 전달하세요.");
+        boolean anyPresent =
+                (body.title() != null) ||
+                        (body.summary() != null) ||
+                        (body.sourceUrl() != null) ||
+                        (body.imageUrl() != null) ||
+                        (body.source() != null) ||
+                        (body.tags() != null) ||
+                        (body.category() != null);
+
+        if (!anyPresent) {
+            throw new IllegalArgumentException(
+                    "변경할 값이 없습니다. title, summary, sourceUrl, imageUrl, source, tags, category 중 하나 이상을 전달하세요."
+            );
+        }
+
+        // 비즈니스 규칙: sourceUrl은 엔티티 nullable=false 이므로, 빈 문자열로 업데이트 요청 시 400
+        if (body.sourceUrl() != null && body.sourceUrl().isBlank()) {
+            throw new IllegalArgumentException("sourceUrl은 빈 값일 수 없습니다.");
         }
 
         Member member = userDetails.getMember();
-        Integer updatedId = dataSourceService.updateDataSource(member.getId(), dataSourceId, body.title(), body.summary()); // CHANGED
-        String msg = updatedId + "번 자료가 수정됐습니다.";
-        return ResponseEntity.ok(
-                new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId))
+
+        Integer updatedId = dataSourceService.updateDataSource(
+                member.getId(),
+                dataSourceId,
+                body.title(),
+                body.summary(),
+                body.sourceUrl(),
+                body.imageUrl(),
+                body.source(),
+                body.tags(),
+                body.category()
         );
+
+        String msg = updatedId + "번 자료가 수정됐습니다.";
+        return ResponseEntity.ok(new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId)));
     }
 
     /**
