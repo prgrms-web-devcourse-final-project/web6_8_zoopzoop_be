@@ -33,18 +33,18 @@ public class ApiV1DashboardController {
      */
     @PutMapping("/{dashboardId}/graph")
     @Operation(summary = "React-flow 데이터 저장(갱신)")
-    public ResponseEntity<RsData<Void>> updateGraph(
+    public ResponseEntity<RsData<Void>> queueGraphUpdate(
             @PathVariable Integer dashboardId,
             @RequestBody String requestBody,
             @RequestHeader("Liveblocks-Signature") String signature
     ) {
-        dashboardService.verifyAndUpdateGraph(dashboardId, requestBody, signature);
+        dashboardService.queueGraphUpdate(dashboardId, requestBody, signature);
 
         return ResponseEntity
-                .status(HttpStatus.OK)
+                .status(HttpStatus.ACCEPTED)
                 .body(new RsData<>(
-                        "200",
-                        "React-flow 데이터를 저장했습니다.",
+                        "202",
+                        "데이터 업데이트 요청이 성공적으로 접수되었습니다.",
                         null
                 ));
     }

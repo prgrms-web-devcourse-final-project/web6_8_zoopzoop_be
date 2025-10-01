@@ -40,6 +40,23 @@ spring:
     port: 5672
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 2000
+          max-attempts: 3
+  data: #RedisTemplate 등을 사용하기 위한 직접 연결용
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 6000
+  cache: #Spring Cache를 사용하기 위한 Redis
+    type: redis
+    redis:
+      time-to-live: 300000
+      cache-null-values: false
+      key-prefix:
 
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
@@ -49,6 +66,7 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG
+    org.springframework.retry: DEBUG
 
 server:
   port: 8080
