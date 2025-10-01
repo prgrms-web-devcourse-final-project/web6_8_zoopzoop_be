@@ -21,7 +21,7 @@ public class Dashboard extends BaseEntity {
 
     // 이 대시보드가 담고 있는 그래프 콘텐츠 (1:1 관계)
     // Cascade 설정을 통해 Dashboard 저장 시 Graph도 함께 저장되도록 함
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "graph_id")
     private Graph graph;
 
