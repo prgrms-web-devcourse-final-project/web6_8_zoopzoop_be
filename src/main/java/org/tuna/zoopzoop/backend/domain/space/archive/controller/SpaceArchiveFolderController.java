@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
@@ -15,7 +16,6 @@ import org.tuna.zoopzoop.backend.domain.space.archive.service.SpaceArchiveFolder
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +25,7 @@ import java.util.Map;
 @Tag(name = "SpaceArchiveFolder", description = "공유 아카이브의 폴더 CRUD")
 public class SpaceArchiveFolderController {
 
-    private final SpaceArchiveFolderService spaceService;
+    private final SpaceArchiveFolderService spaceArchiveFolderService;
 
     /**
      * 공유 아카이브 안에 새 폴더 생성
@@ -35,14 +35,15 @@ public class SpaceArchiveFolderController {
     public RsData<resBodyForCreateFolder> createFolder(
             @PathVariable Integer spaceId,
             @Valid @RequestBody reqBodyForCreateFolder rq,
-            @AuthenticationPrincipal CustomUserDetails principal
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Member requester = principal.getMember();
-        FolderResponse r = spaceService.createFolder(spaceId, requester, rq.folderName());
+        Member requester = userDetails.getMember();
+        FolderResponse fr = spaceArchiveFolderService.createFolder(spaceId, requester, rq.folderName());
+        resBodyForCreateFolder rs = new resBodyForCreateFolder(fr.folderName(), fr.folderId());
         return new RsData<>(
                 "200",
                 rq.folderName() + " 폴더가 생성되었습니다.",
-                new resBodyForCreateFolder(r.folderName(), r.folderId())
+                rs
         );
     }
 
@@ -51,23 +52,19 @@ public class SpaceArchiveFolderController {
      */
     @Operation(summary = "폴더 삭제", description = "해당 스페이스의 공유 아카이브에서 폴더를 삭제합니다.")
     @DeleteMapping("/{folderId}")
-    public Map<String, Object> deleteFolder(
+    public ResponseEntity<RsData<?>> deleteFolder(
             @PathVariable Integer spaceId,
             @PathVariable Integer folderId,
-            @AuthenticationPrincipal CustomUserDetails principal
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        if (folderId == 0) {
-            return Map.of("status", 409, "msg", "default 폴더는 삭제할 수 없습니다.", "data", null);
-        }
+        if (folderId == 0)
+            throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
 
-        String deletedFolderName = spaceService.deleteFolder(spaceId, principal.getMember(), folderId);
-        String msg = (deletedFolderName != null) ? deletedFolderName + " 폴더가 삭제됐습니다." : "폴더가 삭제됐습니다.";
 
-        var body = new HashMap<String, Object>();
-        body.put("status", 200);
-        body.put("msg", msg);
-        body.put("data", null);
-        return body;
+        String deletedFolderName = spaceArchiveFolderService.deleteFolder(spaceId, userDetails.getMember(), folderId);
+        return ResponseEntity.ok().body(
+                new RsData<>("200", deletedFolderName + " 폴더가 삭제됐습니다.", null)
+        );
     }
 
     /**
@@ -75,20 +72,18 @@ public class SpaceArchiveFolderController {
      */
     @Operation(summary = "폴더 이름 수정", description = "해당 스페이스의 공유 아카이브에서 폴더 이름을 변경합니다.")
     @PatchMapping("/{folderId}")
-    public Map<String, Object> updateFolderName(
+    public ResponseEntity<RsData<?>> updateFolderName(
             @PathVariable Integer spaceId,
             @PathVariable Integer folderId,
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal CustomUserDetails principal
     ) {
-        if (folderId == 0) {
-            return Map.of("status", 400, "msg", "default 폴더는 이름을 변경할 수 없습니다.", "data", null);
-        }
-        String updated = spaceService.updateFolderName(spaceId, principal.getMember(), folderId, body.get("folderName"));
-        return Map.of(
-                "status", 200,
-                "msg", "폴더 이름이 " + updated + " 으로 변경됐습니다.",
-                "data", Map.of("folderName", updated)
+        if (folderId == 0)
+            throw new IllegalArgumentException("default 폴더는 이름을 변경할 수 없습니다.");
+
+        String updatename = spaceArchiveFolderService.updateFolderName(spaceId, principal.getMember(), folderId, body.get("folderName"));
+        return ResponseEntity.ok().body(
+                new RsData<>("200", "폴더 이름이 " + updatename + "(으)로 변경됐습니다.", new FolderResponse(updatename, folderId))
         );
     }
 
@@ -97,15 +92,13 @@ public class SpaceArchiveFolderController {
      */
     @Operation(summary = "폴더 이름 조회", description = "해당 스페이스의 공유 아카이브 폴더 목록을 조회합니다.")
     @GetMapping
-    public Map<String, Object> listFolders(
+    public ResponseEntity<RsData<List<FolderResponse>>> listFolders(
             @PathVariable Integer spaceId,
-            @AuthenticationPrincipal CustomUserDetails principal
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<FolderResponse> folders = spaceService.listFolders(spaceId, principal.getMember());
-        return Map.of(
-                "status", 200,
-                "msg", "공유 아카이브의 폴더 목록을 불러왔습니다.",
-                "data", Map.of("folders", folders)
+        List<FolderResponse> folders = spaceArchiveFolderService.getFolders(spaceId, userDetails.getMember());
+        return ResponseEntity.ok().body(
+                new RsData<>("200", "공유 아카이브의 폴더 목록이 조회되었습니다.", folders)
         );
     }
 
@@ -114,24 +107,19 @@ public class SpaceArchiveFolderController {
      */
     @Operation(summary = "폴더 내 파일 조회", description = "해당 스페이스의 공유 아카이브에서 특정 폴더 내 파일 목록을 조회합니다.")
     @GetMapping("/{folderId}/files")
-    public Map<String, Object> filesInFolder(
+    public ResponseEntity<RsData<FolderFilesDto>> filesInFolder(
             @PathVariable Integer spaceId,
             @PathVariable Integer folderId,
-            @AuthenticationPrincipal CustomUserDetails principal
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Integer target = (folderId == 0)
-                ? spaceService.getDefaultFolderId(spaceId, principal.getMember())
+                ? spaceArchiveFolderService.getDefaultFolderId(spaceId, userDetails.getMember())
                 : folderId;
 
-        FolderFilesDto rs = spaceService.getFilesInFolder(spaceId, principal.getMember(), target);
+        FolderFilesDto rs = spaceArchiveFolderService.getFilesInFolder(spaceId, userDetails.getMember(), target);
 
-        return Map.of(
-                "status", 200,
-                "msg", folderId == 0 ? "기본 폴더의 파일 목록을 불러왔습니다." : "해당 폴더의 파일 목록을 불러왔습니다.",
-                "data", Map.of(
-                        "folder", Map.of("folderId", rs.folderId(), "folderName", rs.folderName()),
-                        "files", rs.files()
-                )
+        return ResponseEntity.ok().body(
+                new RsData<>("200", "폴더 안의 파일 목록을 불러왔습니다.", rs)
         );
     }
 }

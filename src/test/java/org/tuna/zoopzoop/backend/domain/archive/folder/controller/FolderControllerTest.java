@@ -30,10 +30,13 @@ import java.util.List;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
+/**
+ * 개인 아카이브 폴더 컨트롤러 통합 테스트 (MockMvc)
+ * - 전역 예외 핸들러를 통해 RsData(JSON)로 응답함
+ * - 응답의 "status" 값은 문자열("200","400","404",...)로 검증
+ */
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -47,12 +50,12 @@ class FolderControllerTest {
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
 
-    @Autowired private PersonalArchiveFolderService folderService;
+    @Autowired private PersonalArchiveFolderService personalArchiveFolderService;
     @Autowired private FolderRepository folderRepository;
 
     @Autowired private DataSourceRepository dataSourceRepository;
 
-    private final String TEST_PROVIDER_KEY = "sc1111"; // WithUserDetails 에서 사용되는 provider key ("KAKAO:sc1111")
+    private final String TEST_PROVIDER_KEY = "sc1111";
     private Integer testMemberId;
     private Integer docsFolderId;
 
@@ -66,13 +69,12 @@ class FolderControllerTest {
                 .map(BaseEntity::getId)
                 .orElseThrow();
 
-        // GIVEN: 테스트용 폴더 및 샘플 자료 준비 (docs 폴더 + 2개 자료)
-        FolderResponse fr = folderService.createFolder(testMemberId, "docs");
+        // given
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
 
-        // 자료 2건 생성
         DataSource d1 = new DataSource();
         d1.setFolder(docsFolder);
         d1.setTitle("spec.pdf");
@@ -82,7 +84,7 @@ class FolderControllerTest {
         d1.setDataCreatedDate(LocalDate.now());
         d1.setActive(true);
         d1.setTags(List.of(new Tag("tag1"), new Tag("tag2")));
-        d1.setCategory(Category.IT); // enum 타입 반영
+        d1.setCategory(Category.IT);
         dataSourceRepository.save(d1);
 
         DataSource d2 = new DataSource();
@@ -108,15 +110,13 @@ class FolderControllerTest {
         } catch (Exception ignored) {}
     }
 
-    // CreateFile
+    // ---------- Create ----------
     @Test
     @DisplayName("개인 아카이브 폴더 생성 - 성공 시 200과 응답 DTO 반환")
     @WithUserDetails("KAKAO:sc1111")
     void createFolder_ok() throws Exception {
-        // Given
         var req = new reqBodyForCreateFolder("보고서");
 
-        // When & Then
         mockMvc.perform(post("/api/v1/archive/folder")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -131,40 +131,37 @@ class FolderControllerTest {
     @DisplayName("개인 아카이브 폴더 생성 - 폴더 이름 누락 시 400")
     @WithUserDetails("KAKAO:sc1111")
     void createFolder_missingName() throws Exception {
-        // Given
         var req = new reqBodyForCreateFolder(null);
 
-        // When & Then
         mockMvc.perform(post("/api/v1/archive/folder")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("400"));
     }
 
-
-    // DeleteFile
+    // ---------- Delete ----------
     @Test
     @DisplayName("개인 아카이브 폴더 삭제 - 성공 시 200과 삭제 메시지 반환")
     @WithUserDetails("KAKAO:sc1111")
     void deleteFolder_ok() throws Exception {
-        // Given: 새 폴더 생성 후 삭제 준비
-        FolderResponse fr = folderService.createFolder(testMemberId, "todelete");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "todelete");
         Integer idToDelete = fr.folderId();
 
-        // When & Then
         mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", idToDelete))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.msg").value("todelete 폴더가 삭제됐습니다."));
+                .andExpect(jsonPath("$.status").value("200"))
+                .andExpect(jsonPath("$.msg").value("todelete 폴더가 삭제됐습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test
-    @DisplayName("개인 아카이브 폴더 삭제 실패- 기본 폴더면 400")
+    @DisplayName("개인 아카이브 폴더 삭제 실패 - 기본 폴더면 400")
     @WithUserDetails("KAKAO:sc1111")
     void deleteDefaultFolder_badRequest() throws Exception {
         mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 0))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.status").value("400"))
                 .andExpect(jsonPath("$.msg").value("default 폴더는 삭제할 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -173,32 +170,28 @@ class FolderControllerTest {
     @DisplayName("개인 아카이브 폴더 삭제 - 존재하지 않으면 404")
     @WithUserDetails("KAKAO:sc1111")
     void deleteFolder_notFound() throws Exception {
-        // When & Then
         mockMvc.perform(delete("/api/v1/archive/folder/{folderId}", 999999))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
     }
 
-
-    // UpdateFile
+    // ---------- Update ----------
     @Test
     @DisplayName("개인 아카이브 폴더 이름 변경 - 성공 시 200과 변경된 이름 반환")
     @WithUserDetails("KAKAO:sc1111")
     void updateFolder_ok() throws Exception {
-        // Given: rename 대상 폴더 생성
-        FolderResponse fr = folderService.createFolder(testMemberId, "toRename");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "toRename");
         Integer id = fr.folderId();
 
         var body = new java.util.HashMap<String,String>();
         body.put("folderName","회의록");
 
-        // When & Then
         mockMvc.perform(patch("/api/v1/archive/folder/{folderId}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.status").value("200"))
                 .andExpect(jsonPath("$.msg").value("폴더 이름이 회의록 으로 변경됐습니다."))
                 .andExpect(jsonPath("$.data.folderName").value("회의록"));
     }
@@ -214,7 +207,7 @@ class FolderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.status").value("400"))
                 .andExpect(jsonPath("$.msg").value("default 폴더는 이름을 변경할 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
@@ -223,11 +216,9 @@ class FolderControllerTest {
     @DisplayName("개인 아카이브 폴더 이름 변경 - 존재하지 않는 폴더면 404")
     @WithUserDetails("KAKAO:sc1111")
     void updateFolder_notFound() throws Exception {
-        // Given
         var body = new java.util.HashMap<String,String>();
         body.put("folderName","회의록");
 
-        // When & Then
         mockMvc.perform(patch("/api/v1/archive/folder/{folderId}", 999999)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
@@ -236,33 +227,27 @@ class FolderControllerTest {
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
     }
 
-    // ReadFolder
-    // Read: 내 폴더 목록
+    // ---------- Read ----------
     @Test
     @DisplayName("개인 아카이브 폴더 목록 조회 - 성공")
     @WithUserDetails("KAKAO:sc1111")
     void getFolders_success() throws Exception {
-        // When & Then
         mockMvc.perform(get("/api/v1/archive/folder")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.status").value("200"))
                 .andExpect(jsonPath("$.msg").value("개인 아카이브의 폴더 목록을 불러왔습니다."))
-                .andExpect(jsonPath("$.data.folders").isArray());
+                .andExpect(jsonPath("$.data").isArray());
     }
 
-    // Read: 폴더 내 파일 목록
     @Test
-    @DisplayName("폴더 내 파일 목록 조회 - 성공")
+    @DisplayName("개인 아카이브 폴더 내 파일 목록 조회 - 성공")
     @WithUserDetails("KAKAO:sc1111")
     void getFilesInFolder_success() throws Exception {
-        // Given : @BeforeAll: docsFolderId 및 샘플 파일 준비됨
-
-        // When & Then
         mockMvc.perform(get("/api/v1/archive/folder/{folderId}/files", docsFolderId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.status").value("200"))
                 .andExpect(jsonPath("$.msg").value("해당 폴더의 파일 목록을 불러왔습니다."))
                 .andExpect(jsonPath("$.data.files").isArray())
                 .andExpect(jsonPath("$.data.files.length()").value(greaterThanOrEqualTo(2)))
@@ -274,25 +259,24 @@ class FolderControllerTest {
     }
 
     @Test
-    @DisplayName("폴더 파일 목록 조회 - default 폴더 성공")
+    @DisplayName("개인 아카이브 기본 폴더 내 파일 목록 조회 - 성공")
     @WithUserDetails("KAKAO:sc1111")
     void getFilesInDefaultFolder_success() throws Exception {
         mockMvc.perform(get("/api/v1/archive/folder/{folderId}/files", 0)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.msg").value("기본 폴더의 파일 목록을 불러왔습니다."))
-                .andExpect(jsonPath("$.data.folder.folderId").isNumber())
-                .andExpect(jsonPath("$.data.folder.folderName").isString())
+                .andExpect(jsonPath("$.status").value("200"))
+
+                .andExpect(jsonPath("$.msg").value("해당 폴더의 파일 목록을 불러왔습니다."))
+                .andExpect(jsonPath("$.data.folderId").isNumber())
+                .andExpect(jsonPath("$.data.folderName").isString())
                 .andExpect(jsonPath("$.data.files").isArray());
     }
 
-
     @Test
-    @DisplayName("폴더 내 파일 목록 조회 - 폴더가 없으면 404")
+    @DisplayName("개인 아카이브 폴더 내 파일 목록 조회 - 폴더가 없으면 404")
     @WithUserDetails("KAKAO:sc1111")
     void getFilesInFolder_notFound() throws Exception {
-        // When & Then
         mockMvc.perform(get("/api/v1/archive/folder/{folderId}/files", 999999)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
