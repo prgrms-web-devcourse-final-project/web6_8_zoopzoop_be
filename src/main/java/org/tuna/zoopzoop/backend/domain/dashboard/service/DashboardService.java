@@ -3,9 +3,13 @@ package org.tuna.zoopzoop.backend.domain.dashboard.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
+import org.tuna.zoopzoop.backend.domain.dashboard.dto.GraphUpdateMessage;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Dashboard;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
@@ -25,6 +29,7 @@ public class DashboardService {
     private final MembershipService membershipService;
     private final ObjectMapper objectMapper;
     private final SignatureService signatureService;
+    private final RabbitTemplate rabbitTemplate;
 
 
 
@@ -102,6 +107,33 @@ public class DashboardService {
             throw new AccessDeniedException("대시보드의 접근 권한이 없습니다.");
         }
     }
+
+    // =========================== message 관리 메서드  ===========================
+
+    /**
+     * Graph 업데이트 요청을 RabbitMQ 큐에 비동기적으로 발행하는 메서드
+     * @param dashboardId 대시보드 ID
+     * @param requestBody 요청 바디
+     * @param signatureHeader 서명 헤더
+     */
+    public void queueGraphUpdate(Integer dashboardId, String requestBody, String signatureHeader){
+        // 서명 검증은 동기적으로 즉시 처리
+        if (!signatureService.isValidSignature(requestBody, signatureHeader)) {
+            throw new SecurityException("Invalid webhook signature.");
+        }
+
+        // 대시보드 존재 여부 확인
+        if (!dashboardRepository.existsById(dashboardId)) {
+            throw new NoResultException(dashboardId + " ID를 가진 대시보드를 찾을 수 없습니다.");
+        }
+
+        // 큐에 보낼 메시지 생성
+        GraphUpdateMessage message = new GraphUpdateMessage(dashboardId, requestBody);
+
+        // RabbitMQ에 메시지 발행
+        rabbitTemplate.convertAndSend("zoopzoop.exchange", "graph.update.rk", message);
+    }
+
 
 
 

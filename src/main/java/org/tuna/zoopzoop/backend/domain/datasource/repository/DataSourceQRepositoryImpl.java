@@ -36,7 +36,6 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         QPersonalArchive pa = QPersonalArchive.personalArchive;
         QTag tag = QTag.tag;
 
-        // where
         BooleanBuilder where = new BooleanBuilder();
 
         if (cond.getIsActive() == null || Boolean.TRUE.equals(cond.getIsActive())) {
@@ -55,6 +54,9 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         }
         if (cond.getFolderName() != null && !cond.getFolderName().isBlank()) {
             where.and(ds.folder.name.eq(cond.getFolderName()));
+        }
+        if (cond.getFolderId() != null) {
+            where.and(ds.folder.id.eq(cond.getFolderId()));
         }
 
         BooleanBuilder ownership = new BooleanBuilder()
@@ -113,7 +115,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .map(row -> new DataSourceSearchItem(
                         row.get(ds.id),
                         row.get(ds.title),
-                        row.get(ds.dataCreatedDate), // LocalDate 그대로 내려줌
+                        row.get(ds.dataCreatedDate),
                         row.get(ds.summary),
                         row.get(ds.sourceUrl),
                         row.get(ds.imageUrl),

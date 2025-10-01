@@ -74,4 +74,15 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
     Optional<Folder> findDefaultByMemberId(@Param("memberId") Integer memberId);
 
     Optional<Folder> findByIdAndArchiveId(Integer folderId, Integer archiveId);
+
+    @Query("""
+        select f.name
+        from Folder f
+        where f.archive.id = :archiveId
+          and f.name = :name
+          and f.id <> :excludeFolderId
+    """)
+    List<String> existsNameInArchiveExceptSelf(@Param("archiveId") Integer archiveId,
+                                               @Param("name") String name,
+                                               @Param("excludeFolderId") Integer excludeFolderId);
 }

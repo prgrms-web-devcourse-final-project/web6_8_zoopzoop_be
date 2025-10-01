@@ -153,6 +153,18 @@ public abstract class ControllerTestSupport {
     }
 
     /**
+     * 202 Accepted 응답을 기대하는 헬퍼 메서드
+     * @param resultActions - MockMvc의 ResultActions 객체
+     * @param msg - 기대하는 메시지
+     * @throws Exception - 예외 발생 시 던짐
+     */
+    protected void expectAccepted(ResultActions resultActions, String msg) throws Exception {
+        resultActions.andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("202"))
+                .andExpect(jsonPath("$.msg").value(msg));
+    }
+
+    /**
      * 400 Bad Request 응답을 기대하는 헬퍼 메서드
      * @param resultActions - MockMvc의 ResultActions 객체
      * @param msg - 기대하는 메시지

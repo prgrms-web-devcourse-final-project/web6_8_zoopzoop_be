@@ -24,10 +24,11 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class FolderService {
+
     private final FolderRepository folderRepository;
     private final DataSourceRepository dataSourceRepository;
 
-    // ====== 공통: 생성 ======
+    // ===== 생성 =====
     @Transactional
     public FolderResponse createFolder(Archive archive, String folderName) {
         if (archive == null) throw new NoResultException("아카이브가 존재하지 않습니다.");
@@ -35,8 +36,8 @@ public class FolderService {
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
 
         final String requested = folderName.trim();
-
         String unique = generateUniqueFolderName(archive.getId(), requested);
+
         for (int attempt = 0; attempt < 2; attempt++) {
             try {
                 Folder folder = new Folder();
@@ -45,7 +46,7 @@ public class FolderService {
                 folder.setDefault(false);
 
                 Folder saved = folderRepository.save(folder);
-                return new FolderResponse(saved.getId(), saved.getName());
+                return new FolderResponse(saved.getName(), saved.getId());
             } catch (DataIntegrityViolationException e) {
                 unique = generateUniqueFolderName(archive.getId(), requested);
             }
@@ -53,20 +54,20 @@ public class FolderService {
         throw new IllegalStateException("동시성 충돌로 폴더 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
 
-    // ====== 공통: 삭제 ======
+    // ===== 삭제 =====
     @Transactional
     public String deleteFolder(Archive archive, Integer folderId) {
         Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
-        if (folder.isDefault()) {
+        if (folder.isDefault())
             throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
-        }
 
+        // 기본 폴더 확보 (같은 archive)
         Folder defaultFolder = folderRepository.findByArchiveIdAndIsDefaultTrue(archive.getId())
                 .orElseThrow(() -> new IllegalStateException("default 폴더가 존재하지 않습니다."));
 
-        // 폴더 내 자료 이관 + soft delete 플래그
+        // 폴더 내 자료 이관 + soft delete(네 정책 유지)
         List<DataSource> dataSources = dataSourceRepository.findAllByFolderId(folderId);
         LocalDate now = LocalDate.now();
         for (DataSource ds : dataSources) {
@@ -76,13 +77,11 @@ public class FolderService {
         }
 
         String name = folder.getName();
-
-        archive.removeFolder(folder);
         folderRepository.delete(folder);
         return name;
     }
 
-    // ====== 공통: 이름 변경 ======
+    // ===== 이름 변경 =====
     @Transactional
     public String updateFolderName(Archive archive, Integer folderId, String newName) {
         if (newName == null || newName.trim().isEmpty())
@@ -94,28 +93,27 @@ public class FolderService {
         if (folder.isDefault())
             throw new IllegalArgumentException("default 폴더는 이름을 변경할 수 없습니다.");
 
-        // 같은 archive 내 중복 체크
-        List<String> existing = folderRepository.findNamesForConflictCheck(
-                archive.getId(), newName.trim(), newName.trim() + "\uffff"
-        );
-        // 자기 자신 제외
-        boolean dup = existing.stream().anyMatch(n -> !n.equals(folder.getName()));
-        if (dup) throw new IllegalArgumentException("이미 존재하는 폴더명입니다.");
+        // 같은 Archive 내 동명 검사 (자기 자신 제외)
+        List<String> conflict = folderRepository.existsNameInArchiveExceptSelf(
+                archive.getId(), newName.trim(), folder.getId());
+        if (!conflict.isEmpty()) {
+            throw new IllegalArgumentException("이미 존재하는 폴더명입니다.");
+        }
 
         folder.setName(newName.trim());
         folderRepository.save(folder);
         return folder.getName();
     }
 
-    // ====== 공통: 목록 ======
+    // ===== 목록 조회 =====
     @Transactional(readOnly = true)
-    public List<FolderResponse> listFolders(Archive archive) {
-        return folderRepository.findAllByArchiveId(archive.getId()).stream()
-                .map(f -> new FolderResponse(f.getId(), f.getName()))
+    public List<FolderResponse> getFolders(Archive archive) {
+        return folderRepository.findByArchive(archive).stream()
+                .map(f -> new FolderResponse(f.getName(), f.getId()))
                 .toList();
     }
 
-    // ====== 공통: 폴더 내 파일 목록 ======
+    // ===== 폴더 내 파일 조회 =====
     @Transactional(readOnly = true)
     public FolderFilesDto getFilesInFolder(Archive archive, Integer folderId) {
         Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
@@ -129,8 +127,7 @@ public class FolderService {
                         ds.getSummary(),
                         ds.getSourceUrl(),
                         ds.getImageUrl(),
-                        ds.getTags() == null ? List.of()
-                                : ds.getTags().stream().map(Tag::getTagName).toList(),
+                        ds.getTags() == null ? List.of() : ds.getTags().stream().map(Tag::getTagName).toList(),
                         ds.getCategory() == null ? null : ds.getCategory().name()
                 ))
                 .toList();
@@ -138,7 +135,7 @@ public class FolderService {
         return new FolderFilesDto(folder.getId(), folder.getName(), files);
     }
 
-    // ====== 공통: default 폴더 id ======
+    // ===== 기본 폴더 ID 조회 (Archive 스코프) =====
     @Transactional(readOnly = true)
     public Integer getDefaultFolderId(Archive archive) {
         return folderRepository.findByArchiveIdAndIsDefaultTrue(archive.getId())
@@ -146,19 +143,21 @@ public class FolderService {
                 .getId();
     }
 
-    // ====== 기존 personal 전용 유틸(이름 생성) 재사용 ======
+    // ===== 이름 충돌 유틸 =====
+    private static final Pattern SUFFIX_PATTERN = Pattern.compile("^(.*?)(?: \\((\\d+)\\))?$");
+
     private String generateUniqueFolderName(Integer archiveId, String requested) {
-        NameParts parts = NameParts.split(requested);
-        String base = parts.base();
-        String baseEnd = base + "\uffff";
-        List<String> existing = folderRepository.findNamesForConflictCheck(archiveId, base, baseEnd);
-        return pickNextAvailable(base, existing);
+        NameParts nameParts = NameParts.split(requested);
+        String file = nameParts.base();
+        String fileEnd = file + "\uffff";
+        List<String> existing = folderRepository.findNamesForConflictCheck(archiveId, file, fileEnd);
+        return pickNextAvailable(file, existing);
     }
 
-    private static String pickNextAvailable(String base, List<String> existing) {
+    private static String pickNextAvailable(String file, List<String> existing) {
         boolean baseUsed = false;
         Set<Integer> used = new HashSet<>();
-        Pattern p = Pattern.compile("^" + Pattern.quote(base) + "(?: \\((\\d+)\\))?$");
+        Pattern p = Pattern.compile("^" + Pattern.quote(file) + "(?: \\((\\d+)\\))?$");
         for (String s : existing) {
             var m = p.matcher(s);
             if (m.matches()) {
@@ -166,23 +165,23 @@ public class FolderService {
                 else used.add(Integer.parseInt(m.group(1)));
             }
         }
-        if (!baseUsed) return base;
+        if (!baseUsed) return file;
         for (int k = 1; k <= used.size() + 1; k++) {
-            if (!used.contains(k)) return base + " (" + k + ")";
+            if (!used.contains(k)) return file + " (" + k + ")";
         }
-        return base + " (" + (used.size() + 1) + ")";
+        return file + " (" + (used.size() + 1) + ")";
     }
 
     private record NameParts(String base, Integer num) {
-        static final Pattern SUFFIX = Pattern.compile("^(.*?)(?: \\((\\d+)\\))?$");
-        static NameParts split(String s) {
-            var m = SUFFIX.matcher(s.trim());
+        static NameParts split(String name) {
+            var m = SUFFIX_PATTERN.matcher(name.trim());
             if (m.matches()) {
-                String b = m.group(1).trim();
-                Integer n = m.group(2) == null ? null : Integer.parseInt(m.group(2));
-                return new NameParts(b, n);
+                String base = m.group(1).trim();
+                Integer n = m.group(2) != null ? Integer.valueOf(m.group(2)) : null;
+                return new NameParts(base, n);
             }
-            return new NameParts(s.trim(), null);
+            return new NameParts(name.trim(), null);
         }
     }
 }
+

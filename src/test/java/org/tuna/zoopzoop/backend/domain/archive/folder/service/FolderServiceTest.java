@@ -10,247 +10,216 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
+import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * PersonalArchiveFolderService 단위 테스트
- * - 오케스트레이션 서비스만 검증 (Archive 조회/권한 컨텍스트)
- * - 공통 도메인 서비스(FolderService)는 mock 으로 스텁
- */
 @ExtendWith(MockitoExtension.class)
-class PersonalArchiveFolderServiceTest {
+class FolderServiceTest {
 
-    @Mock private PersonalArchiveRepository personalArchiveRepository;
-    @Mock private FolderService folderService; // 공통 도메인 서비스 (Archive 스코프)
+    @Mock private FolderRepository folderRepository;
+    @Mock private DataSourceRepository dataSourceRepository;
 
-    @InjectMocks private PersonalArchiveFolderService personalService;
+    @InjectMocks private FolderService folderService;
 
-    private Member member;
     private Archive archive;
-    private PersonalArchive personalArchive;
 
     @BeforeEach
     void setUp() {
-        member = new Member();
-        ReflectionTestUtils.setField(member, "id", 1);
-
-        archive = new Archive();
+        this.archive = new Archive();
         ReflectionTestUtils.setField(archive, "id", 10);
-
-        personalArchive = new PersonalArchive();
-        ReflectionTestUtils.setField(personalArchive, "id", 100);
-        personalArchive.setMember(member);
-        personalArchive.setArchive(archive);
     }
 
     // ---------- Create ----------
     @Test
-    @DisplayName("폴더 생성 성공(중복 없음)")
-    void createFolder_success() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.createFolder(archive, "보고서"))
-                .thenReturn(new FolderResponse(999, "보고서"));
+    @DisplayName("폴더 이름 중복 없음 → 그대로 생성")
+    void generateUniqueName_noConflict() {
+        when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), anyString(), anyString()))
+                .thenReturn(List.of());
 
-        FolderResponse result = personalService.createFolder(1, "보고서");
+        Folder folder = new Folder();
+        folder.setArchive(archive);
+        folder.setName("보고서");
+        ReflectionTestUtils.setField(folder, "id", 1);
 
-        assertThat(result.folderId()).isEqualTo(999);
-        assertThat(result.folderName()).isEqualTo("보고서");
-        verify(folderService).createFolder(archive, "보고서");
+        when(folderRepository.save(any(Folder.class))).thenReturn(folder);
+
+        FolderResponse rs = folderService.createFolder(archive, "보고서");
+
+        assertThat(rs.folderName()).isEqualTo("보고서");
     }
 
     @Test
-    @DisplayName("폴더 이름 중복 시 '(1)' 붙여 생성")
-    void createFolder_withConflict() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.createFolder(archive, "보고서"))
-                .thenReturn(new FolderResponse(1000, "보고서 (1)"));
+    @DisplayName("폴더 이름 중복 시 (1) 붙여 생성")
+    void generateUniqueName_withConflict() {
+        when(folderRepository.findNamesForConflictCheck(eq(archive.getId()), eq("보고서"), anyString()))
+                .thenReturn(List.of("보고서"));
 
-        FolderResponse result = personalService.createFolder(1, "보고서");
+        Folder folder = new Folder();
+        folder.setArchive(archive);
+        folder.setName("보고서 (1)");
+        ReflectionTestUtils.setField(folder, "id", 2);
 
-        assertThat(result.folderName()).isEqualTo("보고서 (1)");
-        assertThat(result.folderId()).isEqualTo(1000);
-        verify(folderService).createFolder(archive, "보고서");
-    }
+        when(folderRepository.save(any(Folder.class))).thenReturn(folder);
 
-    @Test
-    @DisplayName("개인 아카이브가 없으면 예외 발생")
-    void createFolder_personalArchiveNotFound() {
-        when(personalArchiveRepository.findByMemberId(2))
-                .thenReturn(Optional.empty());
+        FolderResponse rs = folderService.createFolder(archive, "보고서");
 
-        assertThrows(NoResultException.class,
-                () -> personalService.createFolder(2, "보고서"));
-
-        verify(folderService, never()).createFolder(any(), anyString());
+        assertThat(rs.folderName()).isEqualTo("보고서 (1)");
     }
 
     // ---------- Delete ----------
     @Test
-    @DisplayName("폴더 삭제 성공 - 공통 서비스 호출 위임")
-    void deleteFolder_success() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.deleteFolder(archive, 500))
-                .thenReturn("보고서");
+    @DisplayName("폴더 삭제 시 자료는 default 폴더로 이관 + soft delete")
+    void deleteFolder_softDeleteAndMove() {
+        Folder target = new Folder();
+        target.setArchive(archive);
+        target.setName("docs");
+        ReflectionTestUtils.setField(target, "id", 100);
 
-        String deletedName = personalService.deleteFolder(1, 500);
+        Folder defaultFolder = new Folder();
+        defaultFolder.setArchive(archive);
+        defaultFolder.setName("default");
+        defaultFolder.setDefault(true);
+        ReflectionTestUtils.setField(defaultFolder, "id", 200);
 
-        assertThat(deletedName).isEqualTo("보고서");
-        verify(folderService).deleteFolder(archive, 500);
+        DataSource d1 = new DataSource(); ReflectionTestUtils.setField(d1, "id", 1); d1.setFolder(target); d1.setActive(true);
+        DataSource d2 = new DataSource(); ReflectionTestUtils.setField(d2, "id", 2); d2.setFolder(target); d2.setActive(true);
+
+        when(folderRepository.findByIdAndArchiveId(100, 10))
+                .thenReturn(Optional.of(target));
+        when(folderRepository.findByArchiveIdAndIsDefaultTrue(10))
+                .thenReturn(Optional.of(defaultFolder));
+        when(dataSourceRepository.findAllByFolderId(100))
+                .thenReturn(List.of(d1, d2));
+
+        String deleted = folderService.deleteFolder(archive, 100);
+
+        assertThat(deleted).isEqualTo("docs");
+        assertThat(d1.isActive()).isFalse();
+        assertThat(d1.getDeletedAt()).isNotNull();
+        assertThat(d1.getFolder()).isEqualTo(defaultFolder);
+        verify(folderRepository, times(1)).delete(target);
     }
 
     @Test
     @DisplayName("폴더 삭제 실패 - 존재하지 않는 폴더")
     void deleteFolder_notFound() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.deleteFolder(archive, 999))
-                .thenThrow(new NoResultException("존재하지 않는 폴더입니다."));
+        when(folderRepository.findByIdAndArchiveId(999, archive.getId()))
+                .thenReturn(Optional.empty());
 
-        assertThrows(NoResultException.class,
-                () -> personalService.deleteFolder(1, 999));
-
-        verify(folderService).deleteFolder(archive, 999);
-    }
-
-    @Test
-    @DisplayName("default 폴더는 삭제할 수 없다")
-    void deleteFolder_default_forbidden() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.deleteFolder(archive, 42))
-                .thenThrow(new IllegalArgumentException("default 폴더는 삭제할 수 없습니다."));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> personalService.deleteFolder(1, 42));
-
-        verify(folderService).deleteFolder(archive, 42);
+        assertThrows(NoResultException.class, () -> folderService.deleteFolder(archive, 999));
     }
 
     // ---------- Update ----------
     @Test
     @DisplayName("폴더 이름 변경 성공")
-    void updateFolderName_ok() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.updateFolderName(archive, 5, "새이름"))
-                .thenReturn("새이름");
+    void updateFolderName_success() {
+        Folder folder = new Folder();
+        folder.setArchive(archive);
+        folder.setName("기존");
+        ReflectionTestUtils.setField(folder, "id", 300);
 
-        String result = personalService.updateFolderName(1, 5, "새이름");
+        when(folderRepository.findByIdAndArchiveId(300, archive.getId()))
+                .thenReturn(Optional.of(folder));
+        when(folderRepository.existsNameInArchiveExceptSelf(archive.getId(), "새이름", folder.getId()))
+                .thenReturn(List.of());
+        when(folderRepository.save(any(Folder.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertEquals("새이름", result);
-        verify(folderService).updateFolderName(archive, 5, "새이름");
-    }
+        String updated = folderService.updateFolderName(archive, 300, "새이름");
 
-    @Test
-    @DisplayName("폴더 이름 변경 실패 - 존재하지 않음")
-    void updateFolderName_notFound() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.updateFolderName(archive, 701, "아무거나"))
-                .thenThrow(new NoResultException("존재하지 않는 폴더입니다."));
-
-        assertThrows(NoResultException.class,
-                () -> personalService.updateFolderName(1, 701, "아무거나"));
-
-        verify(folderService).updateFolderName(archive, 701, "아무거나");
+        assertThat(updated).isEqualTo("새이름");
+        assertThat(folder.getName()).isEqualTo("새이름");
     }
 
     @Test
     @DisplayName("폴더 이름 변경 실패 - 중복 이름 존재")
     void updateFolderName_conflict() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.updateFolderName(archive, 700, "보고서"))
-                .thenThrow(new IllegalArgumentException("이미 존재하는 폴더명입니다."));
+        Folder folder = new Folder();
+        folder.setArchive(archive);
+        folder.setName("기존");
+        ReflectionTestUtils.setField(folder, "id", 301);
+
+        when(folderRepository.findByIdAndArchiveId(301, archive.getId()))
+                .thenReturn(Optional.of(folder));
+        when(folderRepository.existsNameInArchiveExceptSelf(archive.getId(), "보고서", folder.getId()))
+                .thenReturn(List.of("보고서"));
 
         assertThrows(IllegalArgumentException.class,
-                () -> personalService.updateFolderName(1, 700, "보고서"));
-
-        verify(folderService).updateFolderName(archive, 700, "보고서");
-    }
-
-    // ---------- Read: 목록 ----------
-    @Test
-    @DisplayName("개인 아카이브 폴더 목록 조회 - 성공")
-    void listFolders_success() {
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.listFolders(archive))
-                .thenReturn(List.of(
-                        new FolderResponse(1, "default"),
-                        new FolderResponse(2, "docs")
-                ));
-
-        List<FolderResponse> rs = personalService.listFolders(1);
-
-        assertThat(rs).hasSize(2);
-        assertThat(rs.get(0).folderId()).isEqualTo(1);
-        assertThat(rs.get(0).folderName()).isEqualTo("default");
-        assertThat(rs.get(1).folderName()).isEqualTo("docs");
-
-        verify(folderService).listFolders(archive);
-    }
-
-    // ---------- Read: 폴더 내 파일 ----------
-    @Test
-    @DisplayName("폴더 내 파일 목록 조회 - 성공")
-    void getFilesInFolder_success() {
-        Integer folderId = 2;
-
-        FolderFilesDto stub = new FolderFilesDto(
-                folderId,
-                "docs",
-                List.of(
-                        new FileSummary(10, "spec.pdf", LocalDate.now(),
-                                "요약 A", "http://src/a", "http://img/a",
-                                List.of("tag1", "tag2"), "IT"),
-                        new FileSummary(11, "notes.txt", LocalDate.now(),
-                                "요약 B", "http://src/b", "http://img/b",
-                                List.of(), "SCIENCE")
-                )
-        );
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.getFilesInFolder(archive, folderId))
-                .thenReturn(stub);
-
-        FolderFilesDto dto = personalService.getFilesInFolder(1, folderId);
-
-        assertThat(dto.files()).hasSize(2);
-        assertThat(dto.files().getFirst().title()).isEqualTo("spec.pdf");
-        verify(folderService).getFilesInFolder(archive, folderId);
+                () -> folderService.updateFolderName(archive, 301, "보고서"));
     }
 
     @Test
-    @DisplayName("폴더 내 파일 목록 조회 - 폴더가 없으면 예외 발생")
-    void getFilesInFolder_notFound() {
-        Integer folderId = 999;
-        when(personalArchiveRepository.findByMemberId(1))
-                .thenReturn(Optional.of(personalArchive));
-        when(folderService.getFilesInFolder(archive, folderId))
-                .thenThrow(new NoResultException("존재하지 않는 폴더입니다."));
+    @DisplayName("폴더 이름 변경 실패 - 폴더 없음")
+    void updateFolderName_notFound() {
+        when(folderRepository.findByIdAndArchiveId(302, archive.getId()))
+                .thenReturn(Optional.empty());
 
         assertThrows(NoResultException.class,
-                () -> personalService.getFilesInFolder(1, folderId));
+                () -> folderService.updateFolderName(archive, 302, "새이름"));
+    }
 
-        verify(folderService).getFilesInFolder(archive, folderId);
+    // ---------- Read ----------
+    @Test
+    @DisplayName("Archive 단위 폴더 목록 조회 성공")
+    void getFolders_success() {
+        Folder f1 = new Folder(); f1.setArchive(archive); f1.setName("default"); ReflectionTestUtils.setField(f1, "id", 1);
+        Folder f2 = new Folder(); f2.setArchive(archive); f2.setName("docs");    ReflectionTestUtils.setField(f2, "id", 2);
+
+        when(folderRepository.findByArchive(archive)).thenReturn(List.of(f1, f2));
+
+        List<FolderResponse> rs = folderService.getFolders(archive);
+
+        assertThat(rs).hasSize(2);
+        assertThat(rs.get(0).folderName()).isEqualTo("default");
+        assertThat(rs.get(1).folderName()).isEqualTo("docs");
+    }
+
+    @Test
+    @DisplayName("Archive 단위 폴더 내 파일 목록 조회 성공")
+    void getFilesInFolder_success() {
+        Folder folder = new Folder();
+        folder.setArchive(archive);
+        folder.setName("docs");
+        ReflectionTestUtils.setField(folder, "id", 400);
+
+        DataSource d1 = new DataSource(); ReflectionTestUtils.setField(d1, "id", 1);
+        d1.setTitle("spec.pdf"); d1.setSummary("요약"); d1.setFolder(folder);
+        d1.setSourceUrl("http://src/a"); d1.setImageUrl("http://img/a");
+        d1.setDataCreatedDate(LocalDate.now());
+        d1.setTags(List.of(new Tag("tag1")));
+
+        when(folderRepository.findByIdAndArchiveId(eq(400), eq(archive.getId())))
+                .thenReturn(Optional.of(folder));
+        when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1));
+
+        FolderFilesDto dto = folderService.getFilesInFolder(archive, 400);
+
+        assertThat(dto.files()).hasSize(1);
+        FileSummary f = dto.files().getFirst();
+        assertThat(f.title()).isEqualTo("spec.pdf");
+    }
+
+    @Test
+    @DisplayName("Archive 단위 폴더 내 파일 목록 조회 실패 - 폴더 없음")
+    void getFilesInFolder_notFound() {
+        when(folderRepository.findByIdAndArchiveId(eq(999), eq(archive.getId())))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NoResultException.class,
+                () -> folderService.getFilesInFolder(archive, 999));
     }
 }
