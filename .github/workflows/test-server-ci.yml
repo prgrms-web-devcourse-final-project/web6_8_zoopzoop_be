@@ -82,7 +82,7 @@ jobs:
           SPRING_RABBITMQ_PORT: 5672
           SPRING_RABBITMQ_USERNAME: guest
           SPRING_RABBITMQ_PASSWORD: guest
-          SPRING_CONFIG_ADDITIONAL_LOCATION: $TMP_DIR/application-secrets.yml,$TMP_DIR/application-secrets-server.yml
+          SPRING_CONFIG_ADDITIONAL_LOCATION: "file://$TMP_DIR/application-secrets.yml,file://$TMP_DIR/application-secrets-server.yml"
         run: ./gradlew test
       # ----------------------------------
       # 3. 테스트 결과 요약
