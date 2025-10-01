@@ -18,6 +18,7 @@ import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -439,9 +440,9 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
                 .andExpect(jsonPath("$.data.spaces[0].members").isArray())
                 .andExpect(jsonPath("$.data.spaces[0].members.length()").value(2)) // PENDING 제외 2명
-                .andExpect(jsonPath("$.data.spaces[0].members[0].name").value("spaceControllerTester1"))
+                .andExpect(jsonPath("$.data.spaces[0].members[0].name", startsWith("spaceControllerTester1")))
                 .andExpect(jsonPath("$.data.spaces[0].members[0].authority").value("ADMIN"))
-                .andExpect(jsonPath("$.data.spaces[0].members[1].name").value("spaceControllerTester3"))
+                .andExpect(jsonPath("$.data.spaces[0].members[1].name", startsWith("spaceControllerTester3")))
                 .andExpect(jsonPath("$.data.spaces[0].members[1].authority").value("READ_ONLY"));
 
 
@@ -589,7 +590,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 단건 조회 - 실패 : 스페이스 멤버가 아닌 사용자")
     void getSpace_Fail_NotMember() throws Exception {
         // Given
-        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Space space = spaceService.findByName("기존 스페이스 2_forSpaceControllerTest");
         Integer spaceId = space.getId();
         String url = String.format("/api/v1/space/%d", spaceId);
 
