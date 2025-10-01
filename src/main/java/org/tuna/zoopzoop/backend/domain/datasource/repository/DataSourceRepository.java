@@ -52,5 +52,20 @@ public interface DataSourceRepository extends JpaRepository<DataSource, Integer>
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update DataSource d set d.isActive=true, d.deletedAt=null where d.id in :ids")
     int restoreAllByIds(@Param("ids") List<Integer> ids);
+
+    @Query("""
+    select d from DataSource d
+    join d.folder f
+    where d.id = :id and f.archive.id = :archiveId
+""")
+    Optional<DataSource> findByIdAndArchiveId(@Param("id") Integer id, @Param("archiveId") Integer archiveId);
+
+    @Query("""
+    select d.id from DataSource d
+    join d.folder f
+    where f.archive.id = :archiveId and d.id in :ids
+""")
+    List<Integer> findExistingIdsInArchive(@Param("archiveId") Integer archiveId, @Param("ids") Collection<Integer> ids);
+
 }
 

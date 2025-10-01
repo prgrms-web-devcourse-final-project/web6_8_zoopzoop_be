@@ -138,11 +138,85 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
             switch (o.getProperty()) {
                 case "title" ->
                         specs.add(new OrderSpecifier<>(dir, root.getString("title")));
-                case "createdAt" -> // 요청 키
+                case "createdAt" ->
                         specs.add(new OrderSpecifier<>(dir, root.getDate("dataCreatedDate", java.time.LocalDate.class)));
                 default -> { }
             }
         }
         return specs;
     }
+
+    @Override
+    public Page<DataSourceSearchItem> searchInArchive(Integer archiveId, DataSourceSearchCondition cond, Pageable pageable) {
+        if (archiveId == null) throw new IllegalArgumentException("archiveId must not be null");
+
+        QDataSource ds = QDataSource.dataSource;
+        QFolder folder = QFolder.folder;
+
+        // where
+        BooleanBuilder where = new BooleanBuilder();
+        if (cond.getIsActive() == null || Boolean.TRUE.equals(cond.getIsActive())) where.and(ds.isActive.isTrue());
+        else where.and(ds.isActive.isFalse());
+
+        if (cond.getTitle() != null && !cond.getTitle().isBlank()) where.and(ds.title.containsIgnoreCase(cond.getTitle()));
+        if (cond.getSummary() != null && !cond.getSummary().isBlank()) where.and(ds.summary.containsIgnoreCase(cond.getSummary()));
+        if (cond.getCategory() != null && !cond.getCategory().isBlank()) where.and(ds.category.stringValue().containsIgnoreCase(cond.getCategory()));
+        if (cond.getFolderName() != null && !cond.getFolderName().isBlank()) where.and(ds.folder.name.eq(cond.getFolderName()));
+
+        // ownership → archive 스코프
+        BooleanBuilder scope = new BooleanBuilder().and(folder.archive.id.eq(archiveId));
+
+        // count
+        JPAQuery<Long> countQuery = queryFactory
+                .select(ds.id.countDistinct())
+                .from(ds)
+                .join(ds.folder, folder)
+                .where(where.and(scope));
+
+        // content
+        JPAQuery<Tuple> contentQuery = queryFactory
+                .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.sourceUrl, ds.imageUrl, ds.category)
+                .from(ds)
+                .join(ds.folder, folder)
+                .where(where.and(scope));
+
+        List<OrderSpecifier<?>> orderSpecifiers = toOrderSpecifiers(pageable.getSort());
+        if (!orderSpecifiers.isEmpty()) contentQuery.orderBy(orderSpecifiers.toArray(new OrderSpecifier<?>[0]));
+        else contentQuery.orderBy(ds.dataCreatedDate.desc());
+
+        List<Tuple> tuples = contentQuery.offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
+        Long totalCount = countQuery.fetchOne();
+        long total = (totalCount == null ? 0L : totalCount);
+
+        // 태그 배치 조회
+        QTag tag = QTag.tag;
+        Map<Integer, List<String>> tagsById = tuples.isEmpty() ? Map.of()
+                : queryFactory
+                .select(ds.id, tag.tagName)
+                .from(ds)
+                .leftJoin(ds.tags, tag)
+                .where(ds.id.in(tuples.stream().map(t -> t.get(ds.id)).toList()))
+                .fetch()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        row -> row.get(ds.id),
+                        Collectors.mapping(row -> row.get(tag.tagName), Collectors.toList())
+                ));
+
+        List<DataSourceSearchItem> content = tuples.stream()
+                .map(row -> new DataSourceSearchItem(
+                        row.get(ds.id),
+                        row.get(ds.title),
+                        row.get(ds.dataCreatedDate),
+                        row.get(ds.summary),
+                        row.get(ds.sourceUrl),
+                        row.get(ds.imageUrl),
+                        tagsById.getOrDefault(row.get(ds.id), List.of()),
+                        row.get(ds.category).name()
+                ))
+                .toList();
+
+        return new PageImpl<>(content, pageable, total);
+    }
+
 }

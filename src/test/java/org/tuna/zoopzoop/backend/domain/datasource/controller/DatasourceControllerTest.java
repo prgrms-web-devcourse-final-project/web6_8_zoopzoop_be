@@ -14,10 +14,10 @@ import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
+//@Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DatasourceControllerTest {
     @Autowired private MockMvc mockMvc;
@@ -51,9 +51,10 @@ class DatasourceControllerTest {
 
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
-    @Autowired private PersonalArchiveFolderService folderService;
+    @Autowired private FolderService folderService;
     @Autowired private FolderRepository folderRepository;
     @Autowired private DataSourceRepository dataSourceRepository;
+    @Autowired private PersonalArchiveFolderService personalArchiveFolderService;
 
     private final String TEST_PROVIDER_KEY = "testUser_sc1111";
 
@@ -107,7 +108,7 @@ class DatasourceControllerTest {
         testMemberId = member.getId();
 
         // docs 폴더 생성
-        FolderResponse fr = folderService.createFolder(testMemberId, "docs");
+        FolderResponse fr = personalArchiveFolderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -238,21 +239,26 @@ class DatasourceControllerTest {
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void deleteMany_success() throws Exception {
         DataSource a = new DataSource(); a.setFolder(folderRepository.findById(docsFolderId).orElseThrow());
-        a.setTitle("tmp_a"); a.setSummary("a"); a.setSourceUrl("a"); a.setImageUrl("a"); a.setDataCreatedDate(LocalDate.now()); a.setActive(true); a.setCategory(Category.IT);
+        a.setTitle("tmp_a"); a.setSummary("a"); a.setSourceUrl("a"); a.setImageUrl("a");
+        a.setDataCreatedDate(LocalDate.now()); a.setActive(true); a.setCategory(Category.IT);
         DataSource b = new DataSource(); b.setFolder(folderRepository.findById(docsFolderId).orElseThrow());
-        b.setTitle("tmp_b"); b.setSummary("b"); b.setSourceUrl("b"); b.setImageUrl("b"); b.setDataCreatedDate(LocalDate.now()); b.setActive(true); b.setCategory(Category.IT);
+        b.setTitle("tmp_b"); b.setSummary("b"); b.setSourceUrl("b"); b.setImageUrl("b");
+        b.setDataCreatedDate(LocalDate.now()); b.setActive(true); b.setCategory(Category.IT);
         dataSourceRepository.save(a); dataSourceRepository.save(b);
 
-        var body = new reqBodyForDeleteMany(List.of(a.getId(), b.getId()));
+        String body = objectMapper.writeValueAsString(
+                java.util.Map.of("dataSourceId", List.of(a.getId(), b.getId()))
+        );
 
         mockMvc.perform(post("/api/v1/archive/delete")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").value("복수개의 자료가 삭제됐습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
+
 
     @Test
     @DisplayName("다건 삭제 실패: 배열 비어있음 → 400 Bad Request")
@@ -357,7 +363,7 @@ class DatasourceControllerTest {
     @DisplayName("단건 이동 성공 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveOne_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolder(testMemberId, "moveTarget");
+        FolderResponse newFolder = personalArchiveFolderService.createFolder(testMemberId, "moveTarget");
         Integer toId = newFolder.folderId();
 
         var body = new reqBodyForMoveDataSource(toId);
@@ -416,10 +422,10 @@ class DatasourceControllerTest {
     @DisplayName("자료 다건 이동 성공: 지정 폴더 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveMany_specific_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolder(testMemberId, "moveManyTarget");
+        FolderResponse newFolder = personalArchiveFolderService.createFolder(testMemberId, "moveManyTarget");
         Integer toId = newFolder.folderId();
 
-        String body = String.format("{\"folderId\":%d,\"dataSourceId\":[%d,%d]}", toId, dataSourceId1, dataSourceId2);
+        String body = String.format("{\"folderId\":%d,\"ids\":[%d,%d]}", toId, dataSourceId1, dataSourceId2);
 
         mockMvc.perform(patch("/api/v1/archive/move")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -433,7 +439,7 @@ class DatasourceControllerTest {
     @DisplayName("자료 다건 이동 성공: 기본 폴더(null) -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveMany_default_ok() throws Exception {
-        String body = String.format("{\"folderId\":null,\"dataSourceId\":[%d,%d]}", dataSourceId1, dataSourceId2);
+        String body = String.format("{\"folderId\":null,\"ids\":[%d,%d]}", dataSourceId1, dataSourceId2);
 
         mockMvc.perform(patch("/api/v1/archive/move")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -7,4 +7,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 
 public interface DataSourceQRepository {
     Page<DataSourceSearchItem> search(Integer memberId, DataSourceSearchCondition cond, Pageable pageable);
+    Page<DataSourceSearchItem> searchInArchive(Integer archiveId, DataSourceSearchCondition cond, Pageable pageable);
 }
+
