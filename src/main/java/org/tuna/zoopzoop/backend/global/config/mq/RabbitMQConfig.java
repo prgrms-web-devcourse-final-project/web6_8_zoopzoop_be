@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.global.mq;
+package org.tuna.zoopzoop.backend.global.config.mq;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
