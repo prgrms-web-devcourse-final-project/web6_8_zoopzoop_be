@@ -51,7 +51,12 @@ spring:
     port: 5672
     username: guest
     password: guest
-
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 2000
+          max-attempts: 3
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 logging:
@@ -60,6 +65,7 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG
+    org.springframework.retry: DEBUG
 
 server:
   port: 8080
