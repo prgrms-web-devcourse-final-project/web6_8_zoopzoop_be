@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
@@ -19,8 +18,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.req.ReqBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInfo;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceList;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceMembershipInfo;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceListPage;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
@@ -29,9 +27,6 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/space")
@@ -142,7 +137,7 @@ public class ApiV1SpaceController {
 
         // Page<Membership>를 Page<SpaceMembershipInfo>로 변환
         // Page 객체의 map() 메서드를 사용하면 페이징 정보는 그대로 유지하면서 내용물만 쉽게 바꿀 수 있습니다.
-        Page<SpaceMembershipInfo> spaceInfosPage = membershipsPage.map(membership -> new SpaceMembershipInfo(
+        Page<SpaceInfo> spaceInfosPage = membershipsPage.map(membership -> new SpaceInfo(
                 membership.getSpace().getId(),
                 membership.getSpace().getName(),
                 membership.getSpace().getThumbnailUrl(),
