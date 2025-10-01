@@ -170,10 +170,10 @@ class DatasourceControllerTest {
 
     // create
     @Test
-    @DisplayName("자료 생성 성공 - folderId=null → default 폴더에 등록")
+    @DisplayName("자료 생성 성공 - folderId=0 → default 폴더에 등록")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void create_defaultFolder() throws Exception {
-        var rq = new reqBodyForCreateDataSource("https://example.com/a", null);
+        var rq = new reqBodyForCreateDataSource("https://example.com/a", 0);
 
         mockMvc.perform(post("/api/v1/archive")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -183,6 +183,7 @@ class DatasourceControllerTest {
                 .andExpect(jsonPath("$.msg").value("새로운 자료가 등록됐습니다."))
                 .andExpect(jsonPath("$.data").isNumber());
     }
+
 
     @Test
     @DisplayName("자료 생성 성공 - folderId 지정 → 해당 폴더에 등록")

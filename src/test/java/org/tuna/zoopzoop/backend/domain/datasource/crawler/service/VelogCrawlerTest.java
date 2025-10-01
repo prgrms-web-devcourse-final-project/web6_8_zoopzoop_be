@@ -6,7 +6,7 @@ class VelogCrawlerTest {
 
     // 날짜 바뀐 velog 포스트에 대해 에러 처리 필요
     // Text '어제' could not be parsed at index 0
-    //java.time.format.DateTimeParseException
+//    java.time.format.DateTimeParseException
 //    @Test
 //    void testExtract() throws IOException {
 //        Document doc = Jsoup.connect("https://velog.io/@hyeonnnnn/VampireSurvivorsClone-04.-PoolManager").get();

@@ -212,6 +212,7 @@ public class DatasourceController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) Integer folderId,
             @RequestParam(required = false) String folderName,
             @RequestParam(required = false, defaultValue = "true") Boolean isActive,
             @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -223,8 +224,9 @@ public class DatasourceController {
         DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
                 .title(title)
                 .summary(summary)
-                .folderName(folderName)
                 .category(category)
+                .folderId(folderId)
+                .folderName(folderName)
                 .isActive(isActive)
                 .build();
 

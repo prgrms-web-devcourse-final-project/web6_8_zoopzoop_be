@@ -92,7 +92,7 @@ class DataSourceServiceTest {
                     return ds;
                 });
 
-        int id = dataSourceService.createDataSource(currentMemberId, sourceUrl, null);
+        int id = dataSourceService.createDataSource(currentMemberId, sourceUrl, 0);
         assertThat(id).isEqualTo(123);
     }
 
@@ -161,7 +161,7 @@ class DataSourceServiceTest {
 
         // when / then
         assertThrows(NoResultException.class, () ->
-                dataSourceService.createDataSource(currentMemberId, "https://x", null)
+                dataSourceService.createDataSource(currentMemberId, "https://x", 0)
         );
     }
 
@@ -242,7 +242,7 @@ class DataSourceServiceTest {
                 .thenReturn(List.of("AI", "Spring", "JPA"));
 
         @SuppressWarnings("unchecked")
-        List<Tag> ctxTags = (List<Tag>) ReflectionTestUtils.invokeMethod(
+        List<Tag> ctxTags = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "collectDistinctTagsOfFolder", folderId
         );
 
@@ -276,7 +276,7 @@ class DataSourceServiceTest {
         when(dataProcessorService.process(eq(url), anyList())).thenReturn(returnedDto);
 
         // when (private 메서드 호출)
-        DataSource ds = (DataSource) ReflectionTestUtils.invokeMethod(
+        DataSource ds = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "buildDataSource", folder, url, context
         );
 
