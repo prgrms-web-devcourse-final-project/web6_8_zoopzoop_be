@@ -178,25 +178,25 @@ public class DatasourceController {
 
     /**
      *  파일 수정
-     * @param dataSourceId  수정할 파일 Id
-     * @param body          수정할 내용
+     *  - 전달된 필드만 반영 (present)
+     *  - 명시적 null이면 DB에 null 저장
+     *  - 미전달(not present)이면 변경 없음
      */
     @Operation(summary = "자료 수정", description = "내 PersonalArchive 안에 자료를 수정합니다.")
     @PatchMapping("/{dataSourceId}")
     public ResponseEntity<?> updateDataSource(
             @PathVariable Integer dataSourceId,
-            @Valid @RequestBody reqBodyForUpdateDataSource body,
+            @RequestBody reqBodyForUpdateDataSource body,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        // title, summary 둘 다 비어있으면 의미 없는 요청 → 400
         boolean anyPresent =
-                (body.title() != null) ||
-                        (body.summary() != null) ||
-                        (body.sourceUrl() != null) ||
-                        (body.imageUrl() != null) ||
-                        (body.source() != null) ||
-                        (body.tags() != null) ||
-                        (body.category() != null);
+                body.title().isPresent() ||
+                        body.summary().isPresent() ||
+                        body.sourceUrl().isPresent() ||
+                        body.imageUrl().isPresent() ||
+                        body.source().isPresent() ||
+                        body.tags().isPresent() ||
+                        body.category().isPresent();
 
         if (!anyPresent) {
             throw new IllegalArgumentException(
@@ -204,23 +204,18 @@ public class DatasourceController {
             );
         }
 
-        // 비즈니스 규칙: sourceUrl은 엔티티 nullable=false 이므로, 빈 문자열로 업데이트 요청 시 400
-        if (body.sourceUrl() != null && body.sourceUrl().isBlank()) {
-            throw new IllegalArgumentException("sourceUrl은 빈 값일 수 없습니다.");
-        }
-
-        Member member = userDetails.getMember();
-
         Integer updatedId = dataSourceService.updateDataSource(
-                member.getId(),
+                userDetails.getMember().getId(),
                 dataSourceId,
-                body.title(),
-                body.summary(),
-                body.sourceUrl(),
-                body.imageUrl(),
-                body.source(),
-                body.tags(),
-                body.category()
+                DataSourceService.UpdateCommand.builder()
+                        .title(body.title())
+                        .summary(body.summary())
+                        .sourceUrl(body.sourceUrl())
+                        .imageUrl(body.imageUrl())
+                        .source(body.source())
+                        .tags(body.tags())
+                        .category(body.category())
+                        .build()
         );
 
         String msg = updatedId + "번 자료가 수정됐습니다.";

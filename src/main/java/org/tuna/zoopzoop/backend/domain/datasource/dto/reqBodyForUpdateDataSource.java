@@ -1,13 +1,13 @@
 package org.tuna.zoopzoop.backend.domain.datasource.dto;
 
-import java.util.List;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 public record reqBodyForUpdateDataSource(
-        String title,
-        String summary,
-        String sourceUrl,
-        String imageUrl,
-        String source,
-        List<String> tags,
-        String category
+        JsonNullable<String> title,
+        JsonNullable<String> summary,
+        JsonNullable<String> sourceUrl,
+        JsonNullable<String> imageUrl,
+        JsonNullable<String> source,
+        JsonNullable<java.util.List<String>> tags,
+        JsonNullable<String> category
 ) {}

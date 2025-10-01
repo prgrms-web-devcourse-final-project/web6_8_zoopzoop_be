@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.datasource.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,10 +18,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
-import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.reqBodyForCreateDataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.reqBodyForDeleteMany;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.reqBodyForMoveDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
@@ -37,9 +41,8 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -94,6 +97,11 @@ class DatasourceControllerTest {
                     .thenReturn(java.util.List.of("AI", "Spring"));
 
             return mock;
+        }
+
+        @Bean
+         com.fasterxml.jackson.databind.Module jsonNullableModule() {
+            return new JsonNullableModule();
         }
     }
 
@@ -501,21 +509,20 @@ class DatasourceControllerTest {
 
 
     @Test
-    @DisplayName("자료 수정 실패: sourceUrl가 빈 문자열 → 400")
+    @DisplayName("자료 수정 성공: sourceUrl가 빈문자여도 허용 → 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
-    void update_badRequest_sourceUrl_blank() throws Exception {
+    void update_ok_sourceUrl_blank_allowed() throws Exception {
         String body = updateJson(null, null, "  ", null, null, null, null);
 
         mockMvc.perform(patch("/api/v1/archive/{dataSourceId}", dataSourceId1)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.msg").exists());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200));
     }
 
     @Test
-    @DisplayName("자료 수정 실패: 모든 필드 미전달(null) → 400")
+    @DisplayName("자료 수정 실패: 모든 필드 미전달 → 400")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void update_badRequest_all_null() throws Exception {
         // 빈 JSON 객체 {}

@@ -2,11 +2,12 @@ package org.tuna.zoopzoop.backend.domain.datasource.service;
 
 import jakarta.persistence.NoResultException;
 import jakarta.transaction.Transactional;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
@@ -238,83 +239,48 @@ public class DataSourceService {
     /**
      * 자료 수정
      */
+    @Builder
+    public record UpdateCommand(
+            JsonNullable<String> title,
+            JsonNullable<String> summary,
+            JsonNullable<String> sourceUrl,
+            JsonNullable<String> imageUrl,
+            JsonNullable<String> source,
+            JsonNullable<List<String>> tags,
+            JsonNullable<String> category
+    ) {}
+
     @Transactional
-    public Integer updateDataSource(
-            Integer memberId,
-            Integer dataSourceId,
-            String newTitle,
-            String newSummary,
-            String newSourceUrl,
-            String newImageUrl,
-            String newSource,
-            List<String> newTags,
-            String newCategory // enum 이름 string
-    ) {
+    public Integer updateDataSource(Integer memberId, Integer dataSourceId, UpdateCommand cmd) {
         DataSource ds = dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
 
-        if (StringUtils.hasText(newTitle))
-            ds.setTitle(newTitle.trim());
+        // 문자열/enum 필드들
+        if (cmd.title().isPresent())     ds.setTitle(cmd.title().orElse(null));
+        if (cmd.summary().isPresent())   ds.setSummary(cmd.summary().orElse(null));
+        if (cmd.sourceUrl().isPresent()) ds.setSourceUrl(cmd.sourceUrl().orElse(null));
+        if (cmd.imageUrl().isPresent())  ds.setImageUrl(cmd.imageUrl().orElse(null));
+        if (cmd.source().isPresent())    ds.setSource(cmd.source().orElse(null));
+        if (cmd.category().isPresent())  ds.setCategory(parseCategoryNullable(cmd.category().orElse(null)));
 
-        if (StringUtils.hasText(newSummary))
-            ds.setSummary(newSummary.trim());
-
-        if (newSourceUrl != null) {
-            if (!StringUtils.hasText(newSourceUrl))
-                throw new IllegalArgumentException("sourceUrl은 빈 값일 수 없습니다.");
-
-            ds.setSourceUrl(newSourceUrl.trim());
-        }
-
-        if (newImageUrl != null) {
-            String v = newImageUrl.trim();
-            ds.setImageUrl(v.isEmpty() ? null : v);
-        }
-
-        if (newSource != null) {
-            String v = newSource.trim();
-            ds.setSource(v.isEmpty() ? null : v);
-        }
-
-        if (newCategory != null) {
-            ds.setCategory(parseCategoryOrThrow(newCategory));
-        }
-
-        if (newTags != null) {
-            replaceTags(ds, newTags);
+        // 태그
+        if (cmd.tags().isPresent()) {
+            List<String> names = cmd.tags().orElse(null);
+            if (names == null) {
+                ds.getTags().clear();
+            } else {
+                replaceTags(ds, names);
+            }
         }
 
         return ds.getId();
     }
 
-    private Category parseCategoryOrThrow(String raw) {
-        String key = raw.trim();
-        if (key.isEmpty()) {
-            throw new IllegalArgumentException("category는 빈 값일 수 없습니다.");
-        }
-        // 대소문자 관대 처리 (IT, Science, science 등)
-        try {
-            return Category.valueOf(key.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("지원하지 않는 category 값입니다: " + raw);
-        }
-    }
-
-    private void replaceTags(DataSource ds, List<String> names) {
-        ds.getTags().clear();
-
-        if (names == null) return;
-
-        for (String name : names) {
-            if (name == null || name.isBlank()) continue;
-
-            Tag tag = Tag.builder()
-                    .tagName(name.trim())
-                    .dataSource(ds)
-                    .build();
-
-            ds.getTags().add(tag);
-        }
+    private Category parseCategoryNullable(String raw) {
+        if (raw == null) return null;
+        String k = raw.trim();
+        if (k.isEmpty()) return null; // 빈문자 들어오면 null로 저장(원하면 그대로 저장하도록 바꿔도 됨)
+        return Category.valueOf(k.toUpperCase(Locale.ROOT));
     }
 
     /**
@@ -340,4 +306,17 @@ public class DataSourceService {
     }
 
     public record MoveResult(Integer datasourceId, Integer folderId) {}
+
+    private void replaceTags(DataSource ds, List<String> names) {
+        ds.getTags().clear();
+
+        for (String name : names) {
+            if (name == null) continue;
+            Tag tag = Tag.builder()
+                    .tagName(name)
+                    .dataSource(ds)
+                    .build();
+            ds.getTags().add(tag);
+        }
+    }
 }
