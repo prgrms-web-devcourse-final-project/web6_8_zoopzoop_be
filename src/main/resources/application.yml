@@ -35,7 +35,11 @@ spring:
         options:
           model: meta-llama/llama-4-scout-17b-16e-instruct
           temperature: 0
-
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8

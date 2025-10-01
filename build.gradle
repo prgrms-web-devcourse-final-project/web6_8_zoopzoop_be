@@ -115,6 +115,9 @@ dependencies {
 
     // Redis (Spring starter)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // RabbitMQ
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
 }
 
 dependencyManagement {
