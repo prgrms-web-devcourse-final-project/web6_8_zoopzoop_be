@@ -51,11 +51,12 @@ public class VelogCrawler implements Crawler{
         if(rawDate.contains("일 전")){
             int daysAgo = Integer.parseInt(rawDate.split("일 전")[0].trim());
             return LocalDate.now().minusDays(daysAgo);
-        }else if(rawDate.contains("방금 전")) {
+        }else if(rawDate.contains("시간 전")||rawDate.contains("방금 전")||rawDate.contains("분 전")){
             return LocalDate.now();
-        }else if(rawDate.contains("시간 전")||rawDate.contains("분 전")){
-            return LocalDate.now();
+        }else if (rawDate.contains("어제")){
+            return LocalDate.now().minusDays(1);
         }
+
 
         return LocalDate.parse(rawDate, VELOG_FORMATTER);
     }
