@@ -72,6 +72,4 @@ public interface FolderRepository extends JpaRepository<Folder, Integer>{
         where pa.member.id = :memberId and f.isDefault = true
     """)
     Optional<Folder> findDefaultByMemberId(@Param("memberId") Integer memberId);
-
-    Optional<Folder> findByIdAndArchiveId(Integer folderId, Integer archiveId);
 }

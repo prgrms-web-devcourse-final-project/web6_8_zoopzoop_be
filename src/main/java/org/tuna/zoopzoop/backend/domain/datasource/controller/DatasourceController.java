@@ -178,29 +178,48 @@ public class DatasourceController {
 
     /**
      *  파일 수정
-     * @param dataSourceId  수정할 파일 Id
-     * @param body          수정할 내용
+     *  - 전달된 필드만 반영 (present)
+     *  - 명시적 null이면 DB에 null 저장
+     *  - 미전달(not present)이면 변경 없음
      */
     @Operation(summary = "자료 수정", description = "내 PersonalArchive 안에 자료를 수정합니다.")
     @PatchMapping("/{dataSourceId}")
     public ResponseEntity<?> updateDataSource(
             @PathVariable Integer dataSourceId,
-            @Valid @RequestBody reqBodyForUpdateDataSource body,
+            @RequestBody reqBodyForUpdateDataSource body,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        // title, summary 둘 다 비어있으면 의미 없는 요청 → 400
-        boolean noTitle = (body.title() == null || body.title().isBlank());
-        boolean noSummary = (body.summary() == null || body.summary().isBlank());
-        if (noTitle && noSummary) {
-            throw new IllegalArgumentException("변경할 값이 없습니다. title 또는 summary 중 하나 이상을 전달하세요.");
+        boolean anyPresent =
+                body.title().isPresent() ||
+                        body.summary().isPresent() ||
+                        body.sourceUrl().isPresent() ||
+                        body.imageUrl().isPresent() ||
+                        body.source().isPresent() ||
+                        body.tags().isPresent() ||
+                        body.category().isPresent();
+
+        if (!anyPresent) {
+            throw new IllegalArgumentException(
+                    "변경할 값이 없습니다. title, summary, sourceUrl, imageUrl, source, tags, category 중 하나 이상을 전달하세요."
+            );
         }
 
-        Member member = userDetails.getMember();
-        Integer updatedId = dataSourceService.updateDataSource(member.getId(), dataSourceId, body.title(), body.summary()); // CHANGED
-        String msg = updatedId + "번 자료가 수정됐습니다.";
-        return ResponseEntity.ok(
-                new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId))
+        Integer updatedId = dataSourceService.updateDataSource(
+                userDetails.getMember().getId(),
+                dataSourceId,
+                DataSourceService.UpdateCommand.builder()
+                        .title(body.title())
+                        .summary(body.summary())
+                        .sourceUrl(body.sourceUrl())
+                        .imageUrl(body.imageUrl())
+                        .source(body.source())
+                        .tags(body.tags())
+                        .category(body.category())
+                        .build()
         );
+
+        String msg = updatedId + "번 자료가 수정됐습니다.";
+        return ResponseEntity.ok(new ApiResponse<>(200, msg, new resBodyForUpdateDataSource(updatedId)));
     }
 
     /**
@@ -212,6 +231,7 @@ public class DatasourceController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) Integer folderId,
             @RequestParam(required = false) String folderName,
             @RequestParam(required = false, defaultValue = "true") Boolean isActive,
             @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -223,8 +243,9 @@ public class DatasourceController {
         DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
                 .title(title)
                 .summary(summary)
-                .folderName(folderName)
                 .category(category)
+                .folderId(folderId)
+                .folderName(folderName)
                 .isActive(isActive)
                 .build();
 

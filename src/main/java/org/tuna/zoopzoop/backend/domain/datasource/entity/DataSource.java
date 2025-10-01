@@ -15,17 +15,6 @@ import java.util.List;
 @Setter
 @Entity
 @NoArgsConstructor
-@Table(
-        uniqueConstraints = {
-                // 복합 Unique 제약(folder_id, title)
-                // 같은 폴더 내에 자료 제목 중복 금지
-                @UniqueConstraint(columnNames = {"folder_id", "title"})
-        },
-        // 폴더 내 자료 목록 조회 최적화
-        indexes = {
-                @Index(name = "idx_datasource__folder_id", columnList = "folder_id")
-        }
-)
 public class DataSource extends BaseEntity {
     //연결된 폴더 id
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -33,20 +22,20 @@ public class DataSource extends BaseEntity {
     private Folder folder;
 
     //제목
-    @Column(nullable = false)
+    @Column
     private String title;
 
     //요약
-    @Column(nullable = false)
+    @Column
     private String summary;
 
     //소스 데이터의 작성일자
     //DB 저장용 createdDate와 다름.
-    @Column(nullable = false)
+    @Column
     private LocalDate dataCreatedDate;
 
     //소스 데이터 URL
-    @Column(nullable = false)
+    @Column
     private String sourceUrl;
 
     //썸네일 이미지 URL
@@ -54,6 +43,7 @@ public class DataSource extends BaseEntity {
     private String imageUrl;
 
     // 자료 출처 (동아일보, Tstory 등등)
+    @Column
     private String source;
 
     // 태그 목록
@@ -62,11 +52,11 @@ public class DataSource extends BaseEntity {
 
     // 카테고리 목록
     @Enumerated(EnumType.STRING) // IT, SCIENCE 등 ENUM 이름으로 저장
-    @Column(nullable = false)
+    @Column
     private Category category;
 
     // 활성화 여부
-    @Column(nullable = false)
+    @Column
     private boolean isActive = true;
 
     // 삭제 일자

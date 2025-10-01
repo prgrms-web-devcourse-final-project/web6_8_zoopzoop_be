@@ -85,6 +85,9 @@ jobs:
               -e SPRING_DATASOURCE_URL="${{secrets.PROD_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.PROD_DB_USERNAME}}" \
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
+              -e SPRING_RABBITMQ_HOST="${{secrets.PROD_RABBITMQ_HOST}}" \
+              -e SPRING_RABBITMQ_USERNAME="${{secrets.PROD_RABBITMQ_USERNAME}}" \
+              -e SPRING_RABBITMQ_PASSWORD="${{secrets.PROD_RABBITMQ_PASSWORD}}" \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
             
             
