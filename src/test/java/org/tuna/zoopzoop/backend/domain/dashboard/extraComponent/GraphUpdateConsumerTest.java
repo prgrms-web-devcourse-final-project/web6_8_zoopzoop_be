@@ -23,7 +23,7 @@ import static org.awaitility.Awaitility.await;
 class GraphUpdateConsumerTest extends ControllerTestSupport {
     @Autowired private RabbitTemplate rabbitTemplate;
     @Autowired private TransactionTemplate transactionTemplate;
-    @Autowired SpaceService spaceService;
+    @Autowired private SpaceService spaceService;
 
     // 테스트에 사용할 dashboardId (실제 DB에 존재하는 ID)
     private Integer existingDashboardId;
