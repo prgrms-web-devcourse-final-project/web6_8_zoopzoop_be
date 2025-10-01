@@ -10,6 +10,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
@@ -21,6 +22,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceReposito
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final FolderRepository folderRepository;
+    private final FolderService folderService;
     private final PersonalArchiveRepository personalArchiveRepository;
     private final TagRepository tagRepository;
     private final DataProcessorService dataProcessorService;
@@ -40,11 +43,15 @@ public class DataSourceService {
     @Transactional
     public int createDataSource(int currentMemberId, String sourceUrl, Integer folderId) {
         Folder folder;
-        if(folderId == null)
+        if( folderId == null) {
+            throw new IllegalArgumentException("유효하지 않은 입력값입니다.");
+        }
+        if (folderId == 0) {
             folder = findDefaultFolder(currentMemberId);
-        else
+        } else {
             folder = folderRepository.findById(folderId)
                     .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+        }
 
         // 폴더 하위 자료 태그 수집(중복 X)
         List<Tag> contextTags = collectDistinctTagsOfFolder(folder.getId());
@@ -123,9 +130,31 @@ public class DataSourceService {
      */
     @Transactional
     public void deleteMany(Integer memberId, List<Integer> ids) {
-        if (ids == null || ids.isEmpty()) {
+        checkOwnership(memberId, ids);
+        dataSourceRepository.deleteAllByIdInBatch(ids);
+    }
+
+    /**
+     * 자료 소프트 삭제
+     */
+    @Transactional
+    public int softDelete(Integer memberId, List<Integer> ids) {
+        checkOwnership(memberId, ids);
+        return dataSourceRepository.softDeleteAllByIds(ids, LocalDateTime.now());
+    }
+
+    /**
+     * 자료 복원
+     */
+    @Transactional
+    public int restore(Integer memberId, List<Integer> ids) {
+        checkOwnership(memberId, ids);
+        return dataSourceRepository.restoreAllByIds(ids);
+    }
+
+    private void checkOwnership(Integer memberId, List<Integer> ids) {
+        if (ids == null || ids.isEmpty())
             throw new IllegalArgumentException("삭제할 자료 id 배열이 비어있습니다.");
-        }
 
         // 해당 멤버가 소유한 id만 조회
         List<Integer> existing = dataSourceRepository.findExistingIdsInMember(memberId, ids);
@@ -134,8 +163,6 @@ public class DataSourceService {
             missing.removeAll(new HashSet<>(existing));
             throw new NoResultException("존재하지 않거나 소유자가 다른 자료 ID 포함: " + missing);
         }
-
-        dataSourceRepository.deleteAllByIdInBatch(ids);
     }
 
     /**
@@ -227,6 +254,20 @@ public class DataSourceService {
      */
     @Transactional
     public Page<DataSourceSearchItem> search(Integer memberId, DataSourceSearchCondition cond, Pageable pageable) {
+        Integer folderId = cond.getFolderId();
+
+        if (folderId != null && folderId == 0) {
+            int defaultFolderId = folderService.getDefaultFolderId(memberId);
+
+            cond = DataSourceSearchCondition.builder()
+                    .title(cond.getTitle())
+                    .summary(cond.getSummary())
+                    .category(cond.getCategory())
+                    .folderName(cond.getFolderName())
+                    .isActive(cond.getIsActive())
+                    .folderId(defaultFolderId)
+                    .build();
+        }
         return dataSourceQRepository.search(memberId, cond, pageable);
     }
 

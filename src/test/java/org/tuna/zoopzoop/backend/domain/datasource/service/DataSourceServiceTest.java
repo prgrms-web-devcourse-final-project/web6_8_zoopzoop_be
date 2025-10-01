@@ -92,7 +92,7 @@ class DataSourceServiceTest {
                     return ds;
                 });
 
-        int id = dataSourceService.createDataSource(currentMemberId, sourceUrl, null);
+        int id = dataSourceService.createDataSource(currentMemberId, sourceUrl, 0);
         assertThat(id).isEqualTo(123);
     }
 
@@ -161,7 +161,7 @@ class DataSourceServiceTest {
 
         // when / then
         assertThrows(NoResultException.class, () ->
-                dataSourceService.createDataSource(currentMemberId, "https://x", null)
+                dataSourceService.createDataSource(currentMemberId, "https://x", 0)
         );
     }
 
@@ -241,9 +241,8 @@ class DataSourceServiceTest {
         when(tagRepository.findDistinctTagNamesByFolderId(eq(folderId)))
                 .thenReturn(List.of("AI", "Spring", "JPA"));
 
-        // when (private 메서드 호출)
         @SuppressWarnings("unchecked")
-        List<Tag> ctxTags = (List<Tag>) ReflectionTestUtils.invokeMethod(
+        List<Tag> ctxTags = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "collectDistinctTagsOfFolder", folderId
         );
 
@@ -257,7 +256,6 @@ class DataSourceServiceTest {
     }
 
     // buildDataSource 단위 테스트
-
     @Test
     @DisplayName("엔티티 빌드 성공 - process 호출 결과 DTO를 DataSource에 매핑 + 태그 양방향 세팅")
     void buildDataSource_maps_dto_and_tags() throws Exception{
@@ -278,7 +276,7 @@ class DataSourceServiceTest {
         when(dataProcessorService.process(eq(url), anyList())).thenReturn(returnedDto);
 
         // when (private 메서드 호출)
-        DataSource ds = (DataSource) ReflectionTestUtils.invokeMethod(
+        DataSource ds = ReflectionTestUtils.invokeMethod(
                 dataSourceService, "buildDataSource", folder, url, context
         );
 
@@ -373,6 +371,99 @@ class DataSourceServiceTest {
 
         verify(dataSourceRepository, never()).deleteAllByIdInBatch(any());
     }
+
+    // soft delete
+    // soft delete
+    @Test
+    @DisplayName("소프트삭제 성공 - 전부 존재하면 isActive=false, deletedAt 업데이트")
+    void softDelete_success() {
+        Integer memberId = 10;
+        List<Integer> ids = List.of(1, 2, 3);
+
+        // 소유자 검증: 모두 존재한다고 가정
+        when(dataSourceRepository.findExistingIdsInMember(memberId, ids)).thenReturn(ids);
+        // 배치 업데이트 결과 개수 리턴
+        when(dataSourceRepository.softDeleteAllByIds(eq(ids), any())).thenReturn(ids.size());
+
+        int changed = dataSourceService.softDelete(memberId, ids);
+
+        assertThat(changed).isEqualTo(3);
+        verify(dataSourceRepository).findExistingIdsInMember(memberId, ids);
+        verify(dataSourceRepository).softDeleteAllByIds(eq(ids), any());
+    }
+
+    @Test
+    @DisplayName("소프트삭제 실패 - 요청 배열이 비어있으면 400")
+    void softDelete_emptyIds_badRequest_service() {
+        Integer memberId = 10;
+
+        assertThrows(IllegalArgumentException.class, () ->
+                dataSourceService.softDelete(memberId, List.of()));
+
+        verifyNoInteractions(dataSourceRepository);
+    }
+
+    @Test
+    @DisplayName("소프트삭제 실패 - 일부/전부 미존재 → 404")
+    void softDelete_someNotFound() {
+        Integer memberId = 10;
+        List<Integer> ids = List.of(1, 2, 3);
+
+        // 1,3만 존재한다고 가정 → 일부 누락
+        when(dataSourceRepository.findExistingIdsInMember(memberId, ids)).thenReturn(List.of(1, 3));
+
+        assertThrows(jakarta.persistence.NoResultException.class, () ->
+                dataSourceService.softDelete(memberId, ids));
+
+        verify(dataSourceRepository).findExistingIdsInMember(memberId, ids);
+        verify(dataSourceRepository, never()).softDeleteAllByIds(anyList(), any());
+    }
+
+
+
+    // 복구
+    @Test
+    @DisplayName("복구 성공 - 전부 존재하면 isActive=true, deletedAt=null 업데이트")
+    void restore_success() {
+        Integer memberId = 7;
+        List<Integer> ids = List.of(10, 20);
+
+        when(dataSourceRepository.findExistingIdsInMember(memberId, ids)).thenReturn(ids);
+        when(dataSourceRepository.restoreAllByIds(ids)).thenReturn(ids.size());
+
+        int changed = dataSourceService.restore(memberId, ids);
+
+        assertThat(changed).isEqualTo(2);
+        verify(dataSourceRepository).findExistingIdsInMember(memberId, ids);
+        verify(dataSourceRepository).restoreAllByIds(ids);
+    }
+
+    @Test
+    @DisplayName("복구 실패 - 요청 배열이 비어있음 → 400")
+    void restore_empty_badRequest_service() {
+        Integer memberId = 7;
+
+        assertThrows(IllegalArgumentException.class, () ->
+                dataSourceService.restore(memberId, List.of()));
+
+        verifyNoInteractions(dataSourceRepository);
+    }
+
+    @Test
+    @DisplayName("복구 실패 - 일부/전부 미존재 → 404")
+    void restore_someNotFound_service() {
+        Integer memberId = 7;
+        List<Integer> ids = List.of(10, 20);
+
+        when(dataSourceRepository.findExistingIdsInMember(memberId, ids)).thenReturn(List.of(10));
+
+        assertThrows(jakarta.persistence.NoResultException.class, () ->
+                dataSourceService.restore(memberId, ids));
+
+        verify(dataSourceRepository).findExistingIdsInMember(memberId, ids);
+        verify(dataSourceRepository, never()).restoreAllByIds(anyList());
+    }
+
 
 
     // 자료 단건 이동

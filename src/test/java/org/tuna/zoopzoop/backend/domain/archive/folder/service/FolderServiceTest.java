@@ -131,23 +131,50 @@ class FolderServiceTest {
 
     // ---------- Delete ----------
     @Test
-    @DisplayName("폴더 삭제 성공")
+    @DisplayName("폴더 삭제 성공 - 자료는 default 폴더로 이관 + soft delete 후 폴더 영구삭제")
     void deleteFolder_success() {
         // given
+        // 삭제 대상 폴더
         Folder folder = new Folder();
         folder.setName("보고서");
         folder.setArchive(archive);
         ReflectionTestUtils.setField(folder, "id", 500);
 
+        // 기본 폴더 스텁 (회원의 default 폴더)
+        Folder defaultFolder = new Folder("default"); // 생성자에서 isDefault=true 설정이라면 그대로 사용
+        defaultFolder.setArchive(archive);
+        ReflectionTestUtils.setField(defaultFolder, "id", 42);
+
+        // 폴더 내 자료들 (이관 + soft delete가 적용될 대상)
+        DataSource d1 = new DataSource(); ReflectionTestUtils.setField(d1, "id", 1); d1.setFolder(folder); d1.setActive(true);
+        DataSource d2 = new DataSource(); ReflectionTestUtils.setField(d2, "id", 2); d2.setFolder(folder); d2.setActive(true);
+
+
         when(folderRepository.findByIdAndMemberId(500, 1)).thenReturn(Optional.of(folder));
+        when(folderRepository.findDefaultByMemberId(1)).thenReturn(Optional.of(defaultFolder));
+
+        when(dataSourceRepository.findAllByFolderId(500)).thenReturn(List.of(d1, d2));
+
 
         // when
         String deletedName = folderService.deleteFolder(1, 500);
 
         // then
         assertThat(deletedName).isEqualTo("보고서");
+
+        // 자료들이 default 폴더로 이관 + soft delete 되었는지 확인
+        assertThat(d1.getFolder().getId()).isEqualTo(defaultFolder.getId());
+        assertThat(d2.getFolder().getId()).isEqualTo(defaultFolder.getId());
+        assertThat(d1.isActive()).isFalse();
+        assertThat(d2.isActive()).isFalse();
+        assertThat(d1.getDeletedAt()).isNotNull();
+        assertThat(d2.getDeletedAt()).isNotNull();
+
+        // 마지막에 폴더 삭제 호출
         verify(folderRepository, times(1)).delete(folder);
     }
+
+
 
     @Test
     @DisplayName("폴더 삭제 실패 - 존재하지 않는 폴더")
