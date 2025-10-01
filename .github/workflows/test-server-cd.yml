@@ -109,7 +109,7 @@ jobs:
               NEW_PORT=8081
             fi
             
-            # 스크립트 종료 시 자동 삭제
+            # 스크립트 종료 시 .env 파일 자동 삭제
             trap 'rm -f .env' EXIT
 
             # 새 컨테이너 실행 (.env 사용)
