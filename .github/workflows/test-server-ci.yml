@@ -64,29 +64,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 5. application-secrets.yml 생성
-      - name: Generate application-secrets.yml
-        run: |
-          mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secrets.yml
-          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
-
-          echo "spring.cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.credentials.access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.stack.auto: false" >> src/main/resources/application-secrets.yml
-
-          echo "liveblocks.secret-key: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}" >> src/main/resources/application-secrets.yml
-
-      # 6. application-secrets-server.yml 생성
-      - name: Generate application-secrets-server.yml
-        run: |
-          mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_SERVER_YML }}" > src/main/resources/application-secrets-server.yml
-          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets-server.yml
-
-      # 7. Gradle 테스트 실행
+      # 5. Gradle 테스트 실행
       - name: Test with Gradle
         # 테스트 단계에서 RabbitMQ 연결을 위한 환경 변수 설정
         env:
@@ -96,7 +74,7 @@ jobs:
           SPRING_RABBITMQ_PASSWORD: guest
         run: ./gradlew test
 
-      # 8. 테스트 결과 요약 출력
+      # 6. 테스트 결과 요약 출력
       - name: Show test results
         run: |
           echo "==== Test Results ===="
@@ -113,20 +91,11 @@ jobs:
             echo "No test results found."
           fi
 
-      # 8-1. S3 자격 증명 제거 (빌드 전에만)
-      - name: Remove only S3 credentials before building
-        run: |
-          CONFIG_FILE="src/main/resources/application-secrets.yml"
-          sed -i '/spring.cloud.aws.credentials.access-key/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.credentials.secret-key/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.region.static/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.stack.auto/d' $CONFIG_FILE
-
-      # 9. Gradle 빌드 실행 (테스트 성공 시)
+      # 7. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
         run: ./gradlew build -x test
 
-      # 10. GHCR 로그인
+      # 8. GHCR 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -134,7 +103,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 11. Docker 이미지 빌드 & 푸시
+      # 9. Docker 이미지 빌드 & 푸시
       - name: Build & Push Docker Image
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository }}/zoopzoop

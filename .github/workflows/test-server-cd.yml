@@ -24,15 +24,69 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
             docker pull ghcr.io/${{ github.repository }}/zoopzoop:latest
 
+            # .env 파일 생성
+            cat << EOF > .env
+            # DB
+            SPRING_DATASOURCE_URL=${{secrets.TEST_DB_URL}}
+            SPRING_DATASOURCE_USERNAME=${{secrets.TEST_DB_USERNAME}}
+            SPRING_DATASOURCE_PASSWORD=${{secrets.TEST_DB_PASSWORD}}
+            
+            # RabbitMQ
+            SPRING_RABBITMQ_HOST=${{secrets.TEST_RABBITMQ_HOST}}
+            SPRING_RABBITMQ_USERNAME=${{secrets.TEST_RABBITMQ_USERNAME}}
+            SPRING_RABBITMQ_PASSWORD=${{secrets.TEST_RABBITMQ_PASSWORD}}
+            
+            # Kakao OAuth
+            OAUTH_KAKAO_CLIENT_ID=${{secrets.OAUTH_KAKAO_CLIENT_ID}}
+            OAUTH_KAKAO_CLIENT_SECRET=${{secrets.OAUTH_KAKAO_CLIENT_SECRET}}
+            OAUTH_KAKAO_REDIRECT_URI=${{secrets.TEST_OAUTH_KAKAO_REDIRECT_URI}}
+            
+            # Google OAuth
+            OAUTH_GOOGLE_CLIENT_ID=${{secrets.OAUTH_GOOGLE_CLIENT_ID}}
+            OAUTH_GOOGLE_CLIENT_SECRET=${{secrets.OAUTH_GOOGLE_CLIENT_SECRET}}
+            OAUTH_GOOGLE_REDIRECT_URI=${{secrets.TEST_OAUTH_GOOGLE_REDIRECT_URI}}
+            
+            # AWS
+            AWS_ACCESS_KEY_ID=${{secrets.AWS_ACCESS_KEY_ID}}
+            AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}}
+            AWS_REGION=${{secrets.AWS_REGION}}
+            AWS_S3_BUCKET_NAME=${{secrets.AWS_S3_BUCKET_NAME}}
+            
+            # Redis
+            REDIS_HOST=${{secrets.REDIS_HOST}}
+            REDIS_PORT=${{secrets.REDIS_PORT}}
+            REDIS_PASSWORD=${{secrets.REDIS_PASSWORD}}
+            
+            # Naver API
+            NAVER_CLIENT_ID=${{secrets.NAVER_CLIENT_ID}}
+            NAVER_CLIENT_SECRET=${{secrets.NAVER_CLIENT_SECRET}}
+            
+            # JWT
+            JWT_SECRET_KEY=${{secrets.JWT_SECRET_KEY}}
+            JWT_ACCESS_TOKEN_VALIDITY=${{secrets.JWT_ACCESS_TOKEN_VALIDITY}}
+            JWT_REFRESH_TOKEN_VALIDITY=${{secrets.JWT_REFRESH_TOKEN_VALIDITY}}
+            
+            # Frontend Redirect
+            FRONT_REDIRECT_DOMAIN=${{secrets.FRONT_REDIRECT_DOMAIN}}
+            
+            # Liveblocks
+            LIVEBLOCKS_SECRET_KEY=${{secrets.LIVEBLOCKS_SECRET_KEY}}
+            
+            # Sentry
+            SENTRY_DSN=${{secrets.SENTRY_DSN}}
+            EOF
+            
+            # NPM API 설정
             NPM_HOST="localhost:81"
-            NPM_EMAIL="${{ secrets.NPM_ADMIN_EMAIL }}"
-            NPM_PASSWORD="${{ secrets.NPM_ADMIN_PASSWORD }}"
-            PROXY_HOST_ID="${{ secrets.NPM_PROXY_HOST_ID }}"
-
+            NPM_EMAIL="${{secrets.NPM_ADMIN_EMAIL}}"
+            NPM_PASSWORD="${{secrets.NPM_ADMIN_PASSWORD}}"
+            PROXY_HOST_ID="${{secrets.NPM_PROXY_HOST_ID}}"
+            
             # NPM 토큰
             TOKEN=$(curl -s -X POST "http://${NPM_HOST}/api/tokens" \
               -H "Content-Type: application/json" \
               -d "{\"identity\":\"${NPM_EMAIL}\",\"secret\":\"${NPM_PASSWORD}\"}" | jq -r '.token')
+            
             if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
               echo "❌ Failed to get NPM API token"
               exit 1
@@ -54,17 +108,16 @@ jobs:
               OLD_CONTAINER=zoopzoop-green
               NEW_PORT=8081
             fi
+            
+            # 스크립트 종료 시 자동 삭제
+            trap 'rm -f .env' EXIT
 
+            # 새 컨테이너 실행 (.env 사용)
             docker run -d --restart unless-stopped \
               -p $NEW_PORT:8080 \
               --name $NEW_CONTAINER \
               --network common \
-              -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
-              -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
-              -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
-              -e SPRING_RABBITMQ_HOST="${{secrets.TEST_RABBITMQ_HOST}}" \
-              -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
-              -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
+              --env-file .env \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
 
             # 헬스체크
