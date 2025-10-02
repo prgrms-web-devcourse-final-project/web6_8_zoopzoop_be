@@ -15,20 +15,24 @@ spring:
       host: localhost
       port: 6379
       timeout: 6000
-  cache: #Spring Cache를 사용하기 위한 Redis
-    type: redis
-    redis:
-      time-to-live: 300000
-      cache-null-values: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+          google:
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
 
 app:
   seed:
     enabled: true
 
+front:
+  redirect_domain: http://localhost:3000
+
 sentry:
-  dsn: https://60f1acad189d2994353d59b7895076ee@o4510100579155968.ingest.us.sentry.io/4510100584923136
-  # Add data like request headers and IP for users,
-  # see https://docs.sentry.io/platforms/java/guides/spring-boot/data-management/data-collected/ for more info
   send-default-pii: true
   environment: local
   traces-sample-rate: 0.0
