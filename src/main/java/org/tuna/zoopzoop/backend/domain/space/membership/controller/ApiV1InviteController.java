@@ -10,7 +10,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInviteList;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceMembershipInfoWithoutAuthority;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInfoWithoutAuthority;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
@@ -81,8 +81,8 @@ public class ApiV1InviteController {
 
         // 멤버십(초대) 목록 조회
         List<Membership> invitations = membershipService.findByMember(member, "PENDING");
-        List<SpaceMembershipInfoWithoutAuthority> invitationInfos = invitations.stream()
-                .map(membership -> new SpaceMembershipInfoWithoutAuthority(
+        List<SpaceInfoWithoutAuthority> invitationInfos = invitations.stream()
+                .map(membership -> new SpaceInfoWithoutAuthority(
                         membership.getSpace().getId(),
                         membership.getSpace().getName(),
                         membership.getSpace().getThumbnailUrl()

@@ -1,6 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.space.space.dto.etc;
 
-public record SpaceMembershipInfoWithoutAuthority(
+public record SpaceInfoWithoutAuthority(
         Integer id,
         String name,
         String thumbnailUrl
