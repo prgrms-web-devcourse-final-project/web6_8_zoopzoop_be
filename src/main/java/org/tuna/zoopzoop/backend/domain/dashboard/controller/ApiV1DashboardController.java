@@ -71,6 +71,6 @@ public class ApiV1DashboardController {
                         "ID: " + dashboardId + " 의 React-flow 데이터를 조회했습니다.",
                         BodyForReactFlow.from(graph)
                 ));
-
     }
+
 }

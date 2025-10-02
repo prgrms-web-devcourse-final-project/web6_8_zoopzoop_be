@@ -7,6 +7,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.tuna.zoopzoop.backend.domain.dashboard.dto.ReqBodyForLiveblocksAuth;
+import org.tuna.zoopzoop.backend.domain.dashboard.dto.ResBodyForAuthToken;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,7 +25,7 @@ public class LiveblocksClient {
     private String secretKey;
 
     private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms";
-
+    private static final String AUTH_API_URL = "https://api.liveblocks.io/v2/authorize-user";
     /**
      * Liveblocks 서버에 새로운 방을 생성합니다.
      * @param roomId 생성할 방의 고유 ID (워크스페이스 ID와 동일하게 사용)
@@ -78,6 +80,34 @@ public class LiveblocksClient {
             // 예외를 던지는 대신 에러 로그만 남기고 넘어갈 수도 있습니다.
             // 여기서는 일단 예외를 던져서 트랜잭션을 롤백하도록 합니다.
             throw new RuntimeException("Liveblocks API call failed", e);
+        }
+    }
+
+    /**
+     * Liveblocks 사용자 인증 토큰(JWT)을 발급받습니다.
+     * @param request 인증에 필요한 사용자 정보, 권한 등을 담은 객체
+     * @return 발급된 JWT 문자열
+     */
+    public String getAuthToken(ReqBodyForLiveblocksAuth request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(secretKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<ReqBodyForLiveblocksAuth> requestEntity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(AUTH_API_URL, requestEntity, String.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Liveblocks auth token issued successfully for user: {}", request.userId());
+                return response.getBody();
+            } else {
+                log.error("Failed to issue Liveblocks auth token. user: {}, status: {}, body: {}",
+                        request.userId(), response.getStatusCode(), response.getBody());
+                throw new RuntimeException("Failed to issue Liveblocks auth token.");
+            }
+        } catch (RestClientException e) {
+            log.error("Error while calling Liveblocks auth API for user: {}", request.userId(), e);
+            throw new RuntimeException("Liveblocks auth API call failed", e);
         }
     }
 }

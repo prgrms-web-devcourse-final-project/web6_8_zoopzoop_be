@@ -8,9 +8,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.dashboard.dto.ResBodyForAuthToken;
+import org.tuna.zoopzoop.backend.domain.dashboard.service.DashboardService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.dto.etc.SpaceMemberInfo;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
@@ -38,6 +42,7 @@ import java.util.stream.Collectors;
 public class ApiV1SpaceController {
     private final SpaceService spaceService;
     private final MembershipService membershipService;
+    private final DashboardService dashboardService;
 
     @PostMapping
     @Operation(summary = "스페이스 생성")
@@ -206,5 +211,30 @@ public class ApiV1SpaceController {
         );
     }
 
+    /**
+     * Liveblocks 접속을 위한 인증 토큰(JWT) 발급 API
+     * @param spaceId 스페이스 ID
+     * @param userDetails 현재 로그인한 사용자 정보
+     * @return ResponseEntity<RsData<AuthTokenResponse>>
+     */
+    @PostMapping("/dashboard-auth/{spaceId}")
+    @Operation(summary = "Liveblocks 접속 토큰 발급")
+    public ResponseEntity<RsData<ResBodyForAuthToken>> getAuthToken(
+            @PathVariable Integer spaceId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) throws AccessDeniedException {
+
+        Member member = userDetails.getMember();
+        String token = dashboardService.getAuthTokenForSpace(spaceId, member);
+
+        ResBodyForAuthToken response = new ResBodyForAuthToken(token);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new RsData<>(
+                        "200",
+                        "Liveblocks 접속 토큰이 발급되었습니다.",
+                        response
+                ));
+    }
 
 }
