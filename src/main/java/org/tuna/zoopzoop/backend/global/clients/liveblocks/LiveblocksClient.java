@@ -59,6 +59,25 @@ public class LiveblocksClient {
         }
     }
 
-    // 여기에 나중에 방 삭제, 방 업데이트 등의 메소드를 추가하면 됩니다.
-    // public void deleteRoom(String roomId) { ... }
+    /**
+     * Liveblocks 서버의 방을 삭제합니다.
+     * @param roomId 삭제할 방의 고유 ID
+     */
+    public void deleteRoom(String roomId) {
+        String deleteUrl = LIVEBLOCKS_API_URL + "/" + roomId;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(secretKey);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            restTemplate.exchange(deleteUrl, HttpMethod.DELETE, requestEntity, Void.class);
+            log.info("Liveblocks room deleted successfully. roomId: {}", roomId);
+        } catch (RestClientException e) {
+            log.error("Error while calling Liveblocks API to delete room. roomId: {}", roomId, e);
+            // 방 삭제 실패가 전체 로직에 큰 영향을 주지 않는다면,
+            // 예외를 던지는 대신 에러 로그만 남기고 넘어갈 수도 있습니다.
+            // 여기서는 일단 예외를 던져서 트랜잭션을 롤백하도록 합니다.
+            throw new RuntimeException("Liveblocks API call failed", e);
+        }
+    }
 }
