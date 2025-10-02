@@ -36,3 +36,6 @@ sentry:
   send-default-pii: true
   environment: local
   traces-sample-rate: 0.0
+
+liveblocks:
+  secret-key: test_dummy_liveblocks_secret_key
