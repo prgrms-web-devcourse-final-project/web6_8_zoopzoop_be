@@ -2,10 +2,12 @@ package org.tuna.zoopzoop.backend.domain.space.membership.service;
 
 import jakarta.persistence.NoResultException;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
@@ -15,12 +17,14 @@ import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -38,8 +42,14 @@ class MembershipServiceTest {
     @Autowired
     private MemberRepository memberRepository;
 
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
+
     @BeforeAll
     void setUp() {
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
+
         membershipRepository.deleteAll();
         setUpMember();
         setUpSpace();
