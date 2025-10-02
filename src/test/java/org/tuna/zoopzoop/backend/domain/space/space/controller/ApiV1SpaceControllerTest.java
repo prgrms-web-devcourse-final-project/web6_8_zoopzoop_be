@@ -18,6 +18,7 @@ import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -80,6 +81,12 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
                 memberService.findByKakaoKey("sc2222"),
                 spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
                 Authority.PENDING
+        );
+        // test3 -> 스페이스 1 가입 (READ_ONLY)
+        membershipService.addMemberToSpace(
+                memberService.findByKakaoKey("sc3333"),
+                spaceService.findByName("기존 스페이스 1_forSpaceControllerTest"),
+                Authority.READ_ONLY
         );
         // test1 -> 스페이스 2 가입 (PENDING)
         membershipService.addMemberToSpace(
@@ -410,6 +417,45 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
 
     @Test
     @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
+    @DisplayName("나의 스페이스 전체 조회 (멤버 포함) - 성공")
+    void getMySpaces_withMembers_Success() throws Exception {
+        // Given
+        String url = "/api/v1/space?includeMembers=true";
+
+        // When
+        ResultActions resultActions = performGet(url);
+
+        // Then
+        expectOk(
+                resultActions,
+                "스페이스 목록이 조회됐습니다."
+        );
+        resultActions
+                .andExpect(jsonPath("$.data.spaces").isArray())
+                .andExpect(jsonPath("$.data.spaces.length()").value(2));
+
+        // 첫 번째 스페이스 (기존 스페이스 1) 검증
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[0].name").value("기존 스페이스 1_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.spaces[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].members").isArray())
+                .andExpect(jsonPath("$.data.spaces[0].members.length()").value(2)) // PENDING 제외 2명
+                .andExpect(jsonPath("$.data.spaces[0].members[0].name", startsWith("spaceControllerTester1")))
+                .andExpect(jsonPath("$.data.spaces[0].members[0].authority").value("ADMIN"))
+                .andExpect(jsonPath("$.data.spaces[0].members[1].name", startsWith("spaceControllerTester3")))
+                .andExpect(jsonPath("$.data.spaces[0].members[1].authority").value("READ_ONLY"));
+
+
+        // 두 번째 스페이스 (기존 스페이스 2) 검증
+        resultActions
+                .andExpect(jsonPath("$.data.spaces[1].name").value("기존 스페이스 2_forSpaceControllerTest"))
+                .andExpect(jsonPath("$.data.spaces[1].authority").value("PENDING"))
+                .andExpect(jsonPath("$.data.spaces[1].members").isArray())
+                .andExpect(jsonPath("$.data.spaces[1].members.length()").value(0)); // 가입된 멤버 없음
+    }
+
+    @Test
+    @WithUserDetails(value = "KAKAO:sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("초대받은 스페이스 전체 조회 - 성공")
     void getInvitedSpaces_Success() throws Exception {
         // Given
@@ -544,7 +590,7 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @DisplayName("스페이스 단건 조회 - 실패 : 스페이스 멤버가 아닌 사용자")
     void getSpace_Fail_NotMember() throws Exception {
         // Given
-        Space space = spaceService.findByName("기존 스페이스 1_forSpaceControllerTest");
+        Space space = spaceService.findByName("기존 스페이스 2_forSpaceControllerTest");
         Integer spaceId = space.getId();
         String url = String.format("/api/v1/space/%d", spaceId);
 

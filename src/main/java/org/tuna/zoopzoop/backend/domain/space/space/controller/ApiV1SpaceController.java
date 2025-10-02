@@ -9,18 +9,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.etc.SpaceMemberInfo;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.req.ReqBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInfo;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceList;
-import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceMembershipInfo;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceListPage;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
@@ -30,7 +29,6 @@ import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -131,6 +129,7 @@ public class ApiV1SpaceController {
     public RsData<ResBodyForSpaceListPage> getAllSpaces(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) JoinState state,
+            @RequestParam(defaultValue = "false") boolean includeMembers,
             @PageableDefault(size = 10, sort = "createDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         // 현재 로그인한 사용자 정보 가져오기
@@ -141,13 +140,32 @@ public class ApiV1SpaceController {
         Page<Membership> membershipsPage = membershipService.findByMember(member, stateStr, pageable);
 
         // Page<Membership>를 Page<SpaceMembershipInfo>로 변환
-        // Page 객체의 map() 메서드를 사용하면 페이징 정보는 그대로 유지하면서 내용물만 쉽게 바꿀 수 있습니다.
-        Page<SpaceMembershipInfo> spaceInfosPage = membershipsPage.map(membership -> new SpaceMembershipInfo(
-                membership.getSpace().getId(),
-                membership.getSpace().getName(),
-                membership.getSpace().getThumbnailUrl(),
-                membership.getAuthority()
-        ));
+        Page<SpaceInfo> spaceInfosPage = membershipsPage.map(membership -> {
+            Space space = membership.getSpace();
+            List<SpaceMemberInfo> memberInfos = null;
+
+            if (includeMembers) {
+                // 스페이스에 속한 멤버 목록 조회 (가입 상태만)
+                List<Membership> spaceMemberships = membershipService.findMembersBySpace(space);
+                // 멤버 목록을 DTO로 변환
+                memberInfos = spaceMemberships.stream()
+                        .map(spaceMembership -> new SpaceMemberInfo(
+                                spaceMembership.getMember().getId(),
+                                spaceMembership.getMember().getName(),
+                                spaceMembership.getMember().getProfileImageUrl(),
+                                spaceMembership.getAuthority()
+                        ))
+                        .collect(Collectors.toList());
+            }
+
+            return new SpaceInfo(
+                    space.getId(),
+                    space.getName(),
+                    space.getThumbnailUrl(),
+                    membership.getAuthority(),
+                    memberInfos // 조회된 멤버 목록 (null일 수도 있음)
+            );
+        });
 
         // 새로운 응답 DTO 생성
         ResBodyForSpaceListPage resBody = new ResBodyForSpaceListPage(spaceInfosPage);
