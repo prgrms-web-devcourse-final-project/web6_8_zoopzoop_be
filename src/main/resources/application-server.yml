@@ -28,3 +28,7 @@ sentry:
   environment: prod-server
   traces-sample-rate: 0.2
 
+liveblocks:
+  secret-key: test_dummy_liveblocks_secret_key
+
+
