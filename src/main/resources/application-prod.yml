@@ -9,7 +9,7 @@ spring:
       host: 10.0.1.153
       port: 6379
       timeout: 6000
-      password: zoopzoopRedisProd!
+      password: ${redis-password-prod}
 
   security:
     oauth2:
