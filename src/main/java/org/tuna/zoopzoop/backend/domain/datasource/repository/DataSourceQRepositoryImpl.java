@@ -20,6 +20,8 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.util.StringUtils.hasText;
+
 @Repository
 @RequiredArgsConstructor
 public class DataSourceQRepositoryImpl implements DataSourceQRepository {
@@ -52,6 +54,15 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         if (cond.getCategory() != null && !cond.getCategory().isBlank()) {
             where.and(ds.category.stringValue().containsIgnoreCase(cond.getCategory()));
         }
+        if (hasText(cond.getKeyword())) {
+            String kw = cond.getKeyword();
+            where.and(
+                    ds.title.containsIgnoreCase(kw)
+                            .or(ds.summary.containsIgnoreCase(kw))
+                            .or(ds.category.stringValue().containsIgnoreCase(kw))
+            );
+        }
+
         if (cond.getFolderName() != null && !cond.getFolderName().isBlank()) {
             where.and(ds.folder.name.eq(cond.getFolderName()));
         }
@@ -72,7 +83,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
         // content
         JPAQuery<Tuple> contentQuery = queryFactory
-                .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.sourceUrl, ds.imageUrl, ds.category)
+                .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
                 .from(ds)
                 .join(ds.folder, folder)
                 .join(pa).on(pa.archive.eq(folder.archive))
@@ -110,13 +121,13 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                         Collectors.mapping(row -> row.get(tag.tagName), Collectors.toList())
                 ));
 
-        // map to DTO
         List<DataSourceSearchItem> content = tuples.stream()
                 .map(row -> new DataSourceSearchItem(
                         row.get(ds.id),
                         row.get(ds.title),
                         row.get(ds.dataCreatedDate),
                         row.get(ds.summary),
+                        row.get(ds.source),
                         row.get(ds.sourceUrl),
                         row.get(ds.imageUrl),
                         tagsById.getOrDefault(row.get(ds.id), List.of()),
