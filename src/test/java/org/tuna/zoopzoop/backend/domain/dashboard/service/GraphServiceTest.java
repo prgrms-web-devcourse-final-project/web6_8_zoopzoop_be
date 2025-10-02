@@ -44,15 +44,15 @@ public class GraphServiceTest {
         node1.setNodeKey("1");
         node1.setNodeType(NodeType.CUSTOM);
         node1.setData(Map.of("title", "노드 제목", "description", "노드 설명"));
-        node1.setPositonX(100);
-        node1.setPositonY(200);
+        node1.setPositionX(100);
+        node1.setPositionY(200);
         node1.setGraph(graph); // 연관관계 주인 설정
 
         Node node2 = new Node();
         node2.setNodeKey("2");
         node2.setNodeType(NodeType.CUSTOM);
-        node2.setPositonX(300);
-        node2.setPositonY(400);
+        node2.setPositionX(300);
+        node2.setPositionY(400);
         node2.setGraph(graph);
 
         // Edge 생성
