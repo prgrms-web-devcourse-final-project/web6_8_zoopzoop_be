@@ -5,14 +5,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -21,8 +25,12 @@ class SpaceServiceTest {
     @Autowired
     private SpaceService spaceService;
 
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
+
     @BeforeEach
     void setUp() {
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
         spaceService.createSpace("기존 스페이스 1_forSpaceServiceTest");
         spaceService.createSpace("기존 스페이스 2_forSpaceServiceTest");
     }
@@ -33,6 +41,9 @@ class SpaceServiceTest {
     void createSpace_Success() {
         // Given
         String spaceName = "테스트 스페이스";
+
+        // liveblocksClient.createRoom() 메서드가 호출될 때 실제로 아무 작업도 하지 않도록 설정
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
 
         // When
         var createdSpace = spaceService.createSpace(spaceName);
@@ -73,6 +84,9 @@ class SpaceServiceTest {
         Space space = spaceService.findByName("기존 스페이스 1_forSpaceServiceTest");
         Integer spaceId = space.getId();
         String spaceName = space.getName();
+
+        // Mockito 설정: deleteRoom 메소드가 어떤 문자열로 호출되더라도 아무런 동작을 하지 않도록 설정
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
 
         // When
         String deletedSpaceName = spaceService.deleteSpace(spaceId);
