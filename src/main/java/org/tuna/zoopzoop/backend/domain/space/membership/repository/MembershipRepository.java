@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.space.membership.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
@@ -40,4 +41,9 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     long countBySpaceAndAuthority(Space space, Authority authority);
 
 
+    @Query("""
+    select m from Membership m
+    where m.member.id = :memberId and m.space.id = :spaceId
+""")
+    Optional<Membership> findByMemberIdAndSpaceId(Integer memberId, Integer spaceId);
 }

@@ -21,20 +21,6 @@ class SpaceArchiveDataSourceServiceTest {
     DataSourceService archiveScopedService;
 
     @InjectMocks
-    SpaceArchiveDataSourceService spaceFacade;
+    SpaceDataSourceService spaceFacade;
 
-//    @Test
-//    @DisplayName("[Space] 권한 검증 후 공통 서비스 위임")
-//    void create_in_space_delegates() {
-//        int requesterId = 10, spaceId = 100, archiveId = 300;
-//
-//        when(spaceService.getArchiveIdBySpaceId(spaceId)).thenReturn(archiveId);
-//        when(membershipService.isMemberOf(spaceId, requesterId)).thenReturn(true);
-//        when(archiveScopedService.createDataSourceInArchive(archiveId, "https://x", 999)).thenReturn(1234);
-//
-//        int id = spaceFacade.createDataSource(requesterId, spaceId, "https://x", 999);
-//
-//        org.assertj.core.api.Assertions.assertThat(id).isEqualTo(1234);
-//        verify(archiveScopedService).createDataSourceInArchive(archiveId, "https://x", 999);
-//    }
 }

@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface DataSourceRepository extends JpaRepository<DataSource, Integer> {
+public interface DataSourceRepository extends JpaRepository<DataSource, Integer>,
+        PersonalDataSourceRepositoryCustom, SpaceDataSourceRepositoryCustom{
     List<DataSource> findAllByFolder(Folder folder);
 
     List<DataSource> findAllByIdIn(Collection<Integer> ids);
