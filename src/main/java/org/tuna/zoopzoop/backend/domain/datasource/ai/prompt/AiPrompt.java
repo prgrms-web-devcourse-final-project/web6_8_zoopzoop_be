@@ -41,7 +41,7 @@ public class AiPrompt {
            - 제공된 태그와 중복 가능하다.
            - 필요하면 새로운 태그를 만들어도 된다.
         4. 출력은 반드시 아래 JSON 형식으로 해라. Markdown 문법(```)은 쓰지 마라.
-           - 해당 정보가 없으면 null말고 무조건 빈 문자열로 출력해줘라.
+           - 해당정보가 없을 시 summary하고 category는 빈 문자열, category는 null로 출력해줘라.
         
         [출력 JSON 형식]
         {
