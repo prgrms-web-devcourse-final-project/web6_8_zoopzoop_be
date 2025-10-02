@@ -1,33 +1,41 @@
 spring:
   application:
     name: back
+
   profiles:
     active: dev
+
   output:
     ansi:
       enabled: always
+
   datasource:
     hikari:
       auto-commit: false
-  jackson:
+
+  jackson: #Jackson 설정
     serialization:
       fail-on-empty-beans: false
-  jpa:
+
+  jpa: #Hibernate JPA 설정.
     show-sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
-  config:
+
+  config: #application-secrets의 값을 바로 받아올 수 있게.
     import: optional:classpath:application-secrets.yml
-  servlet:
+
+  servlet: #
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-  ai:
+
+  ai: #Spring AI 설정
     openai:
       base-url: https://api.groq.com/openai # 내부 서버를 groq으로
       api-key: ${OPENAI_API_KEY}
@@ -35,7 +43,8 @@ spring:
         options:
           model: meta-llama/llama-4-scout-17b-16e-instruct
           temperature: 0
-  rabbitmq:
+
+  rabbitmq: #RabbitMQ 설정
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: 5672
     username: ${SPRING_RABBITMQ_USERNAME:guest}
@@ -46,19 +55,54 @@ spring:
           enabled: true
           initial-interval: 2000
           max-attempts: 3
-  data: #RedisTemplate 등을 사용하기 위한 직접 연결용
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 6000
+
   cache: #Spring Cache를 사용하기 위한 Redis
     type: redis
     redis:
       time-to-live: 300000
       cache-null-values: false
-      key-prefix:
 
-springdoc:
+  security: #OAuth2 범용 설정
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${kakao.client-id}
+            scope:
+              - profile_nickname
+              - profile_image
+            authorization-grant-type: authorization_code
+          google:
+            client-id: ${google.client-id}
+            client-secret: ${google.client-secret}
+            scope:
+              - profile
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+
+  cloud: #S3 설정
+    aws:
+      credentials:
+        access-key: ${aws.access-key}
+        secret-key: ${aws.secret-key}
+      region:
+        static: ap-northeast-2
+      s3:
+        bucket: ${aws.bucket}
+      stack:
+        auto: false
+
+springdoc: #Spring doc 설정.
   default-produces-media-type: application/json;charset=UTF-8
 logging:
   level:
@@ -68,9 +112,18 @@ logging:
     com.back: DEBUG
     org.springframework.retry: DEBUG
 
-server:
-  port: 8080
-
 app:
   seed:
     enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+sentry: #Sentry 모니터렁 기본 설정.
+  dsn: ${sentry-dsn}

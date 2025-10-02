@@ -41,8 +41,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Value("${front.redirect_domain}")
     private String redirect_domain;
 
-    @Value("${spring.profiles.active:dev}")
-    private String activeProfile;
+    private final String SITE_DOMAIN = "zoopzoop.kro.kr";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -112,7 +111,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
                     // .domain() // 프론트엔드 & 백엔드 상위 도메인
                     // .secure(true) // https 필수 설정.
-                    .domain(redirect_domain)
+                    .domain(SITE_DOMAIN)
                     .secure(true)
                     .sameSite("None")
                     .build();
@@ -121,7 +120,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .httpOnly(true)
                     .path("/")
                     .maxAge(jwtProperties.getRefreshTokenValidity() / 1000) // RefreshToken 유효기간과 동일하게
-                    .domain(redirect_domain)
+                    .domain(SITE_DOMAIN)
                     .secure(true)
                     .sameSite("None")
                     .build();

@@ -6,22 +6,22 @@ spring:
 
   data: #RedisTemplate 등을 사용하기 위한 직접 연결용
     redis:
-      host: 10.0.1.246
+      host: 10.0.1.153
       port: 6379
       timeout: 6000
-      password: ${redis-password-test}
+      password: ${redis-password-prod}
 
   security:
     oauth2:
       client:
         registration:
           kakao:
-            redirect-uri: https://api.test.zoopzoop.kro.kr/login/oauth2/code/kakao
+            redirect-uri: https://api.prod.zoopzoop.kro.kr/login/oauth2/code/kakao
           google:
-            redirect-uri: https://api.test.zoopzoop.kro.kr/login/oauth2/code/google
+            redirect-uri: https://api.prod.zoopzoop.kro.kr/login/oauth2/code/google
 
 front:
-  redirect_domain: http://localhost:3000
+  redirect_domain: https://www.zoopzoop.kro.kr/
 
 sentry:
   send-default-pii: true
@@ -30,5 +30,3 @@ sentry:
 
 liveblocks:
   secret-key: ${liveblocks-secret-key}
-
-
