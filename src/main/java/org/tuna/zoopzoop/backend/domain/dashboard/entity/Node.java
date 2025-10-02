@@ -37,10 +37,10 @@ public class Node extends BaseEntity {
     private Map<String, String> data = new HashMap<>();
 
     @Column
-    private double positonX;
+    private double positionX;
 
     @Column
-    private double positonY;
+    private double positionY;
 
     @Column
     private double width;

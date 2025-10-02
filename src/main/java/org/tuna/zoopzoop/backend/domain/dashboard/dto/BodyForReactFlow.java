@@ -68,8 +68,8 @@ public record BodyForReactFlow(
                     node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase()));
                     node.setSelected(dto.selected() != null ? dto.selected() : false);
                     node.setDragging(dto.dragging() != null ? dto.dragging() : false);
-                    node.setPositonX(dto.positionDto().x());
-                    node.setPositonY(dto.positionDto().y());
+                    node.setPositionX(dto.positionDto().x());
+                    node.setPositionY(dto.positionDto().y());
                     if (dto.measurements() != null) {
                         node.setWidth(dto.measurements().width());
                         node.setHeight(dto.measurements().height());
@@ -113,7 +113,7 @@ public record BodyForReactFlow(
                         n.getNodeType().name().toUpperCase(),
                         n.isSelected(),
                         n.isDragging(),
-                        new NodeDto.PositionDto(n.getPositonX(), n.getPositonY()),
+                        new NodeDto.PositionDto(n.getPositionX(), n.getPositionY()),
                         new NodeDto.MeasurementsDto(n.getWidth(), n.getHeight()),
                         new NodeDto.DataDto(
                                 n.getData().get("content"),
@@ -145,8 +145,8 @@ public record BodyForReactFlow(
                     Node node = new Node();
                     node.setNodeKey(dto.nodeKey());
                     node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase()));
-                    node.setPositonX(dto.positionDto().x());
-                    node.setPositonY(dto.positionDto().y());
+                    node.setPositionX(dto.positionDto().x());
+                    node.setPositionY(dto.positionDto().y());
                     if (dto.measurements() != null) {
                         node.setWidth(dto.measurements().width());
                         node.setHeight(dto.measurements().height());

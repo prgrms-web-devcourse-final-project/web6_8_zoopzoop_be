@@ -65,8 +65,8 @@ class GraphUpdateConsumerTest extends ControllerTestSupport {
                 // DTO의 List 순서대로 엔티티가 생성되므로 get(0)으로 첫 번째 노드를 특정합니다.
                 Node firstNode = updatedGraph.getNodes().get(0);
                 assertThat(firstNode.getNodeKey()).isEqualTo("1");
-                assertThat(firstNode.getPositonX()).isEqualTo(100.0);
-                assertThat(firstNode.getPositonY()).isEqualTo(200.0);
+                assertThat(firstNode.getPositionX()).isEqualTo(100.0);
+                assertThat(firstNode.getPositionY()).isEqualTo(200.0);
 
                 // Node의 data Map 내부 값들을 상세히 검증
                 Map<String, String> data = firstNode.getData();
