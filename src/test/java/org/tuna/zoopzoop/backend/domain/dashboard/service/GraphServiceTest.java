@@ -60,10 +60,6 @@ public class GraphServiceTest {
         edge.setEdgeKey("e1-2");
         edge.setSourceNodeKey("1");
         edge.setTargetNodeKey("2");
-        edge.setEdgeType(EdgeType.SMOOTHSTEP);
-        edge.setAnimated(true);
-        edge.setStroke("#999");
-        edge.setStrokeWidth(2.0);
         edge.setGraph(graph);
 
         // graph와 연결
