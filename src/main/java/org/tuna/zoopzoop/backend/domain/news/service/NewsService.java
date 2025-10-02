@@ -2,7 +2,7 @@ package org.tuna.zoopzoop.backend.domain.news.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FileSummary;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 
@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class NewsService {
-    private final FolderService folderService;
+    private final PersonalArchiveFolderService folderService;
 
     public List<String> getTagFrequencyFromFiles(Integer memberId, Integer folderId) {
-        FolderFilesDto folderFilesDto = folderService.getFilesInFolderForPersonal(memberId, folderId);
+        FolderFilesDto folderFilesDto = folderService.getFilesInFolder(memberId, folderId);
 
         List<FileSummary> files = folderFilesDto.files();
 

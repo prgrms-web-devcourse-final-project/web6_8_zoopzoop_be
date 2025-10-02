@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.reqBodyForCreateDataSource;
@@ -55,7 +55,7 @@ class DatasourceControllerTest {
 
     @Autowired private MemberService memberService;
     @Autowired private MemberRepository memberRepository;
-    @Autowired private FolderService folderService;
+    @Autowired private PersonalArchiveFolderService folderService;
     @Autowired private FolderRepository folderRepository;
     @Autowired private DataSourceRepository dataSourceRepository;
 
@@ -116,7 +116,7 @@ class DatasourceControllerTest {
         testMemberId = member.getId();
 
         // docs 폴더 생성
-        FolderResponse fr = folderService.createFolderForPersonal(testMemberId, "docs");
+        FolderResponse fr = folderService.createFolder(testMemberId, "docs");
         docsFolderId = fr.folderId();
 
         Folder docsFolder = folderRepository.findById(docsFolderId).orElseThrow();
@@ -367,7 +367,7 @@ class DatasourceControllerTest {
     @DisplayName("단건 이동 성공 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveOne_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolderForPersonal(testMemberId, "moveTarget");
+        FolderResponse newFolder = folderService.createFolder(testMemberId, "moveTarget");
         Integer toId = newFolder.folderId();
 
         var body = new reqBodyForMoveDataSource(toId);
@@ -426,7 +426,7 @@ class DatasourceControllerTest {
     @DisplayName("자료 다건 이동 성공: 지정 폴더 -> 200")
     @WithUserDetails(value = "KAKAO:testUser_sc1111", setupBefore = TestExecutionEvent.TEST_METHOD)
     void moveMany_specific_ok() throws Exception {
-        FolderResponse newFolder = folderService.createFolderForPersonal(testMemberId, "moveManyTarget");
+        FolderResponse newFolder = folderService.createFolder(testMemberId, "moveManyTarget");
         Integer toId = newFolder.folderId();
 
         String body = String.format("{\"folderId\":%d,\"dataSourceId\":[%d,%d]}", toId, dataSourceId1, dataSourceId2);

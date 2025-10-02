@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.resBodyForCreateFolder;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -25,12 +25,10 @@ import java.util.Map;
 @Tag(name = "ApiV1Folder", description = "개인 아카이브의 폴더 CRUD")
 public class FolderController {
 
-    private final FolderService folderService;
+    private final PersonalArchiveFolderService personalArchiveFolderService;
 
     /**
      * 내 PersonalArchive 안에 새 폴더 생성
-     * @param rq reqBodyForCreateFolder
-     * @return resBodyForCreateFolder
      */
     @Operation(summary = "폴더 생성", description = "내 PersonalArchive 안에 새 폴더를 생성합니다.")
     @PostMapping
@@ -39,41 +37,30 @@ public class FolderController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
-        FolderResponse createFile = folderService.createFolderForPersonal(member.getId(), rq.folderName());
+        FolderResponse createFile = personalArchiveFolderService.createFolder(member.getId(), rq.folderName());
         resBodyForCreateFolder rs = new resBodyForCreateFolder(createFile.folderName(), createFile.folderId());
 
-        return new RsData<>(
-                "200",
-                rq.folderName() + " 폴더가 생성됐습니다.",
-                rs
-        );
+        return new RsData<>("200",rq.folderName() + " 폴더가 생성됐습니다.", rs);
     }
 
     /**
      * 내 PersonalArchive 안의 folder 삭제
-     * @param folderId  삭제할 folderId
      */
     @DeleteMapping("/{folderId}")
-    public ResponseEntity<Map<String, Object>> deleteFolder(
+    public ResponseEntity<RsData<?>> deleteFolder(
             @PathVariable Integer folderId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        if (folderId == 0) {
-            var body = new java.util.HashMap<String, Object>();
-            body.put("status", 409);
-            body.put("msg", "default 폴더는 삭제할 수 없습니다.");
-            body.put("data", null);
-            return ResponseEntity.badRequest().body(body);
-        }
+        if (folderId == 0)
+            throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
+
 
         Member member = userDetails.getMember();
-        String deletedFolderName = folderService.deleteFolder(member.getId(), folderId);
+        String deletedFolderName = personalArchiveFolderService.deleteFolder(member.getId(), folderId);
 
-        var body = new java.util.HashMap<String, Object>();
-        body.put("status", 200);
-        body.put("msg", deletedFolderName + " 폴더가 삭제됐습니다.");
-        body.put("data", null);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(
+                new RsData<>("200", deletedFolderName + " 폴더가 삭제됐습니다.", null)
+        );
     }
 
     /**
@@ -82,28 +69,23 @@ public class FolderController {
      * @param body  수정할 폴더 값
      */
     @PatchMapping("/{folderId}")
-    public ResponseEntity<Map<String, Object>> updateFolderName(
+    public ResponseEntity<RsData<Map<String, String>>> updateFolderName(
             @PathVariable Integer folderId,
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        if (folderId == 0) {
-            var res = new java.util.HashMap<String, Object>();
-            res.put("status", 400);
-            res.put("msg", "default 폴더는 이름을 변경할 수 없습니다.");
-            res.put("data", null);
-            return ResponseEntity.badRequest().body(res);
-        }
+        if (folderId == 0)
+            throw new IllegalArgumentException("default 폴더는 이름을 변경할 수 없습니다.");
+
 
         Member member = userDetails.getMember();
         String newName = body.get("folderName");
-        String updatedName = folderService.updateFolderName(member.getId(), folderId, newName);
+        String updatedName = personalArchiveFolderService.updateFolderName(member.getId(), folderId, newName);
 
-        return ResponseEntity.ok(java.util.Map.of(
-                "status", 200,
-                "msg", "폴더 이름이 " + updatedName + " 으로 변경됐습니다.",
-                "data", java.util.Map.of("folderName", updatedName)
-        ));
+        return ResponseEntity.ok(
+                new RsData<>("200", "폴더 이름이 " + updatedName + " 으로 변경됐습니다.",
+                        Map.of("folderName", updatedName))
+        );
     }
 
     /**
@@ -112,18 +94,14 @@ public class FolderController {
      */
     @Operation(summary = "폴더 이름 조회", description = "내 PersonalArchive 안에 이름을 전부 조회합니다.")
     @GetMapping
-    public ResponseEntity<?> getFolders(
+    public ResponseEntity<RsData<List<FolderResponse>>> getFolders(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
-        List<FolderResponse> folders = folderService.getFoldersForPersonal(member.getId());
+        List<FolderResponse> folders = personalArchiveFolderService.getFolders(member.getId());
 
         return ResponseEntity.ok(
-                Map.of(
-                        "status", 200,
-                        "msg", "개인 아카이브의 폴더 목록을 불러왔습니다.",
-                        "data", Map.of("folders", folders)
-                )
+                new RsData<>("200", "개인 아카이브의 폴더 목록을 불러왔습니다.", folders)
         );
     }
 
@@ -138,22 +116,14 @@ public class FolderController {
         int memberId = userDetails.getMember().getId();
 
         Integer targetFolderId = (folderId == 0)
-                ? folderService.getDefaultFolderId(memberId)
+                ? personalArchiveFolderService.getDefaultFolderId(memberId)
                 : folderId;
 
-        FolderFilesDto rs = folderService.getFilesInFolderForPersonal(memberId, targetFolderId);
+        FolderFilesDto rs = personalArchiveFolderService.getFilesInFolder(memberId, targetFolderId);
 
-        return ResponseEntity.ok(Map.of(
-                "status", 200,
-                "msg", folderId == 0 ? "기본 폴더의 파일 목록을 불러왔습니다." : "해당 폴더의 파일 목록을 불러왔습니다.",
-                "data", Map.of(
-                        "folder", Map.of(
-                                "folderId", rs.folderId(),
-                                "folderName", rs.folderName()
-                        ),
-                        "files", rs.files()
-                )
-        ));
+        return ResponseEntity.ok(
+                new RsData<>("200","해당 폴더의 파일 목록을 불러왔습니다.", rs)
+        );
     }
 
 }

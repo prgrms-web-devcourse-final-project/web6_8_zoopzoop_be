@@ -12,7 +12,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
-import org.tuna.zoopzoop.backend.domain.archive.folder.service.FolderService;
+import org.tuna.zoopzoop.backend.domain.archive.folder.service.PersonalArchiveFolderService;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final FolderRepository folderRepository;
-    private final FolderService folderService;
+    private final PersonalArchiveFolderService folderService;
     private final PersonalArchiveRepository personalArchiveRepository;
     private final TagRepository tagRepository;
     private final DataProcessorService dataProcessorService;

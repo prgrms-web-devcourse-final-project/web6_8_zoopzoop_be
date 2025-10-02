@@ -6,8 +6,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.FolderResponse;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
@@ -16,8 +14,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.FolderFilesDto;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
-import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -29,32 +25,19 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class FolderService {
 
-    private final MemberRepository memberRepository;
-    private final PersonalArchiveRepository personalArchiveRepository;
     private final FolderRepository folderRepository;
     private final DataSourceRepository dataSourceRepository;
 
-    /**
-     * 현재 로그인 사용자의 PersonalArchive에 폴더 생성
-     * - 폴더명 중복 시 "(n)" 추가
-     * - 동시성 충돌 시(더블 클릭, 브라우저 재전송) 재시도
-     */
+    // ===== 생성 =====
     @Transactional
-    public FolderResponse createFolderForPersonal(Integer currentMemberId, String folderName) {
+    public FolderResponse createFolder(Archive archive, String folderName) {
+        if (archive == null) throw new NoResultException("아카이브가 존재하지 않습니다.");
         if (folderName == null || folderName.trim().isEmpty())
             throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
 
-        Member member = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> new NoResultException("멤버를 찾을 수 없습니다."));
-
-        Archive archive = personalArchiveRepository.findByMemberId(member.getId())
-                .map(PersonalArchive::getArchive)
-                .orElseThrow(() -> new NoResultException("개인 아카이브가 없습니다."));
-
         final String requested = folderName.trim();
-
-        // 동시성 춛돌시 2번 재시도
         String unique = generateUniqueFolderName(archive.getId(), requested);
+
         for (int attempt = 0; attempt < 2; attempt++) {
             try {
                 Folder folder = new Folder();
@@ -63,7 +46,7 @@ public class FolderService {
                 folder.setDefault(false);
 
                 Folder saved = folderRepository.save(folder);
-                return new FolderResponse( saved.getId(), saved.getName());
+                return new FolderResponse(saved.getName(), saved.getId());
             } catch (DataIntegrityViolationException e) {
                 unique = generateUniqueFolderName(archive.getId(), requested);
             }
@@ -71,33 +54,110 @@ public class FolderService {
         throw new IllegalStateException("동시성 충돌로 폴더 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
 
+    // ===== 삭제 =====
+    @Transactional
+    public String deleteFolder(Archive archive, Integer folderId) {
+        Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+
+        if (folder.isDefault())
+            throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
+
+        // 기본 폴더 확보 (같은 archive)
+        Folder defaultFolder = folderRepository.findByArchiveIdAndIsDefaultTrue(archive.getId())
+                .orElseThrow(() -> new IllegalStateException("default 폴더가 존재하지 않습니다."));
+
+        // 폴더 내 자료 이관 + soft delete(네 정책 유지)
+        List<DataSource> dataSources = dataSourceRepository.findAllByFolderId(folderId);
+        LocalDate now = LocalDate.now();
+        for (DataSource ds : dataSources) {
+            ds.setFolder(defaultFolder);
+            ds.setActive(false);
+            ds.setDeletedAt(now);
+        }
+
+        String name = folder.getName();
+        folderRepository.delete(folder);
+        return name;
+    }
+
+    // ===== 이름 변경 =====
+    @Transactional
+    public String updateFolderName(Archive archive, Integer folderId, String newName) {
+        if (newName == null || newName.trim().isEmpty())
+            throw new IllegalArgumentException("폴더 이름은 비어 있을 수 없습니다.");
+
+        Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+
+        if (folder.isDefault())
+            throw new IllegalArgumentException("default 폴더는 이름을 변경할 수 없습니다.");
+
+        // 같은 Archive 내 동명 검사 (자기 자신 제외)
+        List<String> conflict = folderRepository.existsNameInArchiveExceptSelf(
+                archive.getId(), newName.trim(), folder.getId());
+        if (!conflict.isEmpty()) {
+            throw new IllegalArgumentException("이미 존재하는 폴더명입니다.");
+        }
+
+        folder.setName(newName.trim());
+        folderRepository.save(folder);
+        return folder.getName();
+    }
+
+    // ===== 목록 조회 =====
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getFolders(Archive archive) {
+        return folderRepository.findByArchive(archive).stream()
+                .map(f -> new FolderResponse(f.getName(), f.getId()))
+                .toList();
+    }
+
+    // ===== 폴더 내 파일 조회 =====
+    @Transactional(readOnly = true)
+    public FolderFilesDto getFilesInFolder(Archive archive, Integer folderId) {
+        Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+
+        var files = dataSourceRepository.findAllByFolder(folder).stream()
+                .map(ds -> new FileSummary(
+                        ds.getId(),
+                        ds.getTitle(),
+                        ds.getDataCreatedDate(),
+                        ds.getSummary(),
+                        ds.getSourceUrl(),
+                        ds.getImageUrl(),
+                        ds.getTags() == null ? List.of() : ds.getTags().stream().map(Tag::getTagName).toList(),
+                        ds.getCategory() == null ? null : ds.getCategory().name()
+                ))
+                .toList();
+
+        return new FolderFilesDto(folder.getId(), folder.getName(), files);
+    }
+
+    // ===== 기본 폴더 ID 조회 (Archive 스코프) =====
+    @Transactional(readOnly = true)
+    public Integer getDefaultFolderId(Archive archive) {
+        return folderRepository.findByArchiveIdAndIsDefaultTrue(archive.getId())
+                .orElseThrow(() -> new NoResultException("default 폴더를 찾을 수 없습니다."))
+                .getId();
+    }
+
+    // ===== 이름 충돌 유틸 =====
     private static final Pattern SUFFIX_PATTERN = Pattern.compile("^(.*?)(?: \\((\\d+)\\))?$");
 
-    /**
-     * 기존 file 명과 같지 않은 최솟값의 이름 생성
-     * “폴더명”, "폴더명 (1)"→ "폴더명 (2)"
-     * "폴더명", "폴더명 (2)" -> "폴더명 (1)"
-     */
     private String generateUniqueFolderName(Integer archiveId, String requested) {
         NameParts nameParts = NameParts.split(requested);
-
-        // 중복 폴더명 탐색
         String file = nameParts.base();
         String fileEnd = file + "\uffff";
-
         List<String> existing = folderRepository.findNamesForConflictCheck(archiveId, file, fileEnd);
-
         return pickNextAvailable(file, existing);
     }
 
-    /**
-     * 이미 존재하는 이름들 중 가장 작은 비어 있는 번호 반환
-     */
     private static String pickNextAvailable(String file, List<String> existing) {
         boolean baseUsed = false;
         Set<Integer> used = new HashSet<>();
         Pattern p = Pattern.compile("^" + Pattern.quote(file) + "(?: \\((\\d+)\\))?$");
-
         for (String s : existing) {
             var m = p.matcher(s);
             if (m.matches()) {
@@ -109,121 +169,9 @@ public class FolderService {
         for (int k = 1; k <= used.size() + 1; k++) {
             if (!used.contains(k)) return file + " (" + k + ")";
         }
-        return file + " (" + (used.size() + 1) + ")"; // fallback
+        return file + " (" + (used.size() + 1) + ")";
     }
 
-    /**
-     *  folderId에 해당하는 폴더 영구 삭제
-     */
-    @Transactional
-    public String deleteFolder(Integer currentId, Integer folderId) {
-        // 소유한 폴더인지 확인
-        Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
-                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
-
-        if (folder.isDefault()) {
-            throw new IllegalArgumentException("default 폴더는 삭제할 수 없습니다.");
-        }
-
-        Folder defaultFolder = folderRepository.findDefaultByMemberId(currentId)
-                .orElseThrow(() -> new IllegalStateException("default 폴더가 존재하지 않습니다."));
-
-        // 폴더 내 자료들을 Default로 이관 + soft delete
-        List<DataSource> dataSources = dataSourceRepository.findAllByFolderId(folderId);
-        LocalDate now = LocalDate.now();
-        for (DataSource ds : dataSources) {
-            ds.setFolder(defaultFolder);
-            ds.setActive(false);
-            ds.setDeletedAt(now);
-        }
-
-        String name = folder.getName();
-        folderRepository.delete(folder);
-
-        return name;
-    }
-
-    /**
-     *  folderId에 해당하는 이름 변경
-     */
-    @Transactional
-    public String updateFolderName(Integer currentId, Integer folderId, String newName) {
-        Folder folder = folderRepository.findByIdAndMemberId(folderId, currentId)
-                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
-
-        // 같은 아카이브 내에서 중복 폴더 이름 확인
-        List<String> existingNames = folderRepository.findNamesForConflictCheck(
-                folder.getArchive().getId(),
-                newName,
-                folder.getName() // 자기 자신은 제외
-        );
-
-        if (!existingNames.isEmpty()) {
-            throw new IllegalArgumentException("이미 존재하는 폴더명입니다.");
-        }
-
-        folder.setName(newName);
-        folderRepository.save(folder);
-        return newName;
-    }
-
-    /**
-     * Personal Archive의 폴더명 전부 조회
-     * @param memberId  Personal Archive 회원 Id
-     */
-    @Transactional(readOnly = true)
-    public List<FolderResponse> getFoldersForPersonal(Integer memberId) {
-        PersonalArchive personalArchive = personalArchiveRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new NoResultException("개인 아카이브가 존재하지 않습니다."));
-        Archive archive = personalArchive.getArchive();
-
-        return folderRepository.findByArchive(archive).stream()
-                .map(folder -> new FolderResponse(folder.getId(), folder.getName()))
-                .toList();
-    }
-
-    /**
-     * 폴더 하위 파일(datasource) 조회
-     * @param memberId   Personal Archive 회원 Id
-     * @param folderId   조회할 folder Id
-     */
-    @Transactional(readOnly = true)
-    public FolderFilesDto getFilesInFolderForPersonal(Integer memberId, Integer folderId) {
-        Folder folder = folderRepository.findByIdAndMemberId(folderId, memberId)
-                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
-
-        var files = dataSourceRepository.findAllByFolder(folder).stream()
-                .map(ds -> new FileSummary(
-                        ds.getId(),
-                        ds.getTitle(),
-                        ds.getDataCreatedDate(),      // LocalDate
-                        ds.getSummary(),
-                        ds.getSourceUrl(),
-                        ds.getImageUrl(),
-                        ds.getTags() == null ? List.of()
-                                : ds.getTags().stream()
-                                .map(Tag::getTagName)
-                                .toList(),
-                        ds.getCategory() == null ? null : ds.getCategory().name()
-                ))
-                .toList();
-
-        return new FolderFilesDto(folder.getId(), folder.getName(), files);
-    }
-
-
-    public Integer getDefaultFolderId(int memberId) {
-        Folder folder = folderRepository.findDefaultFolderByMemberId(memberId)
-                .orElseThrow(() -> new NoResultException("default 폴더를 찾을 수 없습니다."));
-        return folder.getId();
-
-    }
-
-    /**
-     * 입력된 폴더명을 (폴더명, 숫자)로 분리하는 유틸 클래스
-     * “폴더명” → (”폴더명”, null)
-     * “폴더명(3)” → (”폴더명”, 3)
-     */
     private record NameParts(String base, Integer num) {
         static NameParts split(String name) {
             var m = SUFFIX_PATTERN.matcher(name.trim());
@@ -236,3 +184,4 @@ public class FolderService {
         }
     }
 }
+

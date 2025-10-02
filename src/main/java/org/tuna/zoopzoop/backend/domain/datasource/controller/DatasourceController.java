@@ -231,6 +231,7 @@ public class DatasourceController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer folderId,
             @RequestParam(required = false) String folderName,
             @RequestParam(required = false, defaultValue = "true") Boolean isActive,
@@ -247,6 +248,7 @@ public class DatasourceController {
                 .folderId(folderId)
                 .folderName(folderName)
                 .isActive(isActive)
+                .keyword(keyword)
                 .build();
 
         Page<DataSourceSearchItem> page = dataSourceService.search(memberId, cond, pageable);
