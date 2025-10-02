@@ -22,17 +22,4 @@ public class Edge extends BaseEntity {
 
     @Column
     private String targetNodeKey;
-
-    @Column
-    @Enumerated(EnumType.STRING)
-    private EdgeType edgeType;
-
-    @Column
-    boolean isAnimated;
-
-    @Column
-    private String stroke;
-
-    @Column
-    private Double strokeWidth;
 }

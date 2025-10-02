@@ -24,6 +24,12 @@ public class Node extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private NodeType nodeType;
 
+    @Column
+    private boolean selected;
+
+    @Column
+    private boolean dragging;
+
     @ElementCollection
     @CollectionTable(name = "node_data", joinColumns = @JoinColumn(name = "node_id"))
     @MapKeyColumn(name = "data_key")
@@ -35,4 +41,10 @@ public class Node extends BaseEntity {
 
     @Column
     private double positonY;
+
+    @Column
+    private double width;
+
+    @Column
+    private double height;
 }
