@@ -1,3 +1,0 @@
-2025-09-17 16:09:58.499216+09:00 jdbc[13]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TSPACE" not found; SQL statement:
-SELECT * FROM TSPACE AG [42102-232]

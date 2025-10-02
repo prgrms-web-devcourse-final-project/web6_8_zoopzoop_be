@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.enums.ArchiveType;
+import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
@@ -27,5 +28,9 @@ public class SharingArchive extends BaseEntity {
     public SharingArchive(Space space) {
         this.space = space;
         this.archive = new Archive(ArchiveType.SHARED);
+
+        // 🔧 default 폴더 자동 생성
+        Folder defaultFolder = new Folder("default");
+        this.archive.addFolder(defaultFolder);
     }
 }
