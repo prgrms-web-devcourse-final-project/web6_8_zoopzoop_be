@@ -28,13 +28,11 @@ public class AiService {
         retryFor = {JsonParseException.class, JsonProcessingException.class}
     )
     public AiExtractorDto extract(String rawHtml) {
-        System.out.println("AI 추출 시도");
         AiExtractorDto response = chatClient.prompt()
                 .user(AiPrompt.EXTRACTION.formatted(rawHtml))
                 .call()
                 .entity(AiExtractorDto.class);
 
-        System.out.println("AI 추출 성공!");
         return response;
     }
 
