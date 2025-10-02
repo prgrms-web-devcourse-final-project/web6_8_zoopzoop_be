@@ -13,6 +13,7 @@ public class DataSourceSearchItem {
     private String title;
     private LocalDate dataCreatedDate;
     private String summary;
+    private String source;
     private String sourceUrl;
     private String imageUrl;
     private List<String> tags;
