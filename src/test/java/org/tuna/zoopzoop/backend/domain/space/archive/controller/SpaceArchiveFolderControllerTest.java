@@ -151,7 +151,7 @@ class SpaceArchiveFolderControllerTest {
     void createFolder_ok() throws Exception {
         var req = new reqBodyForCreateFolder("보고서");
 
-        mockMvc.perform(post("/api/v1/spaces/{spaceId}/archive/folder", spaceId)
+        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/folder", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -167,7 +167,7 @@ class SpaceArchiveFolderControllerTest {
     void createFolder_missingName() throws Exception {
         var req = new reqBodyForCreateFolder(null);
 
-        mockMvc.perform(post("/api/v1/spaces/{spaceId}/archive/folder", spaceId)
+        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/folder", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
@@ -190,7 +190,7 @@ class SpaceArchiveFolderControllerTest {
     void createFolder_noAuthority_forbidden() throws Exception {
         var req = new reqBodyForCreateFolder("읽기전용은못만듦");
 
-        mockMvc.perform(post("/api/v1/spaces/{spaceId}/archive/folder", spaceId)
+        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/folder", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden())
@@ -205,7 +205,7 @@ class SpaceArchiveFolderControllerTest {
     void deleteFolder_ok() throws Exception {
         var req = new reqBodyForCreateFolder("todelete");
         String content = objectMapper.writeValueAsString(req);
-        var createRes = mockMvc.perform(post("/api/v1/spaces/{spaceId}/archive/folder", spaceId)
+        var createRes = mockMvc.perform(post("/api/v1/space/{spaceId}/archive/folder", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(content))
                 .andReturn().getResponse().getContentAsString();
@@ -215,7 +215,7 @@ class SpaceArchiveFolderControllerTest {
                 "todelete"
         ).orElseThrow().getId();
 
-        mockMvc.perform(delete("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, toDelete))
+        mockMvc.perform(delete("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, toDelete))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200"))
                 .andExpect(jsonPath("$.msg").value("todelete 폴더가 삭제됐습니다."))
@@ -226,7 +226,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 폴더 삭제 실패 - 기본 폴더면 400")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void deleteDefaultFolder_badRequest() throws Exception {
-        mockMvc.perform(delete("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, 0))
+        mockMvc.perform(delete("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, 0))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("400"))
                 .andExpect(jsonPath("$.msg").value("default 폴더는 삭제할 수 없습니다."))
@@ -237,7 +237,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 폴더 삭제 실패 - 권한 없음(READ_ONLY) 403")
     @WithUserDetails("KAKAO:" + READER_PK)
     void deleteFolder_noAuthority_forbidden() throws Exception {
-        mockMvc.perform(delete("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId))
+        mockMvc.perform(delete("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value("403"))
                 .andExpect(jsonPath("$.msg").value("폴더 삭제 권한이 없습니다."));
@@ -247,7 +247,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 폴더 삭제 실패 - 폴더가 없으면 404")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void deleteFolder_notFound() throws Exception {
-        mockMvc.perform(delete("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, 999999))
+        mockMvc.perform(delete("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, 999999))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 폴더입니다."));
@@ -261,7 +261,7 @@ class SpaceArchiveFolderControllerTest {
         var body = new java.util.HashMap<String, String>();
         body.put("folderName", "회의록");
 
-        mockMvc.perform(patch("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId)
+        mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
@@ -277,7 +277,7 @@ class SpaceArchiveFolderControllerTest {
         var body = new java.util.HashMap<String, String>();
         body.put("folderName", "무시됨");
 
-        mockMvc.perform(patch("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, 0)
+        mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, 0)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest())
@@ -293,7 +293,7 @@ class SpaceArchiveFolderControllerTest {
         var body = new java.util.HashMap<String, String>();
         body.put("folderName", "변경불가");
 
-        mockMvc.perform(patch("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId)
+        mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, docsFolderId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isForbidden())
@@ -308,7 +308,7 @@ class SpaceArchiveFolderControllerTest {
         var body = new java.util.HashMap<String, String>();
         body.put("folderName", "어딨니");
 
-        mockMvc.perform(patch("/api/v1/spaces/{spaceId}/archive/folder/{folderId}", spaceId, 999999)
+        mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/folder/{folderId}", spaceId, 999999)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isNotFound())
@@ -321,7 +321,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 폴더 목록 조회 - 성공")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void listFolders_success() throws Exception {
-        mockMvc.perform(get("/api/v1/spaces/{spaceId}/archive/folder", spaceId)
+        mockMvc.perform(get("/api/v1/space/{spaceId}/archive/folder", spaceId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200"))
@@ -336,7 +336,7 @@ class SpaceArchiveFolderControllerTest {
         Space other = spaceService.createSpace("no-membership-space");
         Integer otherSpaceId = other.getId();
 
-        mockMvc.perform(get("/api/v1/spaces/{spaceId}/archive/folder", otherSpaceId)
+        mockMvc.perform(get("/api/v1/space/{spaceId}/archive/folder", otherSpaceId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value("403"))
@@ -347,7 +347,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 특정 폴더 내 파일 목록 조회 - 성공")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void filesInFolder_success() throws Exception {
-        mockMvc.perform(get("/api/v1/spaces/{spaceId}/archive/folder/{folderId}/files", spaceId, docsFolderId)
+        mockMvc.perform(get("/api/v1/space/{spaceId}/archive/folder/{folderId}/files", spaceId, docsFolderId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200"))
@@ -362,7 +362,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 기본 폴더 내 파일 목록 조회 - 성공")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void filesInDefaultFolder_success() throws Exception {
-        mockMvc.perform(get("/api/v1/spaces/{spaceId}/archive/folder/{folderId}/files", spaceId, 0)
+        mockMvc.perform(get("/api/v1/space/{spaceId}/archive/folder/{folderId}/files", spaceId, 0)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("200"))
@@ -376,7 +376,7 @@ class SpaceArchiveFolderControllerTest {
     @DisplayName("공유 아카이브 폴더 내 파일 목록 조회 실패 - 폴더가 없으면 404")
     @WithUserDetails("KAKAO:" + OWNER_PK)
     void filesInFolder_notFound() throws Exception {
-        mockMvc.perform(get("/api/v1/spaces/{spaceId}/archive/folder/{folderId}/files", spaceId, 999999)
+        mockMvc.perform(get("/api/v1/space/{spaceId}/archive/folder/{folderId}/files", spaceId, 999999)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("404"))

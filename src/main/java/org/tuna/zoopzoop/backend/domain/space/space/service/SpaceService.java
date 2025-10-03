@@ -8,6 +8,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
@@ -21,6 +23,8 @@ public class SpaceService {
     private final SpaceRepository spaceRepository;
     private final S3Service s3Service;
     private final MembershipService membershipService;
+    private final TagRepository tagRepository;
+    private final DataSourceRepository dataSourceRepository;
 
     // ======================== 스페이스 조회 ======================== //
 
@@ -103,8 +107,12 @@ public class SpaceService {
     public String deleteSpace(Integer spaceId) {
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+
         String spaceName = space.getName();
 
+        tagRepository.bulkDeleteTagsBySpaceId(spaceId);
+        dataSourceRepository.bulkDeleteBySpaceId(spaceId);
+        // folder, dashboard membership 등 cascade 설정으로 인해 자동 삭제
         spaceRepository.delete(space);
 
         return spaceName;

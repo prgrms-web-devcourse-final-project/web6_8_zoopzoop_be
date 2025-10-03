@@ -203,7 +203,7 @@ class DataSourceQRepositoryImplTest {
 
         Pageable pageable = PageRequest.of(0, 10);
         DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
-                .isActive(true) // ✅ 활성만
+                .isActive(true)
                 .build();
 
         // when
@@ -227,7 +227,7 @@ class DataSourceQRepositoryImplTest {
 
         Pageable pageable = PageRequest.of(0, 10);
         DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
-                .isActive(false) // ✅ 휴지통만
+                .isActive(false)
                 .build();
 
         // when

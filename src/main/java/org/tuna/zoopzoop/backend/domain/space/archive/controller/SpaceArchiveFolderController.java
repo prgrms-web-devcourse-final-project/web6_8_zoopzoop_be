@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/spaces/{spaceId}/archive/folder")
+@RequestMapping("/api/v1/space/{spaceId}/archive/folder")
 @RequiredArgsConstructor
 @Tag(name = "ApiV1SpaceArchiveFolder", description = "공유 아카이브의 폴더 CRUD")
 public class SpaceArchiveFolderController {
