@@ -80,7 +80,7 @@ public class DataSourceController {
     @PatchMapping("/soft-delete")
     public ResponseEntity<RsData<Void>> softDelete(@RequestBody @Valid IdsRequest rq,
                                                    @AuthenticationPrincipal CustomUserDetails user) {
-        personalApp.softDelete(user.getMember().getId(), rq.ids());
+        personalApp.softDelete(user.getMember().getId(), rq.dataSourceId());
         return ResponseEntity.ok(new RsData<>("200", "자료들이 임시 삭제됐습니다.", null));
     }
 
@@ -88,7 +88,7 @@ public class DataSourceController {
     @PatchMapping("/restore")
     public ResponseEntity<RsData<Void>> restore(@RequestBody @Valid IdsRequest rq,
                                                 @AuthenticationPrincipal CustomUserDetails user) {
-        personalApp.restore(user.getMember().getId(), rq.ids());
+        personalApp.restore(user.getMember().getId(), rq.dataSourceId());
         return ResponseEntity.ok(new RsData<>("200", "자료들이 복구됐습니다.", null));
     }
 

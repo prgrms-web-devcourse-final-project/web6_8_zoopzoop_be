@@ -202,7 +202,7 @@ class SpaceArchiveDataSourceControllerTest {
     @WithUserDetails(value = "KAKAO:" + OWNER_PK, setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("공유 자료 다건 임시 삭제")
     void soft_delete_ok() throws Exception {
-        String body = om.writeValueAsString(Map.of("ids", List.of(ds1Id)));
+        String body = om.writeValueAsString(Map.of("dataSourceId", List.of(ds1Id)));
         mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/datasources/soft-delete", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -214,7 +214,7 @@ class SpaceArchiveDataSourceControllerTest {
     @WithUserDetails(value = "KAKAO:" + OWNER_PK, setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("공유 자료 다건 복원")
     void restore_ok() throws Exception {
-        String body = om.writeValueAsString(Map.of("ids", List.of(ds1Id)));
+        String body = om.writeValueAsString(Map.of("dataSourceId", List.of(ds1Id)));
         mockMvc.perform(patch("/api/v1/space/{spaceId}/archive/datasources/restore", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -298,13 +298,11 @@ class SpaceArchiveDataSourceControllerTest {
     @WithUserDetails(value = "KAKAO:" + OWNER_PK, setupBefore = TestExecutionEvent.TEST_METHOD)
     @DisplayName("개인 → 공유: 단건 불러오기")
     void import_one_ok() throws Exception {
-        // 개인 자료 id는 실제 테스트 환경에 맞게 심어둔 값으로 바꾸세요.
-        // 여기서는 예시로 1 사용 (존재하지 않으면 404가 납니다)
         String body = om.writeValueAsString(Map.of(
-                "datasourceId", personalDs1Id,
-                "targetFolderId", defaultFolderId  // 공유 아카이브의 대상 폴더 (0/null이면 default)
+                "targetFolderId", defaultFolderId  // 0/null이면 default
         ));
-        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/datasources/import", spaceId)
+
+        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/datasources/{dataSourceId}/import", spaceId, personalDs1Id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -316,7 +314,7 @@ class SpaceArchiveDataSourceControllerTest {
     @DisplayName("개인 → 공유: 다건 불러오기")
     void import_many_ok() throws Exception {
         String body = om.writeValueAsString(Map.of(
-                "datasourceId", List.of(personalDs1Id, personalDs2Id, personalDs3Id),
+                "dataSourceId", List.of(personalDs1Id, personalDs2Id, personalDs3Id),
                 "targetFolderId", defaultFolderId
         ));
         mockMvc.perform(post("/api/v1/space/{spaceId}/archive/datasources/import/batch", spaceId)

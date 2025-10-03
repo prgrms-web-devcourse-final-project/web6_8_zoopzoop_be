@@ -61,7 +61,7 @@ public class SpaceArchiveDataSourceController {
             @RequestBody @Valid IdsRequest rq,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        spaceApp.softDelete(user.getMember().getId(), spaceId, rq.ids());
+        spaceApp.softDelete(user.getMember().getId(), spaceId, rq.dataSourceId());
         return ResponseEntity.ok(new RsData<>("200", "자료들이 임시 삭제됐습니다.", null));
     }
 
@@ -72,7 +72,7 @@ public class SpaceArchiveDataSourceController {
             @RequestBody @Valid IdsRequest rq,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        spaceApp.restore(user.getMember().getId(), spaceId, rq.ids());
+        spaceApp.restore(user.getMember().getId(), spaceId, rq.dataSourceId());
         return ResponseEntity.ok(new RsData<>("200", "자료들이 복구됐습니다.", null));
     }
 
@@ -174,7 +174,7 @@ public class SpaceArchiveDataSourceController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         @SuppressWarnings("unchecked")
-        List<Integer> ids = (List<Integer>) body.get("datasourceId");
+        List<Integer> ids = (List<Integer>) body.get("dataSourceId");
         Integer targetFolderId = (Integer) body.get("targetFolderId");
         List<Integer> results = spaceApp.importManyFromPersonal(
                 user.getMember().getId(), spaceId, ids, targetFolderId);
