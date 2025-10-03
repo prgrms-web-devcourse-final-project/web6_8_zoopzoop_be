@@ -151,16 +151,15 @@ public class SpaceArchiveDataSourceController {
 
 
     @Operation(summary = "개인 → 공유: 자료 단건 불러오기")
-    @PostMapping("/import")
+    @PostMapping("/{dataSourceId}/import")
     public ResponseEntity<RsData<Map<String, Integer>>> importOne(
             @PathVariable String spaceId,
+            @PathVariable Integer dataSourceId,
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        Integer personalDataSourceId = (Integer) body.get("datasourceId");
-        Integer targetFolderId = (Integer) body.get("targetFolderId"); // 0 또는 null이면 default
-
-        int createdId = spaceApp.importFromPersonal(user.getMember().getId(), spaceId, personalDataSourceId, targetFolderId);
+        Integer targetFolderId = (body == null) ? null : (Integer) body.get("targetFolderId"); // 0/null = default 처리 내부에서
+        int createdId = spaceApp.importFromPersonal(user.getMember().getId(), spaceId, dataSourceId, targetFolderId);
 
         return ResponseEntity.ok(
                 new RsData<>("200", createdId + "번 자료를 불러오기에 성공하였습니다.", Map.of("dataSourceId", createdId))
@@ -176,12 +175,12 @@ public class SpaceArchiveDataSourceController {
     ) {
         @SuppressWarnings("unchecked")
         List<Integer> ids = (List<Integer>) body.get("datasourceId");
-        Integer targetFolderId = (Integer) body.get("targetFolderId"); // 0 또는 null이면 default
-
-        List<Integer> results = spaceApp.importManyFromPersonal(user.getMember().getId(), spaceId, ids, targetFolderId);
-
+        Integer targetFolderId = (Integer) body.get("targetFolderId");
+        List<Integer> results = spaceApp.importManyFromPersonal(
+                user.getMember().getId(), spaceId, ids, targetFolderId);
         return ResponseEntity.ok(
-                new RsData<>("200", results.size() + "건의 자료 불러오기에 성공하였습니다.", Map.of("results", results))
+                new RsData<>("200", results.size() + "건의 자료 불러오기에 성공하였습니다.",
+                        Map.of("results", results))
         );
     }
 
