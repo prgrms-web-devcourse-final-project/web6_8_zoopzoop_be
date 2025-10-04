@@ -190,7 +190,7 @@ class SpaceArchiveDataSourceControllerTest {
                 "dataSourceId", List.of(a.getId(), b.getId())
         ));
 
-        mockMvc.perform(post("/api/v1/space/{spaceId}/archive/datasources/delete", spaceId)
+        mockMvc.perform(delete("/api/v1/space/{spaceId}/archive/datasources/delete", spaceId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
