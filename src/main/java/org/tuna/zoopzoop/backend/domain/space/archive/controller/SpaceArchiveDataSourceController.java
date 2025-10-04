@@ -44,7 +44,7 @@ public class SpaceArchiveDataSourceController {
     }
 
     @Operation(summary = "공유 자료 다건 삭제")
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<RsData<Void>> deleteMany(
             @PathVariable String spaceId,
             @RequestBody @Valid reqBodyForDeleteMany rq,
