@@ -13,6 +13,27 @@ spring:
       ddl-auto: create-drop
     show-sql: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+            kakao:
+                redirect-uri: http://localhost:3000/oauth/callback/kakao
+            google:
+                redirect-uri: http://localhost:3000/oauth/callback/google
+
+  front:
+    redirect_domain: http://localhost:3000
+
+  app:
+    seed:
+      enabled: false
+
+  sentry:
+    send-default-pii: true
+    environment: local
+    traces-sample-rate: 0.0
+
   sql:
     init:
       mode: never
