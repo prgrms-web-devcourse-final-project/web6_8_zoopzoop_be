@@ -22,8 +22,8 @@ spring:
             google:
                 redirect-uri: http://localhost:3000/oauth/callback/google
 
-  front:
-    redirect_domain: http://localhost:3000
+front:
+  redirect_domain: http://localhost:3000
 
   app:
     seed:
