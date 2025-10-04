@@ -59,12 +59,45 @@ jobs:
               -p $NEW_PORT:8080 \
               --name $NEW_CONTAINER \
               --network common \
+<<<<<<< HEAD
+=======
+              -e SPRING_PROFILES_ACTIVE=server \
+              # DB
+>>>>>>> 09b4d42 (refactor : 테스트 서버 환경변수 주입 설정)
               -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
+              # AWS
+              -e aws.access-key="${{secrets.AWS_ACCESS_KEY_ID}}" \
+              -e aws.secret-key="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
+              -e aws.bucket="${{secrets.AWS_S3_BUCKET_NAME}}" \
+              # RabbitMQ
               -e SPRING_RABBITMQ_HOST="${{secrets.TEST_RABBITMQ_HOST}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
+              # Redis
+              -e redis-password-test="${{secrets.TEST_REDIS_PASSWORD}}" \
+              # OAuth2
+              -e kakao.client-id="${{secrets.OAUTH_KAKAO_CLIENT_ID}}" \
+              -e google.client-id="${{secrets.OAUTH_GOOGLE_CLIENT_ID}}" \
+              -e google.client-secret="${{secrets.OAUTH_GOOGLE_CLIENT_SECRET}}" \
+              -e KAKAO_REDIRECT_URI="${{TEST_OAUTH_KAKAO_REDIRECT_URI}}" \
+              -e GOOGLE_REDIRECT_URI="${{TEST_OAUTH_GOOGLE_REDIRECT_URI}}" \
+              # Sentry
+              -e sentry-dsn="${{secrets.SENTRY_DSN}}" \
+              # OpenAI
+              -e OPENAI_API_KEY="${{secrets.OPENAI_API_KEY}}" \
+              # Liveblocks
+              -e liveblocks-secret-key="${{secrets.LIVEBLOCKS_SECRET_KEY}}" \
+              # naver
+              -e NAVER_CLIENT_ID="${{secrets.NAVER_CLIENT_ID}}" \
+              -e NAVER_CLIENT_SECRET="${{secrets.NAVER_CLIENT_SECRET}}" \
+              # JWT
+              -e JWT_SECRET_KEY="${{secrets.JWT_SECRET_KEY}}" \
+              -e JWT_ACCESS_TOKEN_VALIDITY="${{secrets.JWT_ACCESS_TOKEN_VALIDITY}}" \
+              -e JWT_REFRESH_TOKEN_VALIDITY="${{secrets.JWT_REFRESH_TOKEN_VALIDITY}}" \
+              # Front
+              -e front.redirect_domain="${{secrets.FRONT_REDIRECT_DOMAIN}}" \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
 
             # 헬스체크

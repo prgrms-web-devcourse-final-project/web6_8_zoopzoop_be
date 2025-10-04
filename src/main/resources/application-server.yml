@@ -20,17 +20,19 @@ spring:
       time-to-live: 300000
       cache-null-values: false
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+          google:
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+front:
+  redirect_domain: ${FRONT_REDIRECT_DOMAIN}
 
 sentry:
-  dsn: https://60f1acad189d2994353d59b7895076ee@o4510100579155968.ingest.us.sentry.io/4510100584923136
   # Add data like request headers and IP for users,
   # see https://docs.sentry.io/platforms/java/guides/spring-boot/data-management/data-collected/ for more info
   send-default-pii: true
