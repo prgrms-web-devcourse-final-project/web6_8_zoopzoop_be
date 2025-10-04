@@ -2,7 +2,6 @@ package org.tuna.zoopzoop.backend.domain.dashboard.controller;
 
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,13 +10,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
-import org.tuna.zoopzoop.backend.domain.dashboard.entity.Node;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -27,7 +23,6 @@ import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipServi
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
-import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import javax.crypto.Mac;
@@ -35,12 +30,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -60,9 +53,6 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @Autowired private TransactionTemplate transactionTemplate;
 
-    @MockitoBean
-    private LiveblocksClient liveblocksClient;
-
     private Integer unauthorizedDashboardId;
     private Integer authorizedDashboardId;
 
@@ -74,9 +64,6 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @BeforeAll
     void setUp() {
-        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
-        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
-
         // 1. 유저 생성
         memberService.createMember("tester1_forDashboardControllerTest", "url", "dc1111", Provider.KAKAO);
         memberService.createMember("tester2_forDashboardControllerTest", "url", "dc2222", Provider.KAKAO);
@@ -196,32 +183,9 @@ class DashboardControllerTest extends ControllerTestSupport {
             transactionTemplate.execute(status -> {
                 Space space = spaceService.findByName(authorizedSpaceName);
                 Graph updatedGraph = space.getDashboard().getGraph();
-
-                // 1. 노드와 엣지의 전체 개수 검증
                 assertThat(updatedGraph.getNodes()).hasSize(2);
                 assertThat(updatedGraph.getEdges()).hasSize(1);
-
-                // 2. 특정 노드(id="1")의 상세 데이터 검증
-                // DTO의 List 순서대로 엔티티가 생성되므로 get(0)으로 첫 번째 노드를 특정합니다.
-                Node firstNode = updatedGraph.getNodes().get(0);
-                assertThat(firstNode.getNodeKey()).isEqualTo("1");
-                assertThat(firstNode.getPositionX()).isEqualTo(100.0);
-                assertThat(firstNode.getPositionY()).isEqualTo(200.0);
-
-                // Node의 data Map 내부 값들을 상세히 검증
-                Map<String, String> data = firstNode.getData();
-                assertThat(data.get("title")).isEqualTo("노드 1");
-                assertThat(data.get("content")).isEqualTo("첫 번째 노드에 대한 간단한 요약 내용입니다. 이 내용은 노드 내부에 표시됩니다.");
-                assertThat(data.get("sourceUrl")).isEqualTo("https://example.com/source1");
-                assertThat(data.get("writerName")).isEqualTo("김Tuna");
-                assertThat(data.get("writerProfileImageUrl")).isEqualTo("https://example.com/profiles/tuna.jpg");
-
-                // 3. 엣지(id="e1-2")의 상세 데이터 검증
-                Edge edge = updatedGraph.getEdges().get(0);
-                assertThat(edge.getEdgeKey()).isEqualTo("e1-2");
-                assertThat(edge.getSourceNodeKey()).isEqualTo("1");
-                assertThat(edge.getTargetNodeKey()).isEqualTo("2");
-
+                assertThat(updatedGraph.getNodes().get(0).getData().get("title")).isEqualTo("노드1");
                 return null; // execute 메서드는 반환값이 필요
             });
         });
@@ -271,65 +235,32 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     private String createReactFlowJsonBody() {
         return """
-                {
-                    "nodes": [
-                        {
-                            "id": "1",
-                            "type": "CUSTOM",
-                            "selected": false,
-                            "dragging": false,
-                            "position": {
-                                "x": 100,
-                                "y": 200
-                            },
-                            "measured": {
-                                "width": 250,
-                                "height": 150
-                            },
-                            "data": {
-                                "content": "첫 번째 노드에 대한 간단한 요약 내용입니다. 이 내용은 노드 내부에 표시됩니다.",
-                                "createdAt": "2025-10-02",
-                                "link": "https://example.com/source1",
-                                "title": "노드 1",
-                                "user": {
-                                    "name": "김Tuna",
-                                    "profileUrl": "https://example.com/profiles/tuna.jpg"
-                                }
-                            }
-                        },
-                        {
-                            "id": "2",
-                            "type": "CUSTOM",
-                            "selected": false,
-                            "dragging": false,
-                            "position": {
-                                "x": 500,
-                                "y": 300
-                            },
-                            "measured": {
-                                "width": 250,
-                                "height": 150
-                            },
-                            "data": {
-                                "content": "두 번째 노드에 대한 요약입니다. 원본 소스는 다른 곳을 가리킵니다.",
-                                "createdAt": "2025-10-01",
-                                "link": "https://example.com/source2",
-                                "title": "노드 2",
-                                "user": {
-                                    "name": "박Zoop",
-                                    "profileUrl": "https://example.com/profiles/zoop.jpg"
-                                }
-                            }
-                        }
-                    ],
-                    "edges": [
-                        {
-                            "id": "e1-2",
-                            "source": "1",
-                            "target": "2"
-                        }
-                    ]
-                }
+            {
+                "nodes": [
+                    {
+                        "id": "1",
+                        "type": "CUSTOM",
+                        "data": { "title": "노드1", "description": "설명1" },
+                        "position": { "x": 100, "y": 200 }
+                    },
+                    {
+                        "id": "2",
+                        "type": "CUSTOM",
+                        "data": { "title": "노드2" },
+                        "position": { "x": 300, "y": 400 }
+                    }
+                ],
+                "edges": [
+                    {
+                        "id": "e1-2",
+                        "source": "1",
+                        "target": "2",
+                        "type": "SMOOTHSTEP",
+                        "animated": true,
+                        "style": { "stroke": "#999", "strokeWidth": 2.0 }
+                    }
+                ]
+            }
             """;
     }
 

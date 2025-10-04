@@ -7,5 +7,5 @@ import java.util.List;
 
 public record IdsRequest (
         @NotEmpty(message = "dataSourceId 배열은 비어있을 수 없습니다.")
-        List<Integer> ids
+        List<Integer> dataSourceId
 ){}

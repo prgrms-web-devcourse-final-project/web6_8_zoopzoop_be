@@ -3,6 +3,7 @@ package org.tuna.zoopzoop.backend.domain.member.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -10,6 +11,8 @@ import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
@@ -37,9 +40,16 @@ public class MemberControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private DataSourceRepository dataSourceRepository;
+    @Qualifier("tagRepository")
+    @Autowired
+    private TagRepository tagRepository;
 
     @BeforeAll
     void setUp() {
+        tagRepository.deleteAll();
+        dataSourceRepository.deleteAll();
         memberRepository.deleteAll();
         Member member1 = memberService.createMember(
                 "test1",
@@ -63,6 +73,8 @@ public class MemberControllerTest {
 
     @AfterAll
     void cleanUp() {
+        tagRepository.deleteAll();
+        dataSourceRepository.deleteAll();
         memberRepository.deleteAll(); // Graph만 삭제
         // 필요하면 다른 Repository도 순서대로 삭제
     }

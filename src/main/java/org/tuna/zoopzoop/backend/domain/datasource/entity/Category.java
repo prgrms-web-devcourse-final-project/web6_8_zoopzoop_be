@@ -21,4 +21,12 @@ public enum Category {
     public String getName() {
         return name;
     }
+
+    public boolean isBlank() {
+        return this.name == null || this.name.isBlank();
+    }
+
+    public String toUpperCase() {
+        return this.name.toUpperCase();
+    }
 }

@@ -24,12 +24,6 @@ public class Node extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private NodeType nodeType;
 
-    @Column
-    private boolean selected;
-
-    @Column
-    private boolean dragging;
-
     @ElementCollection
     @CollectionTable(name = "node_data", joinColumns = @JoinColumn(name = "node_id"))
     @MapKeyColumn(name = "data_key")
@@ -37,14 +31,8 @@ public class Node extends BaseEntity {
     private Map<String, String> data = new HashMap<>();
 
     @Column
-    private double positionX;
+    private double positonX;
 
     @Column
-    private double positionY;
-
-    @Column
-    private double width;
-
-    @Column
-    private double height;
+    private double positonY;
 }

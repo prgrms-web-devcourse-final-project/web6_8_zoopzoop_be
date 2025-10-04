@@ -1,14 +1,12 @@
 package org.tuna.zoopzoop.backend.domain.space.space.controller;
 
 import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
@@ -17,12 +15,10 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
-import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,14 +36,8 @@ class ApiV1SpaceControllerTest extends ControllerTestSupport {
     @Autowired
     private MembershipService membershipService;
 
-    @MockitoBean
-    private LiveblocksClient liveblocksClient;
-
     @BeforeAll
     void setUp() {
-        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
-        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
-
         setUpMember();
         setUpSpace();
         setUpMembership();

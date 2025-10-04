@@ -8,13 +8,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.exception.DuplicateSpaceNameException;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 import org.tuna.zoopzoop.backend.global.aws.S3Service;
-import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +23,8 @@ public class SpaceService {
     private final SpaceRepository spaceRepository;
     private final S3Service s3Service;
     private final MembershipService membershipService;
-    private final LiveblocksClient liveblocksClient;
+    private final TagRepository tagRepository;
+    private final DataSourceRepository dataSourceRepository;
 
     // ======================== 스페이스 조회 ======================== //
 
@@ -59,7 +61,17 @@ public class SpaceService {
      */
     @Transactional
     public Space createSpace(@NotBlank @Length(max = 50) String name) {
-        return createSpace(name, null);
+        Space newSpace = Space.builder()
+                .name(name)
+                .build();
+
+        try{
+            return spaceRepository.save(newSpace);
+        }catch (DataIntegrityViolationException e) {
+            throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     /**
@@ -75,19 +87,13 @@ public class SpaceService {
                 .thumbnailUrl(thumbnailUrl)
                 .build();
 
-        Space savedSpace;
         try{
-            savedSpace = spaceRepository.save(newSpace);
+            return spaceRepository.save(newSpace);
         }catch (DataIntegrityViolationException e) {
             throw new DuplicateSpaceNameException("이미 존재하는 스페이스 이름입니다.");
         } catch (Exception e) {
             throw e;
         }
-
-        // Liveblocks에 방 생성 요청
-        liveblocksClient.createRoom("space_" + savedSpace.getId());
-
-        return savedSpace;
     }
 
     /**
@@ -101,12 +107,12 @@ public class SpaceService {
     public String deleteSpace(Integer spaceId) {
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+
         String spaceName = space.getName();
-        String roomId = "space_" + space.getId();
 
-        // Liveblocks에 방 삭제 요청
-        liveblocksClient.deleteRoom(roomId);
-
+        tagRepository.bulkDeleteTagsBySpaceId(spaceId);
+        dataSourceRepository.bulkDeleteBySpaceId(spaceId);
+        // folder, dashboard membership 등 cascade 설정으로 인해 자동 삭제
         spaceRepository.delete(space);
 
         return spaceName;

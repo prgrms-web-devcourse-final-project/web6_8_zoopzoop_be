@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
@@ -22,6 +24,8 @@ import java.util.UUID;
 public class MemberService {
     private final MemberRepository memberRepository;
     private final S3Service s3Service;
+    private final TagRepository tagRepository;
+    private final DataSourceRepository dataSourceRepository;
 
     //회원 조회 관련
     public Member findById(Integer id) {
@@ -125,7 +129,13 @@ public class MemberService {
 
     //회원 삭제/복구 관련
     public void softDeleteMember(Member member){ member.deactivate(); }
-    public void hardDeleteMember(Member member){ memberRepository.delete(member); }
+    @Transactional
+    public void hardDeleteMember(Member member){
+        Integer memberId = member.getId();
+        tagRepository.bulkDeleteTagsByMemberId(memberId);
+        dataSourceRepository.bulkDeleteByMemberId(memberId);
+        memberRepository.delete(member);
+    }
 
     //soft-delete한 회원 복구
     public void restoreMember(Member member){ member.activate(); }

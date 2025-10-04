@@ -19,42 +19,27 @@ public record BodyForReactFlow(
     public record NodeDto(
             @JsonProperty("id") String nodeKey,
             @JsonProperty("type") String nodeType,
-            @JsonProperty("selected") Boolean selected,
-            @JsonProperty("dragging") Boolean dragging,
-            @JsonProperty("position") PositionDto positionDto,
-            @JsonProperty("measured") MeasurementsDto measurements,
-            @JsonProperty("data") DataDto data
+            Map<String, String> data,
+            @JsonProperty("position") PositionDto positionDto
     ) {
         public record PositionDto(
             @JsonProperty("x") double x,
             @JsonProperty("y") double y
-        ) {}
-
-        public record MeasurementsDto(
-            @JsonProperty("width") double width,
-            @JsonProperty("height") double height
-        ) {}
-
-        public record DataDto(
-            @JsonProperty("content") String content,
-            @JsonProperty("createdAt") String createAt, // YYYY-MM-DD format
-            @JsonProperty("link") String sourceUrl,
-            @JsonProperty("title") String title,
-            @JsonProperty("user") WriterDto writer
-        ) {}
-
-        public record WriterDto(
-                @JsonProperty("name") String name,
-                @JsonProperty("profileUrl") String profileImageUrl
-        ) {}
-
+    ) {}
     }
 
     public record EdgeDto(
             @JsonProperty("id") String edgeKey,
             @JsonProperty("source") String sourceNodeKey,
-            @JsonProperty("target") String targetNodeKey
+            @JsonProperty("target") String targetNodeKey,
+            @JsonProperty("type") String edgeType,
+            @JsonProperty("animated") boolean isAnimated,
+            @JsonProperty("style") StyleDto styleDto
     ) {
+        public record StyleDto(
+                String stroke,
+                Double strokeWidth
+        ) {}
     }
 
     // DTO -> Entity, BodyForReactFlow를 Graph 엔티티로 변환
@@ -66,24 +51,10 @@ public record BodyForReactFlow(
                     Node node = new Node();
                     node.setNodeKey(dto.nodeKey());
                     node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase()));
-                    node.setSelected(dto.selected() != null ? dto.selected() : false);
-                    node.setDragging(dto.dragging() != null ? dto.dragging() : false);
-                    node.setPositionX(dto.positionDto().x());
-                    node.setPositionY(dto.positionDto().y());
-                    if (dto.measurements() != null) {
-                        node.setWidth(dto.measurements().width());
-                        node.setHeight(dto.measurements().height());
-                    }
-                    if (dto.data() != null) {
-                        node.setData(Map.of(
-                                "content", dto.data().content(),
-                                "createdAt", dto.data().createAt(),
-                                "sourceUrl", dto.data().sourceUrl(),
-                                "title", dto.data().title(),
-                                "writerName", dto.data().writer() != null ? dto.data().writer().name() : null,
-                                "writerProfileImageUrl", dto.data().writer() != null ? dto.data().writer().profileImageUrl() : null
-                        ));
-                    }
+                    node.setData(dto.data());
+                    node.setPositonX(dto.positionDto().x());
+                    node.setPositonY(dto.positionDto().y());
+                    node.setGraph(graph); // 연관관계 설정
                     return node;
                 })
                 .toList();
@@ -94,6 +65,12 @@ public record BodyForReactFlow(
                     edge.setEdgeKey(dto.edgeKey());
                     edge.setSourceNodeKey(dto.sourceNodeKey());
                     edge.setTargetNodeKey(dto.targetNodeKey());
+                    edge.setEdgeType(EdgeType.valueOf(dto.edgeType().toUpperCase()));
+                    edge.setAnimated(dto.isAnimated());
+                    if (dto.styleDto() != null) {
+                        edge.setStroke(dto.styleDto().stroke());
+                        edge.setStrokeWidth(dto.styleDto().strokeWidth());
+                    }
                     edge.setGraph(graph); // 연관관계 설정
                     return edge;
                 })
@@ -111,20 +88,8 @@ public record BodyForReactFlow(
                 .map(n -> new NodeDto(
                         n.getNodeKey(),
                         n.getNodeType().name().toUpperCase(),
-                        n.isSelected(),
-                        n.isDragging(),
-                        new NodeDto.PositionDto(n.getPositionX(), n.getPositionY()),
-                        new NodeDto.MeasurementsDto(n.getWidth(), n.getHeight()),
-                        new NodeDto.DataDto(
-                                n.getData().get("content"),
-                                n.getData().get("createdAt"),
-                                n.getData().get("sourceUrl"),
-                                n.getData().get("title"),
-                                new NodeDto.WriterDto(
-                                        n.getData().get("writerName"),
-                                        n.getData().get("writerProfileImageUrl")
-                                )
-                        )
+                        n.getData(),
+                        new NodeDto.PositionDto(n.getPositonX(), n.getPositonY())
                 ))
                 .toList();
 
@@ -132,7 +97,10 @@ public record BodyForReactFlow(
                 .map(e -> new EdgeDto(
                         e.getEdgeKey(),
                         e.getSourceNodeKey(),
-                        e.getTargetNodeKey()
+                        e.getTargetNodeKey(),
+                        e.getEdgeType().name().toUpperCase(),
+                        e.isAnimated(),
+                        new EdgeDto.StyleDto(e.getStroke(), e.getStrokeWidth())
                 ))
                 .toList();
 
@@ -145,22 +113,9 @@ public record BodyForReactFlow(
                     Node node = new Node();
                     node.setNodeKey(dto.nodeKey());
                     node.setNodeType(NodeType.valueOf(dto.nodeType().toUpperCase()));
-                    node.setPositionX(dto.positionDto().x());
-                    node.setPositionY(dto.positionDto().y());
-                    if (dto.measurements() != null) {
-                        node.setWidth(dto.measurements().width());
-                        node.setHeight(dto.measurements().height());
-                    }
-                    if (dto.data() != null) {
-                        node.setData(Map.of(
-                                "content", dto.data().content(),
-                                "createdAt", dto.data().createAt(),
-                                "sourceUrl", dto.data().sourceUrl(),
-                                "title", dto.data().title(),
-                                "writerName", dto.data().writer() != null ? dto.data().writer().name() : null,
-                                "writerProfileImageUrl", dto.data().writer() != null ? dto.data().writer().profileImageUrl() : null
-                        ));
-                    }
+                    node.setData(dto.data());
+                    node.setPositonX(dto.positionDto().x());
+                    node.setPositonY(dto.positionDto().y());
                     node.setGraph(graph); // 연관관계 설정
                     return node;
                 })
@@ -174,6 +129,12 @@ public record BodyForReactFlow(
                     edge.setEdgeKey(dto.edgeKey());
                     edge.setSourceNodeKey(dto.sourceNodeKey());
                     edge.setTargetNodeKey(dto.targetNodeKey());
+                    edge.setEdgeType(EdgeType.valueOf(dto.edgeType().toUpperCase()));
+                    edge.setAnimated(dto.isAnimated());
+                    if (dto.styleDto() != null) {
+                        edge.setStroke(dto.styleDto().stroke());
+                        edge.setStrokeWidth(dto.styleDto().strokeWidth());
+                    }
                     edge.setGraph(graph); // 연관관계 설정
                     return edge;
                 })

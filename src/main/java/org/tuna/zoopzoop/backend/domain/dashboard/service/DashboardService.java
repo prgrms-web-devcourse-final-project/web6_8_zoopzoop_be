@@ -10,24 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.BodyForReactFlow;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.GraphUpdateMessage;
-import org.tuna.zoopzoop.backend.domain.dashboard.dto.ReqBodyForLiveblocksAuth;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Dashboard;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Edge;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Node;
 import org.tuna.zoopzoop.backend.domain.dashboard.repository.DashboardRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
-import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
-import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
-import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
-import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
-import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 
 import java.nio.file.AccessDeniedException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +30,7 @@ public class DashboardService {
     private final ObjectMapper objectMapper;
     private final SignatureService signatureService;
     private final RabbitTemplate rabbitTemplate;
-    private final SpaceService spaceService;
-    private final LiveblocksClient liveblocksClient;
+
 
 
     // =========================== Graph 관련 메서드 ===========================
@@ -143,59 +134,8 @@ public class DashboardService {
         rabbitTemplate.convertAndSend("zoopzoop.exchange", "graph.update.rk", message);
     }
 
-    // =========================== 기타 메서드 ===========================
 
-    /**
-     * 특정 스페이스에 대한 Liveblocks 접속 토큰(JWT)을 발급합니다.
-     * @param spaceId 스페이스 ID
-     * @param member 토큰을 요청하는 멤버
-     * @return 발급된 JWT 문자열
-     * @throws AccessDeniedException 멤버가 해당 스페이스에 속해있지 않거나 권한이 없는 경우
-     */
-    @Transactional(readOnly = true)
-    public String getAuthTokenForSpace(Integer spaceId, Member member) throws AccessDeniedException {
-        Space space = spaceService.findById(spaceId);
 
-        // 해당 스페이스에 멤버가 속해있는지, PENDING 상태는 아닌지 확인
-        Membership membership = membershipService.findByMemberAndSpace(member, space);
-        if (membership.getAuthority().equals(Authority.PENDING)) {
-            throw new AccessDeniedException("스페이스에 가입된 멤버가 아닙니다.");
-        }
-
-        // Liveblocks Room ID 생성
-        String roomId = "space_" + space.getId();
-
-        // Liveblocks에 전달할 사용자 정보 생성
-        String userId = String.valueOf(member.getId());
-        ReqBodyForLiveblocksAuth.UserInfo userInfo = new ReqBodyForLiveblocksAuth.UserInfo(
-                member.getName(),
-                member.getProfileImageUrl()
-        );
-
-        // Liveblocks 권한 설정 (내 서비스의 Authority -> Liveblocks 권한으로 변환)
-        List<String> permissions;
-        switch (membership.getAuthority()) {
-            case ADMIN, READ_WRITE:
-                permissions = List.of("room:write");
-                break;
-            case READ_ONLY:
-                permissions = Collections.emptyList(); // 빈 리스트는 읽기 전용을 의미
-                break;
-            default:
-                // PENDING 등 다른 상태는 위에서 이미 필터링됨
-                throw new AccessDeniedException("유효하지 않은 권한입니다.");
-        }
-
-        // Liveblocks Client에 전달할 요청 객체 생성
-        ReqBodyForLiveblocksAuth authRequest = new ReqBodyForLiveblocksAuth(
-                userId,
-                userInfo,
-                Map.of(roomId, permissions)
-        );
-
-        // LiveblocksClient를 통해 토큰 발급 요청
-        return liveblocksClient.getAuthToken(authRequest);
-    }
 
 
 }
