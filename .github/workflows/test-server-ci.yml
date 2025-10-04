@@ -113,14 +113,12 @@ jobs:
             echo "No test results found."
           fi
 
-      # 8-1. S3 자격 증명 제거 (빌드 전에만)
-      - name: Remove only S3 credentials before building
+      # 8-1. secrets 파일 완전 삭제
+      - name: Remove secrets files before building
         run: |
-          CONFIG_FILE="src/main/resources/application-secrets.yml"
-          sed -i '/spring.cloud.aws.credentials.access-key/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.credentials.secret-key/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.region.static/d' $CONFIG_FILE
-          sed -i '/spring.cloud.aws.stack.auto/d' $CONFIG_FILE
+          rm -f src/main/resources/application-secrets.yml
+          rm -f src/main/resources/application-secrets-server.yml
+          echo "Secrets files removed for build"
 
       # 9. Gradle 빌드 실행 (테스트 성공 시)
       - name: Build with Gradle
