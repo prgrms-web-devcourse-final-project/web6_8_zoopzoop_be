@@ -66,7 +66,7 @@ public class DataSourceController {
 
     // ===== 다건 삭제 =====
     @Operation(summary = "자료 다건 삭제", description = "내 PersonalArchive 안에 자료를 다건 삭제합니다.")
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<RsData<Void>> deleteMany(
             @Valid @RequestBody reqBodyForDeleteMany rq,
             @AuthenticationPrincipal CustomUserDetails user
