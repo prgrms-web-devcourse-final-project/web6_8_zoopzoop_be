@@ -51,6 +51,7 @@ spring:
       host: localhost
       port: 6379
       timeout: 6000
+      password: ${redis-password}
   cache: #Spring Cache를 사용하기 위한 Redis
     type: redis
     redis:
