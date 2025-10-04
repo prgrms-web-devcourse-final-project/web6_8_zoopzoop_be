@@ -78,14 +78,14 @@ spring:
       client:
         registration:
           kakao:
-            client-id: ${kakao.client-id}
+            client-id: ${KAKAO_CLIENT_ID}
             scope:
               - profile_nickname
               - profile_image
             authorization-grant-type: authorization_code
           google:
-            client-id: ${google.client-id}
-            client-secret: ${google.client-secret}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - profile
             authorization-grant-type: authorization_code
@@ -105,12 +105,12 @@ spring:
   cloud:
     aws:
       credentials:
-        access-key: ${aws.access-key}
-        secret-key: ${aws.secret-key}
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
       region:
         static: ap-northeast-2
       s3:
-        bucket: ${aws.bucket}
+        bucket: ${AWS_S3_BUCKET_NAME}
       stack:
         auto: false
 
@@ -142,7 +142,7 @@ management:
       show-details: always
 
 sentry: #Sentry 모니터렁 기본 설정.
-  dsn: ${sentry-dsn}
+  dsn: ${SENTRY_DSN}
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}
@@ -154,4 +154,4 @@ naver:
   client_secret: ${NAVER_CLIENT_SECRET}
 
 liveblocks:
-  secret-key: ${liveblocks-secret-key}
+  secret-key: ${LIVEBLOCKS_SECRET_KEY}

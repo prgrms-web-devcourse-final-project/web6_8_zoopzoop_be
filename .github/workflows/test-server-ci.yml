@@ -64,36 +64,49 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 5. application-secrets.yml 생성
-      - name: Generate application-secrets.yml
-        run: |
-          mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_YML_V2 }}" > src/main/resources/application-secrets.yml
-          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
-
-          echo "spring.cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.credentials.access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
-          echo "spring.cloud.aws.stack.auto: false" >> src/main/resources/application-secrets.yml
-
-          echo "liveblocks.secret-key: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}" >> src/main/resources/application-secrets.yml
-
-      # 6. application-secrets-server.yml 생성
-      - name: Generate application-secrets-server.yml
-        run: |
-          mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_SERVER_YML }}" > src/main/resources/application-secrets-server.yml
-          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets-server.yml
+#      # 5. application-secrets.yml 생성
+#      - name: Generate application-secrets.yml
+#        run: |
+#          mkdir -p src/main/resources
+#          echo "${{ secrets.APPLICATION_SECRET_YML_V2 }}" > src/main/resources/application-secrets.yml
+#          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
+#
+#          echo "spring.cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
+#          echo "spring.cloud.aws.credentials.access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application-secrets.yml
+#          echo "spring.cloud.aws.credentials.secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application-secrets.yml
+#          echo "spring.cloud.aws.s3.bucket: ${{ secrets.AWS_S3_BUCKET_NAME }}" >> src/main/resources/application-secrets.yml
+#          echo "spring.cloud.aws.stack.auto: false" >> src/main/resources/application-secrets.yml
+#
+#          echo "liveblocks.secret-key: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}" >> src/main/resources/application-secrets.yml
+#
+#      # 6. application-secrets-server.yml 생성
+#      - name: Generate application-secrets-server.yml
+#        run: |
+#          mkdir -p src/main/resources
+#          echo "${{ secrets.APPLICATION_SECRET_SERVER_YML }}" > src/main/resources/application-secrets-server.yml
+#          echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets-server.yml
 
       # 7. Gradle 테스트 실행
       - name: Test with Gradle
         # 테스트 단계에서 RabbitMQ 연결을 위한 환경 변수 설정
         env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_RABBITMQ_HOST: localhost
-          SPRING_RABBITMQ_PORT: 5672
           SPRING_RABBITMQ_USERNAME: guest
           SPRING_RABBITMQ_PASSWORD: guest
+          KAKAO_CLIENT_ID: ${{ secrets.OAUTH_KAKAO_CLIENT_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          JWT_ACCESS_TOKEN_VALIDITY: ${{ secrets.JWT_ACCESS_TOKEN_VALIDITY }}
+          JWT_REFRESH_TOKEN_VALIDITY: ${{ secrets.JWT_REFRESH_TOKEN_VALIDITY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          LIVEBLOCKS_SECRET_KEY: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}
         run: ./gradlew test
 
       # 8. 테스트 결과 요약 출력
