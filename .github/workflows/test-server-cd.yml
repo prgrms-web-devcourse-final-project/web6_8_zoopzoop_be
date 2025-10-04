@@ -60,6 +60,7 @@ jobs:
               --name $NEW_CONTAINER \
               --network common \
               -e SPRING_PROFILES_ACTIVE=server \
+              # DB
               -e SPRING_DATASOURCE_URL="${{secrets.TEST_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.TEST_DB_USERNAME}}" \
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
@@ -72,7 +73,8 @@ jobs:
               -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
               # Redis
-              -e redis-password-test="${{secrets.TEST_REDIS_PASSWORD}}" \
+              -e REDIS_HOST="${{secrets.TEST_REDIS_HOST}}" \
+              -e REDIS_PASSWORD="${{secrets.TEST_REDIS_PASSWORD}}" \
               # OAuth2
               -e kakao.client-id="${{secrets.OAUTH_KAKAO_CLIENT_ID}}" \
               -e google.client-id="${{secrets.OAUTH_GOOGLE_CLIENT_ID}}" \
