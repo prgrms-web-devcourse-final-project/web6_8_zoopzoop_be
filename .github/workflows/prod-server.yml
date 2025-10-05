@@ -87,27 +87,28 @@ jobs:
               -e SPRING_DATASOURCE_USERNAME="${{secrets.PROD_DB_USERNAME}}" \
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
               # AWS
-              -e aws.access-key="${{secrets.AWS_ACCESS_KEY_ID}}" \
-              -e aws.secret-key="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
-              -e aws.bucket="${{secrets.AWS_S3_BUCKET_NAME}}" \
+              -e AWS_ACCESS_KEY_ID="${{secrets.AWS_ACCESS_KEY_ID}}" \
+              -e AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
+              -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
               # RabbitMQ
               -e SPRING_RABBITMQ_HOST="${{secrets.PROD_RABBITMQ_HOST}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.PROD_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.PROD_RABBITMQ_PASSWORD}}" \
               # Redis
-              -e redis-password="${{secrets.PROD_REDIS_PASSWORD}}" \
+              -e REDIS_HOST="${{secrets.PROD_REDIS_HOST}}" \
+              -e REDIS_PASSWORD="${{secrets.PROD_REDIS_PASSWORD}}" \
               # OAuth2
-              -e kakao.client-id="${{secrets.OAUTH_KAKAO_CLIENT_ID}}" \
-              -e google.client-id="${{secrets.OAUTH_GOOGLE_CLIENT_ID}}" \
-              -e google.client-secret="${{secrets.OAUTH_GOOGLE_CLIENT_SECRET}}" \
+              -e KAKAO_CLIENT_ID="${{secrets.OAUTH_KAKAO_CLIENT_ID}}" \
+              -e GOOGLE_CLIENT_ID="${{secrets.OAUTH_GOOGLE_CLIENT_ID}}" \
+              -e GOOGLE_CLIENT_SECRET="${{secrets.OAUTH_GOOGLE_CLIENT_SECRET}}" \
               -e KAKAO_REDIRECT_URI="${{PROD_OAUTH_KAKAO_REDIRECT_URI}}" \
               -e GOOGLE_REDIRECT_URI="${{PROD_OAUTH_GOOGLE_REDIRECT_URI}}" \
               # Sentry
-              -e sentry-dsn="${{secrets.SENTRY_DSN}}" \
+              -e SENTRY_DSN="${{secrets.SENTRY_DSN}}" \
               # OpenAI
               -e OPENAI_API_KEY="${{secrets.OPENAI_API_KEY}}" \
               # Liveblocks
-              -e liveblocks-secret-key="${{secrets.LIVEBLOCKS_SECRET_KEY}}" \
+              -e LIVEBLOCKS_SECRET_KEY="${{secrets.LIVEBLOCKS_SECRET_KEY}}" \
               # naver
               -e NAVER_CLIENT_ID="${{secrets.NAVER_CLIENT_ID}}" \
               -e NAVER_CLIENT_SECRET="${{secrets.NAVER_CLIENT_SECRET}}" \
@@ -116,7 +117,7 @@ jobs:
               -e JWT_ACCESS_TOKEN_VALIDITY="${{secrets.JWT_ACCESS_TOKEN_VALIDITY}}" \
               -e JWT_REFRESH_TOKEN_VALIDITY="${{secrets.JWT_REFRESH_TOKEN_VALIDITY}}" \
               # Front
-              -e front.redirect_domain="${{secrets.FRONT_REDIRECT_DOMAIN}}" \
+              -e FRONT_REDIRECT_DOMAIN="${{secrets.FRONT_REDIRECT_DOMAIN}}" \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
             
             
