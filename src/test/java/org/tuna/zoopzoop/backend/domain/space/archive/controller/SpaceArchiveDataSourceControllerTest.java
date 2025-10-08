@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
@@ -27,6 +29,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.time.LocalDate;
@@ -34,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -45,6 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SpaceArchiveDataSourceControllerTest {
+
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper om;
@@ -70,6 +77,9 @@ class SpaceArchiveDataSourceControllerTest {
 
     @BeforeAll
     void setUp() {
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
+
         // 사용자 생성 (있으면 무시)
         try { memberService.createMember("spaceOwner", "http://img/owner.png", OWNER_PK, Provider.KAKAO); } catch (Exception ignored) {}
         ownerMemberId = memberRepository.findByProviderAndProviderKey(Provider.KAKAO, OWNER_PK)
