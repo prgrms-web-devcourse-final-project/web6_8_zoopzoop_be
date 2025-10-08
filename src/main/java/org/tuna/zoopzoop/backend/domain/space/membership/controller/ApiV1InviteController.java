@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInvitationInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceInviteList;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.res.ResBodyForSpaceSave;
 import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInfoWithoutAuthority;
@@ -81,11 +82,12 @@ public class ApiV1InviteController {
 
         // 멤버십(초대) 목록 조회
         List<Membership> invitations = membershipService.findByMember(member, "PENDING");
-        List<SpaceInfoWithoutAuthority> invitationInfos = invitations.stream()
-                .map(membership -> new SpaceInfoWithoutAuthority(
+        List<SpaceInvitationInfo> invitationInfo = invitations.stream()
+                .map(membership -> new SpaceInvitationInfo(
                         membership.getSpace().getId(),
                         membership.getSpace().getName(),
-                        membership.getSpace().getThumbnailUrl()
+                        membership.getSpace().getThumbnailUrl(),
+                        membership.getId()
                 ))
                 .toList();
 
@@ -93,7 +95,7 @@ public class ApiV1InviteController {
                 "200",
                 "사용자에게 온 스페이스 초대 목록을 조회했습니다.",
                 new ResBodyForSpaceInviteList(
-                        invitationInfos
+                        invitationInfo
                 )
         );
     }
