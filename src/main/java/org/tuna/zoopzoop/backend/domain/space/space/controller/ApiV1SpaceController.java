@@ -168,7 +168,6 @@ public class ApiV1SpaceController {
                     space.getName(),
                     space.getThumbnailUrl(),
                     membership.getAuthority(),
-                    space.getCreateDate(),
                     memberInfos // 조회된 멤버 목록 (null일 수도 있음)
             );
         });

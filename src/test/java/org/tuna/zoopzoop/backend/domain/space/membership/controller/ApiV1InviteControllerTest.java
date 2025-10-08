@@ -288,12 +288,14 @@ class ApiV1InviteControllerTest extends ControllerTestSupport {
         resultActions
                 .andExpect(jsonPath("$.data.spaces").isArray())
                 .andExpect(jsonPath("$.data.spaces.length()").value(2))
-                .andExpect(jsonPath("$.data.spaces[0].id").value(space1.getId()))
-                .andExpect(jsonPath("$.data.spaces[0].name").value(space1.getName()))
-                .andExpect(jsonPath("$.data.spaces[0].thumbnailUrl").value(space1.getThumbnailUrl()))
-                .andExpect(jsonPath("$.data.spaces[1].id").value(space2.getId()))
-                .andExpect(jsonPath("$.data.spaces[1].name").value(space2.getName()))
-                .andExpect(jsonPath("$.data.spaces[1].thumbnailUrl").value(space2.getThumbnailUrl()));
+                .andExpect(jsonPath("$.data.spaces[0].spaceId").value(space1.getId()))
+                .andExpect(jsonPath("$.data.spaces[0].spaceName").value(space1.getName()))
+                .andExpect(jsonPath("$.data.spaces[0].spaceThumbnailUrl").value(space1.getThumbnailUrl()))
+                .andExpect(jsonPath("$.data.spaces[0].inviteId").isNumber())
+                .andExpect(jsonPath("$.data.spaces[1].spaceId").value(space2.getId()))
+                .andExpect(jsonPath("$.data.spaces[1].spaceName").value(space2.getName()))
+                .andExpect(jsonPath("$.data.spaces[1].spaceThumbnailUrl").value(space2.getThumbnailUrl()))
+                .andExpect(jsonPath("$.data.spaces[1].inviteId").isNumber());
     }
 
 

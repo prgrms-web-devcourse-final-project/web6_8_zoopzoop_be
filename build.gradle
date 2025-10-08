@@ -125,10 +125,6 @@ dependencies {
 
     // Awaitility (비동기 테스트 지원)
     testImplementation 'org.awaitility:awaitility:4.2.0'
-
-    // retry (ai retry용)
-    implementation 'org.springframework.retry:spring-retry'
-    implementation 'org.springframework:spring-aspects'
 }
 
 dependencyManagement {

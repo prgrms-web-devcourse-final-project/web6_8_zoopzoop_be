@@ -68,7 +68,7 @@ jobs:
       - name: Generate application-secrets.yml
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_YML_V2 }}" > src/main/resources/application-secrets.yml
+          echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secrets.yml
           echo "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}" >> src/main/resources/application-secrets.yml
 
           echo "spring.cloud.aws.region.static: ${{ secrets.AWS_REGION }}" >> src/main/resources/application-secrets.yml
