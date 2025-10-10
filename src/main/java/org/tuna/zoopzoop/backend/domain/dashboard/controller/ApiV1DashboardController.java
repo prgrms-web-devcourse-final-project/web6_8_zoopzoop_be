@@ -72,5 +72,4 @@ public class ApiV1DashboardController {
                         BodyForReactFlow.from(graph)
                 ));
     }
-
 }
