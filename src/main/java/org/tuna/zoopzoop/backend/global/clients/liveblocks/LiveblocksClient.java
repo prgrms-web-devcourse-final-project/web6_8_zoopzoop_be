@@ -26,6 +26,7 @@ public class LiveblocksClient {
 
     private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms";
     private static final String AUTH_API_URL = "https://api.liveblocks.io/v2/authorize-user";
+
     /**
      * Liveblocks 서버에 새로운 방을 생성합니다.
      * @param roomId 생성할 방의 고유 ID (워크스페이스 ID와 동일하게 사용)
