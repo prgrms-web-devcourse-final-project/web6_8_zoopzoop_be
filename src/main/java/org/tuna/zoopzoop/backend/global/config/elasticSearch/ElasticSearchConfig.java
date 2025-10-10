@@ -25,4 +25,6 @@ public class ElasticSearchConfig extends ElasticsearchConfiguration {
                 .connectedTo(host + ":" + port)
                 .build();
     }
+
+
 }
