@@ -15,7 +15,7 @@ import java.net.URLEncoder;
 @Component
 @RequiredArgsConstructor
 public class OAuth2FailureHandler implements AuthenticationFailureHandler {
-    @Value("${front.redirect_domain}")
+    @Value("${REDIRECT_DOMAIN}")
     private String redirect_domain;
 
     @Override
