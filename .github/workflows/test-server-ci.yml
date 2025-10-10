@@ -68,6 +68,7 @@ jobs:
       - name: Test with Gradle
         # 테스트 단계에서 RabbitMQ 연결을 위한 환경 변수 설정
         env:
+          SPRING_PROFILES_ACTIVE: test
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_RABBITMQ_HOST: localhost
           SPRING_RABBITMQ_USERNAME: guest
