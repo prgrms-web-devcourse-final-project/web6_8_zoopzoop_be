@@ -2,12 +2,14 @@ package org.tuna.zoopzoop.backend.domain.space.archive.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.archive.folder.dto.reqBodyForCreateFolder;
@@ -25,6 +27,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.time.LocalDate;
@@ -32,6 +35,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +59,9 @@ class SpaceArchiveFolderControllerTest {
     @Autowired private FolderRepository folderRepository;
     @Autowired private DataSourceRepository dataSourceRepository;
 
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
+
     private static final String OWNER_PK = "sp1111";
     private static final String READER_PK = "sp2222";
 
@@ -67,6 +74,9 @@ class SpaceArchiveFolderControllerTest {
 
     @BeforeAll
     void setUp() {
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
+
         // 사용자 생성
         try { memberService.createMember("spaceOwner", "http://img/owner.png", OWNER_PK, Provider.KAKAO); } catch (Exception ignored) {}
         try { memberService.createMember("spaceReader", "http://img/reader.png", READER_PK, Provider.KAKAO); } catch (Exception ignored) {}

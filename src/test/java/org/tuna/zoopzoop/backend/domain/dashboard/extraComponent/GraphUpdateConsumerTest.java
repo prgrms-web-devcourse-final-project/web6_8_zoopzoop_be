@@ -1,21 +1,25 @@
 package org.tuna.zoopzoop.backend.domain.dashboard.extraComponent;
 
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.GraphUpdateMessage;
 import org.tuna.zoopzoop.backend.domain.dashboard.entity.Graph;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @SpringBootTest
 @Transactional
@@ -25,6 +29,9 @@ class GraphUpdateConsumerTest extends ControllerTestSupport {
     @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private SpaceService spaceService;
 
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
+
     // 테스트에 사용할 dashboardId (실제 DB에 존재하는 ID)
     private Integer existingDashboardId;
 
@@ -32,6 +39,9 @@ class GraphUpdateConsumerTest extends ControllerTestSupport {
 
     @BeforeAll
     void setUp(){
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
+
         spaceService.createSpace(existingSpaceName, "thumb1");
     }
 

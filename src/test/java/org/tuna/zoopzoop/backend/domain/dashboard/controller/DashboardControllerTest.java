@@ -2,6 +2,7 @@ package org.tuna.zoopzoop.backend.domain.dashboard.controller;
 
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -10,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -23,6 +25,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipServi
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
+import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 import org.tuna.zoopzoop.backend.testSupport.ControllerTestSupport;
 
 import javax.crypto.Mac;
@@ -34,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -53,6 +57,9 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @Autowired private TransactionTemplate transactionTemplate;
 
+    @MockitoBean
+    private LiveblocksClient liveblocksClient;
+
     private Integer unauthorizedDashboardId;
     private Integer authorizedDashboardId;
 
@@ -64,6 +71,9 @@ class DashboardControllerTest extends ControllerTestSupport {
 
     @BeforeAll
     void setUp() {
+        Mockito.doNothing().when(liveblocksClient).createRoom(anyString());
+        Mockito.doNothing().when(liveblocksClient).deleteRoom(anyString());
+
         // 1. 유저 생성
         memberService.createMember("tester1_forDashboardControllerTest", "url", "dc1111", Provider.KAKAO);
         memberService.createMember("tester2_forDashboardControllerTest", "url", "dc2222", Provider.KAKAO);
