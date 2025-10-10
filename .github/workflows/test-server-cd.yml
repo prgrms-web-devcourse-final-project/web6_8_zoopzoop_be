@@ -65,7 +65,8 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
               -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
               -e AWS_S3_PREFIX="${{secrets.TEST_AWS_S3_PREFIX}}" \
-              -e SPRING_RABBITMQ_HOST="${{secrets.TEST_RABBITMQ_HOST}}" \
+              -e SPRING_RABBITMQ_HOST="${{secrets.RABBITMQ_HOST}}" \
+              -e SPRING_RABBITMQ_PORT="${{secrets.TEST_RABBITMQ_PORT}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
               -e REDIS_HOST="${{secrets.TEST_REDIS_HOST}}" \
