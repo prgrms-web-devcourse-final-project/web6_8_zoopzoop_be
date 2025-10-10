@@ -128,6 +128,10 @@ dependencies {
 
     // Elastic Search
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+    // retry (ai retry용)
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
 }
 
 dependencyManagement {
