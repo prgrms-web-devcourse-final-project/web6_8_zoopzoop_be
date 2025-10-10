@@ -10,8 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.domain.member.entity.MemberDocument;
 import org.tuna.zoopzoop.backend.domain.member.enums.Provider;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
+import org.tuna.zoopzoop.backend.domain.member.repository.MemberSearchRepository;
 import org.tuna.zoopzoop.backend.global.aws.S3Service;
 
 import java.io.IOException;
@@ -23,6 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final MemberSearchRepository memberSearchRepository;
     private final S3Service s3Service;
     private final TagRepository tagRepository;
     private final DataSourceRepository dataSourceRepository;
@@ -83,7 +86,16 @@ public class MemberService {
                 .providerKey(key)
                 .provider(provider)
                 .build();
-        return memberRepository.save(member);
+
+        Member saved = memberRepository.save(member);
+
+        // ElasticSearch용 document 생성.
+        MemberDocument doc = new MemberDocument();
+        doc.setId(saved.getId());
+        doc.setName(saved.getName());
+        memberSearchRepository.save(doc);
+
+        return saved;
     }
 
     //사용자 이름 수정
@@ -94,6 +106,11 @@ public class MemberService {
         }
         member.updateName(generateUniqueUserNameTag(newName));
         memberRepository.save(member);
+
+        MemberDocument doc = new MemberDocument();
+        doc.setId(member.getId());
+        doc.setName(member.getName());
+        memberSearchRepository.save(doc);
     }
 
     @Transactional

@@ -109,6 +109,7 @@ jobs:
               -e JWT_ACCESS_TOKEN_VALIDITY="${{secrets.JWT_ACCESS_TOKEN_VALIDITY}}" \
               -e JWT_REFRESH_TOKEN_VALIDITY="${{secrets.JWT_REFRESH_TOKEN_VALIDITY}}" \
               -e FRONT_REDIRECT_DOMAIN="${{secrets.FRONT_REDIRECT_DOMAIN}}" \
+              -e ELASTIC_HOST="${{secrets.PROD_ELASTIC_HOST}}" \
               ghcr.io/${{ github.repository }}/zoopzoop:latest
             
             

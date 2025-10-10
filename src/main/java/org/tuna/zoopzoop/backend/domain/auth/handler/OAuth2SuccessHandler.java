@@ -91,7 +91,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             // 확장 프로그램에서 로그인 했을 경우.
             if ("extension".equals(source)) {
                 authResult.put(customState, accessToken, sessionId);
-                response.sendRedirect(redirect_domain + "/extension/success");
+                response.sendRedirect("https://" + redirect_domain + "/extension/success");
                 response.flushBuffer();
                 return;
             }
@@ -132,7 +132,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             // 로그인 성공 후 리다이렉트.
             // 배포 시에 프론트엔드와 조율이 필요한 부분일 듯 함.
-            response.sendRedirect(redirect_domain + "/api/auth/callback");
+            response.sendRedirect("https://" + redirect_domain + "/api/auth/callback");
         }
         // 보안을 좀 더 강화하고자 한다면 CSRF 토큰 같은 걸 생각해볼 수 있겠으나,
         // 일단은 구현하지 않음.(개발 과정 중에 번거로워질 수 있을 듯 함.)

@@ -29,7 +29,8 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         String source = request.getParameter("source");
 
         if("extension".equals(source)){
-            String redirectUrl = redirect_domain + "/extension/callback "
+            String redirectUrl =
+                    "https://" + redirect_domain + "/extension/callback "
                     + "?success=false"
                     + "&error=" + URLEncoder.encode(exception.getMessage(), "UTF-8");
             response.sendRedirect(redirectUrl);
@@ -37,7 +38,7 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         }
 
         String redirectUrl =
-                redirect_domain + "/auth/callback"
+                "https://" + redirect_domain + "/auth/callback"
                 + "?success=false"
                 + "&error=" + URLEncoder.encode(exception.getMessage(), "UTF-8");
 

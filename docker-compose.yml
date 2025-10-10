@@ -13,5 +13,19 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.5
+    container_name: local-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    restart: unless-stopped
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
 volumes:
   rabbitmq-data:
+  elasticsearch-data:
