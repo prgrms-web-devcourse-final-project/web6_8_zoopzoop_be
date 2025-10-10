@@ -6,7 +6,7 @@ import java.util.Map;
 public record ReqBodyForLiveblocksAuth(
         String userId,
         UserInfo userInfo,
-        Map<String, List<String>>permissions
+        Map<String, List<String>> permissions
 ) {
     public record UserInfo(
             String name,
