@@ -38,7 +38,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final RefreshTokenService refreshTokenService;
     private final AuthResult authResult;
 
-    @Value("${REDIRECT_DOMAIN}")
+    @Value("${front.redirect_domain}")
     private String redirect_domain;
 
     @Value("${spring.profiles.active:dev}")
