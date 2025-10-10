@@ -109,7 +109,7 @@ public class ApiV1NewsController {
      * @param folderId 대상 폴더 id
      */
     @GetMapping("/recommends/shared/{spaceId}/{folderId}")
-    @Operation(summary = "개인 아카이브 뉴스 추천")
+    @Operation(summary = "공유 아카이브 뉴스 추천")
     public Mono<ResponseEntity<RsData<ResBodyForNaverNews>>> searchNewsByRecommends(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Integer spaceId,
