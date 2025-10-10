@@ -65,8 +65,8 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.TEST_DB_PASSWORD}}" \
               -e AWS_ACCESS_KEY_ID="${{secrets.AWS_ACCESS_KEY_ID}}" \
               -e AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
-              -e AWS_S3_BUCKECT_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
-              -e AWS_S3_PREFIX="${{secrets.TEST_AWS_S3_PREFIX}}" \
+              -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
+              -e AWS_S3_PREFIX="${{secrets.TEST_AWS_S3_PREFIX}}" \git 
               -e SPRING_RABBITMQ_HOST="${{secrets.TEST_RABBITMQ_HOST}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
