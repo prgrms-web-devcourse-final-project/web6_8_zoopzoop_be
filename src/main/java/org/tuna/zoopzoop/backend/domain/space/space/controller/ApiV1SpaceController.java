@@ -220,8 +220,8 @@ public class ApiV1SpaceController {
     @Operation(summary = "Liveblocks 접속 토큰 발급")
     public ResponseEntity<RsData<ResBodyForAuthToken>> getAuthToken(
             @PathVariable Integer spaceId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) throws AccessDeniedException {
-
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) throws AccessDeniedException {
         Member member = userDetails.getMember();
         String token = dashboardService.getAuthTokenForSpace(spaceId, member);
 

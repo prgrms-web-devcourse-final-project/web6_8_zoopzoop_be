@@ -8,12 +8,15 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.tuna.zoopzoop.backend.domain.SSE.service.EmitterService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
+import org.tuna.zoopzoop.backend.domain.space.space.dto.etc.SpaceInvitationInfo;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
@@ -26,6 +29,7 @@ import java.util.Optional;
 public class MembershipService {
     private final MembershipRepository membershipRepository;
     private final MemberService memberService;
+    private final NotificationService notificationService;
 
     // ======================== 멤버십 조회 ======================== //
 
@@ -205,6 +209,7 @@ public class MembershipService {
      * @param invitedName 초대할 멤버 이름 목록
      * @return 생성된 Membership 엔티티 목록
      */
+    @Transactional
     public List<Membership> inviteMembersToSpace(Space space, List<String> invitedName) {
         // 1. 이름 중복 제거
         List<String> uniqueNames = invitedName.stream().distinct().toList();
@@ -228,7 +233,24 @@ public class MembershipService {
                 })
                 .toList();
 
-        return membershipRepository.saveAll(invitedMemberships);
+        // 4. 멤버십 저장
+        List<Membership> savedMemberships = membershipRepository.saveAll(invitedMemberships);
+
+        // 5. 알림 전송 호출
+        savedMemberships.forEach(membership -> {
+            notificationService.sendSpaceInvitation(
+                    (long) membership.getMember().getId(),
+                        new SpaceInvitationInfo(
+                                space.getId(),
+                                space.getName(),
+                                space.getThumbnailUrl(),
+                                membership.getId()
+                    )
+            );
+        });
+
+        // 6. 저장된 멤버십 반환
+        return savedMemberships;
     }
 
     /**
