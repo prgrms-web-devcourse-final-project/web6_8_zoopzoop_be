@@ -26,6 +26,7 @@ public class ApiV1NewsController {
     private final NewsAPIService newsSearchService;
     private final NewsService newsService;
 
+
     /**
      * 최신 뉴스 목록을 조회하는 API
      * 한번에 100개를 조회 합니다.
@@ -87,6 +88,35 @@ public class ApiV1NewsController {
     ) {
         Member member = userDetails.getMember();
         List<String> frequency = newsService.getTagFrequencyFromFiles(member.getId(), folderId);
+        String query = String.join(" ", frequency);
+
+        return newsSearchService.searchNews(query, "sim")
+                .map(response -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new RsData<>(
+                                "200",
+                                "키워드 기반 뉴스 목록을 조회했습니다.",
+                                response
+                        )));
+    }
+
+    /**
+     * 공유 아카이브의 폴더 내부의 자료를 기반으로 키워드를 추천해서 검색하는 뉴스 API
+     * HTTP METHOD: GET
+     * 한번에 100개를 조회 합니다.
+     * @param userDetails 로그인한 사용자
+     * @param spaceId 대상 스페이스 id
+     * @param folderId 대상 폴더 id
+     */
+    @GetMapping("/recommends/shared/{spaceId}/{folderId}")
+    @Operation(summary = "개인 아카이브 뉴스 추천")
+    public Mono<ResponseEntity<RsData<ResBodyForNaverNews>>> searchNewsByRecommends(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Integer spaceId,
+            @PathVariable Integer folderId
+    ) {
+        Member member = userDetails.getMember();
+        List<String> frequency = newsService.getTagFrequencyFromFilesInSharing(spaceId, member.getId(), folderId);
         String query = String.join(" ", frequency);
 
         return newsSearchService.searchNews(query, "sim")
