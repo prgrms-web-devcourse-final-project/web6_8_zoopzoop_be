@@ -67,6 +67,7 @@ jobs:
               -e AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
               -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
               -e AWS_S3_PREFIX="${{secrets.TEST_AWS_S3_PREFIX}}" \
+              -e AWS_S3_PREFIX="${{secrets.TEST_AWS_S3_PREFIX}}" \
               -e SPRING_RABBITMQ_HOST="${{secrets.TEST_RABBITMQ_HOST}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.TEST_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.TEST_RABBITMQ_PASSWORD}}" \
