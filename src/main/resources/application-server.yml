@@ -33,6 +33,12 @@ spring:
           google:
             redirect-uri: ${GOOGLE_REDIRECT_URI}
 
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
 front:
   redirect_domain: ${FRONT_REDIRECT_DOMAIN}
 
