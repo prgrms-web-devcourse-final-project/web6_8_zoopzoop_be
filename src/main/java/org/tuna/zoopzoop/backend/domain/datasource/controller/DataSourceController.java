@@ -4,22 +4,23 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
 import org.tuna.zoopzoop.backend.domain.datasource.service.PersonalDataSourceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -119,11 +120,12 @@ public class DataSourceController {
     }
 
     // ===== 수정 =====
+    // JSON만 수정
     @Operation(summary = "자료 수정", description = "내 PersonalArchive 안에 자료를 수정합니다.")
-    @PatchMapping("/{dataSourceId}")
-    public ResponseEntity<RsData<Map<String, Integer>>> updateDataSource(
+    @PatchMapping(path = "/{dataSourceId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RsData<Map<String, Integer>>> updateDataSourceJson(
             @PathVariable Integer dataSourceId,
-            @RequestBody reqBodyForUpdateDataSource body,
+            @RequestBody @Valid reqBodyForUpdateDataSource body,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         boolean anyPresent =
@@ -136,34 +138,64 @@ public class DataSourceController {
                         (body.category() != null && body.category().isPresent());
         if (!anyPresent) throw new IllegalArgumentException("변경할 값이 없습니다.");
 
-
-        var catNullable = body.category();
-
-        // category enum 변환 시도
-        JsonNullable<Category> enumCat = null;
-        if (catNullable != null && catNullable.isPresent()) {
-            String raw = catNullable.get();
-            try {
-                // 필요하면 대소문자 허용 로직 추가
-                enumCat = JsonNullable.of(Category.valueOf(raw.toUpperCase()));
-            } catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException("유효하지 않은 카테고리입니다: " + raw);
-            }
-        }
-
         int updatedId = personalApp.update(
                 user.getMember().getId(),
                 dataSourceId,
                 DataSourceService.UpdateCmd.builder()
-                        .title(body.title()).summary(body.summary()).sourceUrl(body.sourceUrl())
-                        .imageUrl(body.imageUrl()).source(body.source())
-                        .tags(body.tags()).category(enumCat)
+                        .title(body.title())
+                        .summary(body.summary())
+                        .source(body.source())
+                        .sourceUrl(body.sourceUrl())
+                        .imageUrl(body.imageUrl())
+                        .category(body.category())
+                        .tags(body.tags())
                         .build()
         );
 
         return ResponseEntity.ok(
                 new RsData<>("200", updatedId + "번 자료가 수정됐습니다.", Map.of("dataSourceId", updatedId))
         );
+    }
+
+    // 이미지 포함 수정
+    @Operation(summary = "자료 수정(이미지+JSON)", description = "내 PersonalArchive 안에 자료를 수정합니다")
+    @PatchMapping(path = "/{dataSourceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RsData<Map<String, Object>>> updateDataSourceMultipart(
+            @PathVariable Integer dataSourceId,
+            @RequestPart("payload") @Valid reqBodyForUpdateDataSource body, // JSON 파트
+            @RequestPart(value = "image", required = false) MultipartFile image, // 파일 파트
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        boolean anyPresent =
+                (body.title() != null && body.title().isPresent()) ||
+                        (body.summary() != null && body.summary().isPresent()) ||
+                        (body.sourceUrl() != null && body.sourceUrl().isPresent()) ||
+                        (body.imageUrl() != null && body.imageUrl().isPresent()) ||
+                        (body.source() != null && body.source().isPresent()) ||
+                        (body.tags() != null && body.tags().isPresent()) ||
+                        (body.category() != null && body.category().isPresent()) ||
+                        (image != null && !image.isEmpty());
+        if (!anyPresent) throw new IllegalArgumentException("변경할 값이 없습니다.");
+
+        var baseCmd = DataSourceService.UpdateCmd.builder()
+                .title(body.title())
+                .summary(body.summary())
+                .source(body.source())
+                .sourceUrl(body.sourceUrl())
+                .imageUrl(body.imageUrl())
+                .category(body.category())
+                .tags(body.tags())
+                .build();
+
+        var outcome = personalApp.updateWithImage(
+                user.getMember().getId(), dataSourceId, baseCmd, image
+        );
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("dataSourceId", outcome.dataSourceId());
+        data.put("imageUrl", outcome.imageUrl());
+
+        return ResponseEntity.ok(new RsData<>("200", "자료가 수정됐습니다.", data));
     }
 
     // ===== 검색 =====

@@ -3,9 +3,11 @@ package org.tuna.zoopzoop.backend.domain.datasource.service;
 import jakarta.persistence.NoResultException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
@@ -13,10 +15,11 @@ import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataPro
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
-import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.UpdateOutcome;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.global.aws.S3Service;
 
 import java.io.IOException;
 import java.util.*;
@@ -31,6 +34,8 @@ public class PersonalDataSourceService {
     private final FolderRepository folderRepository;
     private final PersonalArchiveRepository personalArchiveRepository;
     private final DataProcessorService dataProcessorService;
+
+    private final S3Service s3Service;
 
     private int getPersonalArchiveId(int memberId) {
         PersonalArchive pa = personalArchiveRepository.findByMemberId(memberId)
@@ -62,14 +67,6 @@ public class PersonalDataSourceService {
 
         DataSourceDto dto = dataProcessorService.process(sourceUrl, baseTags);
 
-        Category category = null;
-        if (dto.category() != null && !dto.category().isBlank()) {
-            try {
-                category = Category.valueOf(dto.category().toUpperCase());
-            } catch (IllegalArgumentException ignore) {
-                // 모르는 카테고리는 null 저장
-            }
-        }
         var cmd = DataSourceService.CreateCmd.builder()
                 .title(dto.title())
                 .summary(dto.summary())
@@ -89,6 +86,7 @@ public class PersonalDataSourceService {
     public int deleteOne(int memberId, int dataSourceId) {
         dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+
         domain.hardDeleteOne(dataSourceId);
         return dataSourceId;
     }
@@ -136,6 +134,7 @@ public class PersonalDataSourceService {
         return domain.moveOne(dataSourceId, folderId);
     }
 
+    // move many
     @Transactional
     public void moveMany(int memberId, Integer targetFolderIdOrZero, List<Integer> ids) {
         if (ids == null || ids.isEmpty())
@@ -160,12 +159,35 @@ public class PersonalDataSourceService {
         domain.moveMany(ids, folderId);
     }
 
-    // update
+    // update (JSON-only)
     @Transactional
     public int update(int memberId, int dataSourceId, DataSourceService.UpdateCmd cmd) {
         dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
         return domain.update(dataSourceId, cmd);
+    }
+
+    // update image (S3)
+    @Transactional
+    public UpdateOutcome updateWithImage(int memberId, int dataSourceId,
+                                         DataSourceService.UpdateCmd baseCmd,
+                                         MultipartFile image) {
+        dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+
+        var cmd = baseCmd;
+        String finalUrl = null;
+
+        if (image != null && !image.isEmpty()) {
+            String key = domain.thumbnailKeyForPersonal(memberId, dataSourceId);
+            finalUrl = domain.uploadThumbnailAndReturnFinalUrl(image, key);
+            cmd = DataSourceService.UpdateCmd.builderFrom(baseCmd)
+                    .imageUrl(JsonNullable.of(finalUrl))
+                    .build();
+        }
+
+        int updatedId = domain.update(dataSourceId, cmd);
+        return new UpdateOutcome(updatedId, finalUrl);
     }
 
     // search

@@ -3,16 +3,18 @@ package org.tuna.zoopzoop.backend.domain.space.archive.service;
 import jakarta.persistence.NoResultException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.SharingArchive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.UpdateOutcome;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
-import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
@@ -20,6 +22,7 @@ import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
 import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
+import org.tuna.zoopzoop.backend.global.aws.S3Service;
 
 import java.util.*;
 
@@ -29,10 +32,11 @@ public class SpaceDataSourceService {
 
     private final DataSourceService domain;
     private final DataSourceRepository dataSourceRepository;
-    private final DataSourceQRepository dataSourceQRepository;
     private final FolderRepository folderRepository;
     private final SpaceRepository spaceRepository;
     private final MembershipRepository membershipRepository;
+
+    private final S3Service s3Service;
 
     private Space getSpace(String raw) {
         Integer spaceId;
@@ -45,6 +49,7 @@ public class SpaceDataSourceService {
                 .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
     }
 
+    // 권한 검사
     private void assertReadable(int requesterMemberId, Space space) {
         membershipRepository.findByMemberIdAndSpaceId(requesterMemberId, space.getId())
                 .orElseThrow(() -> new NoResultException("스페이스 멤버가 아닙니다."));
@@ -57,6 +62,7 @@ public class SpaceDataSourceService {
             throw new SecurityException("쓰기 권한 없음");
     }
 
+    // 스페이스의 공유 아카이브 ID 조회
     private Integer getArchiveId(Space space) {
         SharingArchive sa = space.getSharingArchive();
         if (sa == null || sa.getArchive() == null)
@@ -64,6 +70,7 @@ public class SpaceDataSourceService {
         return sa.getArchive().getId();
     }
 
+    // 아카이브 내 폴더 ID 결정 (0 또는 null → 기본 폴더)
     private int resolveTargetFolderIdByArchive(int archiveId, Integer folderIdOrZero) {
         if (folderIdOrZero == null || Objects.equals(folderIdOrZero, 0)) {
             return folderRepository.findByArchiveIdAndIsDefaultTrue(archiveId)
@@ -77,7 +84,7 @@ public class SpaceDataSourceService {
         return f.getId();
     }
 
-    // ===== 불러오기(개인→공유) =====
+    // 불러오기(개인→공유)
     @Transactional
     public int importFromPersonal(int requesterMemberId, String spaceIdRaw, int sourceDataSourceId, Integer targetFolderIdOrZero) {
         Space space = getSpace(spaceIdRaw);
@@ -104,6 +111,7 @@ public class SpaceDataSourceService {
         return domain.create(targetFolderId, cmd);
     }
 
+    // 불러오기(개인→공유) 다건
     @Transactional
     public List<Integer> importManyFromPersonal(int requesterMemberId, String spaceIdRaw, List<Integer> sourceIds, Integer targetFolderIdOrZero) {
         if (sourceIds == null || sourceIds.isEmpty())
@@ -143,7 +151,7 @@ public class SpaceDataSourceService {
         return created;
     }
 
-    // ===== 공유 스코프: 삭제/이동/수정/검색 =====
+    // 삭제
     @Transactional
     public int deleteOne(int requesterMemberId, String spaceIdRaw, int dataSourceId) {
         Space space = getSpace(spaceIdRaw);
@@ -157,6 +165,7 @@ public class SpaceDataSourceService {
         return dataSourceId;
     }
 
+    // 다건 삭제
     @Transactional
     public void deleteMany(int requesterMemberId, String spaceIdRaw, List<Integer> ids) {
         Space space = getSpace(spaceIdRaw);
@@ -170,6 +179,7 @@ public class SpaceDataSourceService {
         domain.hardDeleteMany(ids);
     }
 
+    // 임시 삭제
     @Transactional
     public int softDelete(int requesterMemberId, String spaceIdRaw, List<Integer> ids) {
         Space space = getSpace(spaceIdRaw);
@@ -183,6 +193,7 @@ public class SpaceDataSourceService {
         return domain.softDeleteMany(ids);
     }
 
+    // 복원
     @Transactional
     public int restore(int requesterMemberId, String spaceIdRaw, List<Integer> ids) {
         Space space = getSpace(spaceIdRaw);
@@ -196,6 +207,7 @@ public class SpaceDataSourceService {
         return domain.restoreMany(ids);
     }
 
+    // 이동
     @Transactional
     public DataSourceService.MoveResult moveOne(int requesterMemberId, String spaceIdRaw, int dataSourceId, Integer targetFolderIdOrZero) {
         Space space = getSpace(spaceIdRaw);
@@ -210,6 +222,7 @@ public class SpaceDataSourceService {
         return domain.moveOne(dataSourceId, folderId);
     }
 
+    // 다건 이동
     @Transactional
     public void moveMany(int requesterMemberId, String spaceIdRaw, Integer targetFolderIdOrZero, List<Integer> ids) {
         Space space = getSpace(spaceIdRaw);
@@ -225,6 +238,7 @@ public class SpaceDataSourceService {
         domain.moveMany(ids, folderId);
     }
 
+    // 수정
     @Transactional
     public int update(int requesterMemberId, String spaceIdRaw, int dataSourceId, DataSourceService.UpdateCmd cmd) {
         Space space = getSpace(spaceIdRaw);
@@ -237,6 +251,35 @@ public class SpaceDataSourceService {
         return domain.update(dataSourceId, cmd);
     }
 
+    // 이미지 포함 수정
+    @Transactional
+    public UpdateOutcome updateWithImage(int requesterMemberId, String spaceIdRaw, int dataSourceId,
+                                         DataSourceService.UpdateCmd baseCmd,
+                                         MultipartFile image) {
+        Space space = getSpace(spaceIdRaw);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        dataSourceRepository.findByIdAndArchiveId(dataSourceId, archiveId)
+                .orElseThrow(() -> new NoResultException("해당 스페이스에 존재하지 않는 자료입니다."));
+
+        var cmd = baseCmd;
+        String finalUrl = null;
+
+        if (image != null && !image.isEmpty()) {
+            String key = domain.thumbnailKeyForSpace(space.getId(), dataSourceId);
+            finalUrl = domain.uploadThumbnailAndReturnFinalUrl(image, key);
+            cmd = DataSourceService.UpdateCmd.builderFrom(baseCmd)
+                    .imageUrl(JsonNullable.of(finalUrl))
+                    .build();
+        }
+
+        int updatedId = domain.update(dataSourceId, cmd);
+        return new UpdateOutcome(updatedId, finalUrl);
+    }
+
+
+    // 검색
     public Page<DataSourceSearchItem> search(int requesterMemberId, String spaceIdRaw, DataSourceSearchCondition cond, Pageable pageable) {
         Space space = getSpace(spaceIdRaw);
         assertReadable(requesterMemberId, space);
@@ -259,4 +302,5 @@ public class SpaceDataSourceService {
 
         return domain.searchInArchive(archiveId, cond, pageable);
     }
+
 }

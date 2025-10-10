@@ -97,7 +97,7 @@ public class SpaceArchiveFolderService {
     }
 
     @Transactional(readOnly = true)
-    public FolderFilesDto getFilesInFolder(Integer spaceId, Member requester, Integer folderId) {
+    public FolderFilesDto getFilesInFolder(Integer spaceId,     Member requester, Integer folderId) {
         Space space = spaceService.findById(spaceId);
         if (!membershipService.isMemberInSpace(requester, space))
             throw new SecurityException("스페이스의 구성원이 아닙니다.");
