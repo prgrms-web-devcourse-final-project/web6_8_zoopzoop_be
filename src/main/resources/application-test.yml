@@ -29,18 +29,15 @@ front:
     seed:
       enabled: false
 
-  sentry:
-    send-default-pii: true
-    environment: local
-    traces-sample-rate: 0.0
+sentry:
+  dsn : ""
+  send-default-pii: true
+  environment: local
+  traces-sample-rate: 0.0
 
   sql:
     init:
       mode: never
-
-app:
-  seed:
-    enabled: false
 
 liveblocks:
   secret-key: test_dummy_liveblocks_secret_key
