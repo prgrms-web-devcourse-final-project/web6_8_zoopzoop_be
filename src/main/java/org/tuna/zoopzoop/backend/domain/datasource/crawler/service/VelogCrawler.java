@@ -1,6 +1,8 @@
 package org.tuna.zoopzoop.backend.domain.datasource.crawler.service;
 
 import org.jsoup.nodes.Document;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.CrawlerResult;
 import org.tuna.zoopzoop.backend.domain.datasource.crawler.dto.SpecificSiteDto;
@@ -9,6 +11,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class VelogCrawler implements Crawler{
     private static final SupportedDomain DOMAIN = SupportedDomain.VELOG;
     private static final DateTimeFormatter VELOG_FORMATTER = DateTimeFormatter.ofPattern("yyyy년 M월 d일");
