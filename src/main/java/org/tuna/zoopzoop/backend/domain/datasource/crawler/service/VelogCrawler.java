@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.datasource.crawler.service;
 
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -22,25 +23,28 @@ public class VelogCrawler implements Crawler{
     }
 
     @Override
-    public CrawlerResult<?> extract(Document doc) {
+    public CrawlerResult<SpecificSiteDto> extract(Document doc) {
         // 제목
-        String title = doc.selectFirst("meta[property=og:title]").attr("content");
+        Element titleElement = doc.selectFirst("meta[property=og:title]");
+        String title = titleElement != null ? titleElement.attr("content") : "";
 
         // 작성 날짜
-        String publishedAt = doc.selectFirst(
-                "div.information > span:not([class])"
-        ).text();
+        Element publishedAtElement = doc.selectFirst("div.information > span:not([class])");
+        String publishedAt = publishedAtElement != null ? publishedAtElement.text() : "";
 
-        LocalDate dataCreatedDate = transLocalDate(publishedAt);
+        LocalDate dataCreatedDate = publishedAt.isBlank() ? DEFAULT_DATE : transLocalDate(publishedAt) ;
 
         // 내용(ai한테 줘야함)
-        String content = doc.selectFirst("div.atom-one").text();
+        Element contentElement = doc.selectFirst("div.atom-one");
+        String content = contentElement != null ? contentElement.text() : "";
 
         // 썸네일 이미지 url
-        String imageUrl = doc.selectFirst("meta[property=og:image]").attr("content");
+        Element imageUrlElement = doc.selectFirst("meta[property=og:image]");
+        String imageUrl = imageUrlElement != null ? imageUrlElement.attr("content") : "";
 
         // 출처
-        String source = doc.selectFirst("span.username > a").text();
+        Element sourceElement = doc.selectFirst("span.username > a");
+        String source = sourceElement != null ? sourceElement.text() : "";
 
         return new CrawlerResult<>(
                 CrawlerResult.CrawlerType.SPECIFIC,
@@ -59,7 +63,6 @@ public class VelogCrawler implements Crawler{
         }else if (rawDate.contains("어제")){
             return LocalDate.now().minusDays(1);
         }
-
 
         return LocalDate.parse(rawDate, VELOG_FORMATTER);
     }
