@@ -102,8 +102,8 @@ jobs:
               -e KAKAO_CLIENT_ID="${{secrets.OAUTH_KAKAO_CLIENT_ID}}" \
               -e GOOGLE_CLIENT_ID="${{secrets.OAUTH_GOOGLE_CLIENT_ID}}" \
               -e GOOGLE_CLIENT_SECRET="${{secrets.OAUTH_GOOGLE_CLIENT_SECRET}}" \
-              -e KAKAO_REDIRECT_URI="${{PROD_OAUTH_KAKAO_REDIRECT_URI}}" \
-              -e GOOGLE_REDIRECT_URI="${{PROD_OAUTH_GOOGLE_REDIRECT_URI}}" \
+              -e KAKAO_REDIRECT_URI="${{secrets.PROD_OAUTH_KAKAO_REDIRECT_URI}}" \
+              -e GOOGLE_REDIRECT_URI="${{secrets.PROD_OAUTH_GOOGLE_REDIRECT_URI}}" \
               # Sentry
               -e SENTRY_DSN="${{secrets.SENTRY_DSN}}" \
               # OpenAI
