@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.SSE.service;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -52,5 +53,23 @@ public class EmitterService {
                 this.emitters.remove(memberId);
             }
         }
+    }
+
+    /**
+     * 20초마다 모든 Emitter에 하트비트 전송
+     * 클라이언트와의 연결 유지를 위해 주기적으로 빈 이벤트를 전송
+     */
+    @Scheduled(fixedRate = 20000)
+    public void sendHeartbeat() {
+        // 모든 Emitter에 하트비트 전송
+        emitters.forEach((userId, emitter) -> {
+            try {
+                // SSE 주석(comment)을 사용하여 클라이언트에서 별도 이벤트를 발생시키지 않음
+                emitter.send(SseEmitter.event().comment("keep-alive"));
+            } catch (IOException e) {
+                // 전송 실패 시, 클라이언트 연결이 끊어진 것으로 간주하고 Map에서 제거
+                emitters.remove(userId);
+            }
+        });
     }
 }
