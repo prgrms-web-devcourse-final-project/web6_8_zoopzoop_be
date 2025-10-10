@@ -27,6 +27,7 @@ spring:
             redirect-uri: http://localhost:8080/login/oauth2/code/kakao
           google:
             redirect-uri: http://localhost:8080/login/oauth2/code/google
+
 app:
   seed:
     enabled: true
