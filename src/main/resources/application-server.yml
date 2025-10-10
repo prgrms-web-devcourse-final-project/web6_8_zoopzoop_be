@@ -40,3 +40,7 @@ sentry:
   environment: prod
   traces-sample-rate: 0.2
 
+cloud:
+  aws:
+    s3:
+      prefix: ${AWS_S3_PREFIX}
