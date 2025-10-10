@@ -125,6 +125,9 @@ dependencies {
 
     // Awaitility (비동기 테스트 지원)
     testImplementation 'org.awaitility:awaitility:4.2.0'
+
+    // Elastic Search
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 }
 
 dependencyManagement {

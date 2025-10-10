@@ -8,6 +8,11 @@ spring:
     password:
     driver-class-name: org.h2.Driver
 
+  data:
+    elasticsearch:
+      host: localhost
+      port: 9200
+
   jpa:
     hibernate:
       ddl-auto: create-drop
