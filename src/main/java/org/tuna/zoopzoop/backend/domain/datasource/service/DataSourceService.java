@@ -5,9 +5,11 @@ import jakarta.transaction.Transactional;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
@@ -17,7 +19,9 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.global.aws.S3Service;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +34,10 @@ public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final FolderRepository folderRepository;
     private final DataSourceQRepository dataSourceQRepository;
+    private final S3Service s3Service;
+
+    @Value("${spring.cloud.aws.s3.bucket}")
+    private String bucket;
 
     // ===== DTOs =====
 
@@ -55,7 +63,18 @@ public class DataSourceService {
         JsonNullable<String> imageUrl,
         JsonNullable<Category> category,
         JsonNullable<List<String>> tags
-    ) {}
+    ) {
+        public static UpdateCmd.UpdateCmdBuilder builderFrom(UpdateCmd base) {
+            return UpdateCmd.builder()
+                    .title(base.title())
+                    .summary(base.summary())
+                    .source(base.source())
+                    .sourceUrl(base.sourceUrl())
+                    .imageUrl(base.imageUrl())
+                    .category(base.category())
+                    .tags(base.tags());
+        }
+    }
 
     @Builder
     public record MoveResult (
@@ -107,12 +126,8 @@ public class DataSourceService {
         if (cmd.imageUrl() != null && cmd.imageUrl().isPresent()) ds.setImageUrl(cmd.imageUrl().get());
         if (cmd.category() != null && cmd.category().isPresent()) {
             Category v = cmd.category().get();
-            if (v != null) ds.setCategory(v);
-            else throw new IllegalArgumentException("유효하지 않은 카테고리입니다.");
-        }
-        if (cmd.category() != null && cmd.category().isPresent()) {
-            Category v = cmd.category().get();
-            if (v != null) ds.setCategory(v);
+            if (v == null) throw new IllegalArgumentException("유효하지 않은 카테고리입니다.");
+            ds.setCategory(v);
         }
 
         if (cmd.tags() != null && cmd.tags().isPresent()) {
@@ -166,6 +181,7 @@ public class DataSourceService {
     public void hardDeleteOne(int dataSourceId) {
         DataSource ds = dataSourceRepository.findById(dataSourceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+        deleteOwnedImageIfAny(ds);
         dataSourceRepository.delete(ds);
     }
 
@@ -174,6 +190,7 @@ public class DataSourceService {
         if (ids == null || ids.isEmpty()) return;
         List<DataSource> list = dataSourceRepository.findAllById(ids);
         if (list.size() != ids.size()) throw new NoResultException("존재하지 않는 자료 포함");
+        for (DataSource ds : list) deleteOwnedImageIfAny(ds);
         dataSourceRepository.deleteAll(list);
     }
 
@@ -211,9 +228,106 @@ public class DataSourceService {
         return affected;
     }
 
-    // 검색
+    // search
     @Transactional
     public Page<DataSourceSearchItem> searchInArchive(Integer archiveId, DataSourceSearchCondition cond, Pageable pageable) {
         return dataSourceQRepository.searchInArchive(archiveId, cond, pageable);
+    }
+
+    // ===== update: 공통 유틸 =====
+    // 이미지 유효성 검사
+    public void validateImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일이 비어있습니다.");
+        }
+        if (image.getSize() > (5 * 1024 * 1024)) {
+            throw new IllegalArgumentException("이미지 파일 크기는 5MB를 초과할 수 없습니다.");
+        }
+        String ct = image.getContentType();
+        if (ct == null || !(ct.equals("image/png") || ct.equals("image/jpeg") || ct.equals("image/webp"))) {
+            throw new IllegalArgumentException("이미지 형식은 PNG/JPEG/WEBP만 허용합니다.");
+        }
+    }
+
+    // 썸네일 S3 키 생성
+    public String thumbnailKeyForPersonal(int memberId, int dataSourceId) {
+        return "datasource-thumbnail/personal_" + memberId + "/ds_" + dataSourceId;
+    }
+    public String thumbnailKeyForSpace(int spaceId, int dataSourceId) {
+        return "datasource-thumbnail/space_" + spaceId + "/ds_" + dataSourceId;
+    }
+
+    // 썸네일 업로드 + URL 반환
+    public String uploadThumbnailAndReturnFinalUrl(MultipartFile image, String key) {
+        validateImage(image);
+        try {
+            String baseUrl = s3Service.upload(image, key); // S3 putObject
+            return baseUrl + "?v=" + System.currentTimeMillis();
+        } catch (Exception e) {
+            throw new RuntimeException("썸네일 이미지 업로드에 실패했습니다.");
+        }
+    }
+
+    // ===== S3 삭제 관련 유틸 =====
+    // 소유한 이미지가 있으면 S3에서 삭제
+    private void deleteOwnedImageIfAny(DataSource ds) {
+        String url = ds.getImageUrl();
+        if (url == null || url.isBlank()) return;
+        if (!isOurS3Url(url)) return;
+
+        String key = extractKeyFromUrl(url);
+        if (key == null || key.isBlank()) return;
+
+        try {
+            s3Service.delete(key);
+        } catch (Exception ignore) {
+            // 파일 삭제 실패로 전체 삭제를 롤백하지 않음
+            // 필요하면 warn 로그 추가
+        }
+    }
+
+    // URL이 우리 S3 버킷의 객체를 가리키는지 검사
+    private boolean isOurS3Url(String url) {
+        try {
+            String noQuery = url.split("\\?")[0];
+            URI uri = URI.create(noQuery);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || bucket == null || bucket.isBlank()) return false;
+
+            if (host.startsWith(bucket + ".s3")) return true;
+
+            return host.startsWith("s3.") && path != null && path.startsWith("/" + bucket + "/");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // S3 URL에서 key 추출
+    private String extractKeyFromUrl(String url) {
+        try {
+            String noQuery = url.split("\\?")[0];
+            URI uri = URI.create(noQuery);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null) return null;
+
+            // virtual-hosted-style: /<key>
+            if (host.startsWith(bucket + ".s3")) return trimLeadingSlash(path);
+
+            // path-style: /{bucket}/{key}
+            if (host.startsWith("s3.") && path.startsWith("/" + bucket + "/")) {
+                return path.substring(("/" + bucket + "/").length());
+            }
+
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // 문자열 앞의 '/' 제거
+    private String trimLeadingSlash(String s) {
+        return (s != null && s.startsWith("/")) ? s.substring(1) : s;
     }
 }
