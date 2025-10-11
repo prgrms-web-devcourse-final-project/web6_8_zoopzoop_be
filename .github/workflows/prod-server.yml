@@ -86,8 +86,6 @@ jobs:
               -e SPRING_DATASOURCE_URL="${{secrets.PROD_DB_URL}}" \
               -e SPRING_DATASOURCE_USERNAME="${{secrets.PROD_DB_USERNAME}}" \
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
-              -e AWS_ACCESS_KEY_ID="${{secrets.AWS_ACCESS_KEY_ID}}" \
-              -e AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}" \
               -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
               -e AWS_S3_PREFIX="${{secrets.PROD_AWS_S3_PREFIX}}" \
               -e SPRING_RABBITMQ_HOST="${{secrets.RABBITMQ_HOST}}" \ 
