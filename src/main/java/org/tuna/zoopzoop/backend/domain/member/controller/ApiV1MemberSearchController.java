@@ -1,5 +1,6 @@
 package org.tuna.zoopzoop.backend.domain.member.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class ApiV1MemberSearchController {
     private final MemberService memberService;
 
     @GetMapping("/search")
+    @Operation(summary = "사용자 이름 기반 검색")
     public ResponseEntity<RsData<List<ResBodyForSearchMember>>> searchMembers(
             @RequestParam String keyword
     ) {
