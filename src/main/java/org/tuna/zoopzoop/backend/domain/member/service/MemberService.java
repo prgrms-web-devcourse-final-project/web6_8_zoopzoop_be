@@ -93,6 +93,7 @@ public class MemberService {
         MemberDocument doc = new MemberDocument();
         doc.setId(saved.getId());
         doc.setName(saved.getName());
+        doc.setProfileImageUrl(saved.getProfileImageUrl());
         memberSearchRepository.save(doc);
 
         return saved;
@@ -110,6 +111,7 @@ public class MemberService {
         MemberDocument doc = new MemberDocument();
         doc.setId(member.getId());
         doc.setName(member.getName());
+        doc.setProfileImageUrl(member.getProfileImageUrl());
         memberSearchRepository.save(doc);
     }
 

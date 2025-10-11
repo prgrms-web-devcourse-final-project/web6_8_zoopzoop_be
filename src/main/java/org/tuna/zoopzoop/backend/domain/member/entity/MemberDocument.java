@@ -18,4 +18,6 @@ public class MemberDocument {
 
     @Field(type = FieldType.Text, analyzer = "ngram_analyzer", searchAnalyzer = "standard")
     private String name;
+
+    private String profileImageUrl;
 }

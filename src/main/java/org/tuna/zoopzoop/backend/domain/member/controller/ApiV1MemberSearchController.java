@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForSearchMember;
-import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.entity.MemberDocument;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberSearchService;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -33,12 +32,7 @@ public class ApiV1MemberSearchController {
     ) {
         List<MemberDocument> memberDocuments = memberSearchService.searchByName(keyword);
         List<ResBodyForSearchMember> memberDtos = memberDocuments.stream()
-                .map(doc -> {
-                            int id = doc.getId();
-                            Member member = memberService.findById(id);
-                    return new ResBodyForSearchMember(doc, member.getProfileImageUrl());
-                        }
-                )
+                .map(ResBodyForSearchMember::new)
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.OK)
