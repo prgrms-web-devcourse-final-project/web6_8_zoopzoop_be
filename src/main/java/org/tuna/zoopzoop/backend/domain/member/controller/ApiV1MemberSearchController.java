@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.member.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/member")
+@Tag(name = "ApiV1MemberSearchController", description = "사용자 검색 REST API 컨트롤러")
 public class ApiV1MemberSearchController {
     private final MemberSearchService memberSearchService;
     private final MemberService memberService;
