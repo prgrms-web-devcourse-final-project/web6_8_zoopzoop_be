@@ -1,6 +1,7 @@
 package org.tuna.zoopzoop.backend.domain.member.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.ResBodyForSearchMember;
+import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.entity.MemberDocument;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberSearchService;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
@@ -19,6 +21,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/member")
+@Tag(name = "ApiV1MemberSearchController", description = "사용자 검색 REST API 컨트롤러")
 public class ApiV1MemberSearchController {
     private final MemberSearchService memberSearchService;
     private final MemberService memberService;
@@ -30,7 +33,12 @@ public class ApiV1MemberSearchController {
     ) {
         List<MemberDocument> memberDocuments = memberSearchService.searchByName(keyword);
         List<ResBodyForSearchMember> memberDtos = memberDocuments.stream()
-                .map(ResBodyForSearchMember::new)
+                .map(doc -> {
+                            int id = doc.getId();
+                            Member member = memberService.findById(id);
+                    return new ResBodyForSearchMember(doc, member.getProfileImageUrl());
+                        }
+                )
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.OK)
