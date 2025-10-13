@@ -6,5 +6,6 @@ import org.tuna.zoopzoop.backend.domain.member.entity.MemberDocument;
 import java.util.List;
 
 public interface MemberSearchRepository extends ElasticsearchRepository<MemberDocument, Integer> {
-    List<MemberDocument> findByNameContaining(String name);
+    List<MemberDocument> findByNameOnlyContaining(String name);
+    List<MemberDocument> findByNameOnly(String name);
 }
