@@ -160,7 +160,7 @@ class DataSourceQRepositoryImplTest {
     void filter_category_contains() {
         Pageable pageable = PageRequest.of(0, 10);
         DataSourceSearchCondition cond = DataSourceSearchCondition.builder()
-                .category("it")
+                .category(Category.IT)
                 .build();
 
         Page<DataSourceSearchItem> page = dataSourceQRepository.search(memberId, cond, pageable);

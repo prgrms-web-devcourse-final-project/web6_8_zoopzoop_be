@@ -17,6 +17,7 @@ import org.tuna.zoopzoop.backend.domain.archive.archive.entity.QPersonalArchive;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.QFolder;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 
@@ -51,19 +52,28 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
         if (hasText(cond.getTitle())) where.and(ds.title.containsIgnoreCase(cond.getTitle()));
         if (hasText(cond.getSummary())) where.and(ds.summary.containsIgnoreCase(cond.getSummary()));
-        if (hasText(cond.getCategory())) where.and(ds.category.stringValue().containsIgnoreCase(cond.getCategory()));
-        if (hasText(cond.getSource())) where.and(ds.source.containsIgnoreCase(cond.getSource()));
+        if (cond.getCategory() != null) where.and(ds.category.eq(cond.getCategory()));
 
+        // 키워드 검색 (카테고리는 "한글 라벨 정확 일치" + IT 예외만 허용)
         if (hasText(cond.getKeyword())) {
             String kw = cond.getKeyword();
+
+            BooleanBuilder categoryMatch = new BooleanBuilder();
+            Category cat = resolveCategoryFromKoreanOrIT(kw); // 한글 또는 IT만 매칭
+            if (cat != null) {
+                categoryMatch.or(ds.category.eq(cat));
+            }
+            // 영어 ENUM 문자열로의 비교는 제거 (ds.category.stringValue().containsIgnoreCase(kw) 금지)
+
             where.and(
                     ds.title.containsIgnoreCase(kw)
                             .or(ds.summary.containsIgnoreCase(kw))
                             .or(ds.source.containsIgnoreCase(kw))
-                            .or(ds.category.stringValue().containsIgnoreCase(kw))
+                            .or(categoryMatch)
             );
         }
 
+        // 폴더 조건
         if (hasText(cond.getFolderName())) where.and(ds.folder.name.eq(cond.getFolderName()));
         if (cond.getFolderId() != null) where.and(ds.folder.id.eq(cond.getFolderId()));
 
@@ -156,33 +166,46 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
         QTag tag = QTag.tag;
 
         BooleanBuilder where = new BooleanBuilder();
+
+        // 활성/비활성
         if (cond.getIsActive() == null || Boolean.TRUE.equals(cond.getIsActive())) where.and(ds.isActive.isTrue());
         else where.and(ds.isActive.isFalse());
 
+        // 개별 필드 필터
         if (hasText(cond.getTitle())) where.and(ds.title.containsIgnoreCase(cond.getTitle()));
         if (hasText(cond.getSummary())) where.and(ds.summary.containsIgnoreCase(cond.getSummary()));
-        if (hasText(cond.getCategory())) where.and(ds.category.stringValue().containsIgnoreCase(cond.getCategory()));
-        if (hasText(cond.getSource())) where.and(ds.source.containsIgnoreCase(cond.getSource()));
+        if (cond.getCategory() != null) where.and(ds.category.eq(cond.getCategory()));
+
+        // 키워드 검색 (카테고리는 "한글 라벨 정확 일치" + IT 예외만 허용)
         if (hasText(cond.getKeyword())) {
             String kw = cond.getKeyword();
+
+            BooleanBuilder categoryMatch = new BooleanBuilder();
+            Category cat = resolveCategoryFromKoreanOrIT(kw);
+            if (cat != null) {
+                categoryMatch.or(ds.category.eq(cat));
+            }
+            // 영어 ENUM 문자열 비교 제거
+
             where.and(
                     ds.title.containsIgnoreCase(kw)
                             .or(ds.summary.containsIgnoreCase(kw))
                             .or(ds.source.containsIgnoreCase(kw))
-                            .or(ds.category.stringValue().containsIgnoreCase(kw))
+                            .or(categoryMatch)
             );
         }
-        if (hasText(cond.getFolderName())) where.and(ds.folder.name.eq(cond.getFolderName()));
-        if (cond.getFolderId() != null) where.and(ds.folder.id.eq(cond.getFolderId()));
 
+        // 아카이브 스코프
         BooleanBuilder scope = new BooleanBuilder().and(folder.archive.id.eq(archiveId));
 
+        // count
         JPAQuery<Long> countQuery = queryFactory
                 .select(ds.id.countDistinct())
                 .from(ds)
                 .join(ds.folder, folder)
                 .where(where.and(scope));
 
+        // content
         JPAQuery<Tuple> contentQuery = queryFactory
                 .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
                 .from(ds)
@@ -220,10 +243,26 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                         row.get(ds.sourceUrl),
                         row.get(ds.imageUrl),
                         tagsById.getOrDefault(row.get(ds.id), List.of()),
-                        row.get(ds.category).name()
+                        row.get(ds.category).name() // 응답은 영문 코드 유지
                 ))
                 .toList();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    /**
+     * 키워드가 "IT"(대소문자 무시)이면 IT를, 그 외에는
+     * 카테고리의 한글 라벨과 "정확 일치"할 때만 해당 Enum을 반환.
+     * (예: "스포츠" -> SPORTS, "SPORTS" -> null)
+     */
+    private Category resolveCategoryFromKoreanOrIT(String kw) {
+        if (kw == null || kw.isBlank()) return null;
+        if ("IT".equalsIgnoreCase(kw)) return Category.IT; // 유일한 영문 예외
+        for (Category c : Category.values()) {
+            if (c != Category.IT && c.getName().equalsIgnoreCase(kw)) {
+                return c; // 한글 라벨 정확 일치
+            }
+        }
+        return null; // 영문 코드 등은 매칭하지 않음
     }
 }
