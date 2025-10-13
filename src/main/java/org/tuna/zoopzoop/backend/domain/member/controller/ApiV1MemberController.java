@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
+import org.tuna.zoopzoop.backend.domain.auth.service.refresh.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMember;
 import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.*;

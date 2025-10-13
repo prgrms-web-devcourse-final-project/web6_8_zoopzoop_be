@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.tuna.zoopzoop.backend.domain.auth.global.CustomOAuth2AuthorizationRequestResolver;
 import org.tuna.zoopzoop.backend.domain.auth.handler.OAuth2SuccessHandler;
-import org.tuna.zoopzoop.backend.domain.auth.service.CustomOAuth2UserService;
+import org.tuna.zoopzoop.backend.domain.auth.service.oauth2.CustomOAuth2UserService;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomAuthenticationEntryPoint;
 import org.tuna.zoopzoop.backend.global.security.jwt.JwtAuthenticationFilter;
 

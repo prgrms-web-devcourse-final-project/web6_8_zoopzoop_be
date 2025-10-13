@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.auth.service;
+package org.tuna.zoopzoop.backend.domain.auth.service.oauth2;
 
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.tuna.zoopzoop.backend.domain.auth.dto.AuthResultData;
 import org.tuna.zoopzoop.backend.domain.auth.entity.AuthResult;
 import org.tuna.zoopzoop.backend.domain.auth.entity.RefreshToken;
-import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
+import org.tuna.zoopzoop.backend.domain.auth.service.refresh.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import org.tuna.zoopzoop.backend.domain.auth.entity.RefreshToken;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,4 +14,5 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Inte
     Optional<RefreshToken> findBySessionId(String sessionId);
     Optional<RefreshToken> findByMember(Member member);
     List<RefreshToken> findAllByMember(Member member);
+    List<RefreshToken> findAllByExpiredAtBefore(LocalDateTime dateTime);
 }
