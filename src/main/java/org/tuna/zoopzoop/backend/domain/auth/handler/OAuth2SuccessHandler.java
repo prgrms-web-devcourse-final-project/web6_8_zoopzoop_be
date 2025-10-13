@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.tuna.zoopzoop.backend.domain.auth.entity.AuthResult;
-import org.tuna.zoopzoop.backend.domain.auth.service.RefreshTokenService;
+import org.tuna.zoopzoop.backend.domain.auth.service.refresh.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.repository.MemberRepository;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;

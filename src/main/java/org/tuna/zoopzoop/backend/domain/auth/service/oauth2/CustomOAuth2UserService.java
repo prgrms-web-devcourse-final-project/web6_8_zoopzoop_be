@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.auth.service;
+package org.tuna.zoopzoop.backend.domain.auth.service.oauth2;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

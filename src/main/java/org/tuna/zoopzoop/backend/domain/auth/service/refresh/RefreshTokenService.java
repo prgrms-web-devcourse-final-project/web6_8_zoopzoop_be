@@ -1,4 +1,4 @@
-package org.tuna.zoopzoop.backend.domain.auth.service;
+package org.tuna.zoopzoop.backend.domain.auth.service.refresh;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -49,8 +49,9 @@ public class RefreshTokenService {
     }
 
     public void deleteBySessionId(String sessionId) {
-        refreshTokenRepository.findBySessionId(sessionId)
+        RefreshToken token = refreshTokenRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new BadCredentialsException("잘못된 요청입니다."));
+        refreshTokenRepository.delete(token);
     }
 
     public void deleteByMember(Member member) {
