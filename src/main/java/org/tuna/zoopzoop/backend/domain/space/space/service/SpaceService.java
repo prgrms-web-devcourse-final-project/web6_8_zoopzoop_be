@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,9 @@ public class SpaceService {
     private final LiveblocksClient liveblocksClient;
     private final TagRepository tagRepository;
     private final DataSourceRepository dataSourceRepository;
+
+    @Value("${aws.s3.prefix}")
+    private String s3Prefix;
 
     // ======================== 스페이스 조회 ======================== //
 
@@ -177,10 +181,10 @@ public class SpaceService {
         }
 
         try {
-            //String fileName = "space-thumbnail/space_" + System.currentTimeMillis() + "_" +
+            //String fileName = "space-thumbnail/prefix/space_id.jpg";
             // S3 저장 시 파일 이름 고정 (덮어쓰기)
             String extension = StringUtils.getFilenameExtension(image.getOriginalFilename());
-            String fileName = "space-thumbnail/space_" + spaceId + "." + extension;
+            String fileName = "space-thumbnail/" + s3Prefix + "/space_" + spaceId + "." + extension;
             String baseImageUrl = s3Service.upload(image, fileName);
 
             // DB 용으로 현재 시간을 쿼리 파라미터에 추가 (캐시 무효화)
