@@ -88,7 +88,7 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD="${{secrets.PROD_DB_PASSWORD}}" \
               -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
               -e AWS_S3_PREFIX="${{secrets.PROD_AWS_S3_PREFIX}}" \
-              -e SPRING_RABBITMQ_HOST="${{secrets.RABBITMQ_HOST}}" \ 
+              -e SPRING_RABBITMQ_HOST="${{secrets.RABBITMQ_HOST}}" \
               -e SPRING_RABBITMQ_PORT="${{secrets.PROD_RABBITMQ_PORT}}" \
               -e SPRING_RABBITMQ_USERNAME="${{secrets.PROD_RABBITMQ_USERNAME}}" \
               -e SPRING_RABBITMQ_PASSWORD="${{secrets.PROD_RABBITMQ_PASSWORD}}" \
@@ -100,7 +100,7 @@ jobs:
               -e KAKAO_REDIRECT_URI="${{secrets.PROD_OAUTH_KAKAO_REDIRECT_URI}}" \
               -e GOOGLE_REDIRECT_URI="${{secrets.PROD_OAUTH_GOOGLE_REDIRECT_URI}}" \
               -e SENTRY_DSN="${{secrets.SENTRY_DSN}}" \
-              -e OPENAI_API_KEY="${{secrets.OPENAI_API_KEY}}" \
+              -e OPENAI_API_KEY="${{secrets.PROD_OPENAI_API_KEY}}" \
               -e LIVEBLOCKS_SECRET_KEY="${{secrets.LIVEBLOCKS_SECRET_KEY}}" \
               -e NAVER_CLIENT_ID="${{secrets.NAVER_CLIENT_ID}}" \
               -e NAVER_CLIENT_SECRET="${{secrets.NAVER_CLIENT_SECRET}}" \
