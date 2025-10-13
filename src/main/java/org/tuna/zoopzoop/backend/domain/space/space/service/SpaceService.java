@@ -32,7 +32,7 @@ public class SpaceService {
     private final TagRepository tagRepository;
     private final DataSourceRepository dataSourceRepository;
 
-    @Value("${cloud.aws.s3.prefix}")
+    @Value("${spring.cloud.aws.s3.prefix}")
     private String s3Prefix;
 
     // ======================== 스페이스 조회 ======================== //
