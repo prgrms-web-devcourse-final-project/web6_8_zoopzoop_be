@@ -108,8 +108,10 @@ spring:
         static: ap-northeast-2
       s3:
         bucket: ${AWS_S3_BUCKET_NAME}
+        prefix: ${AWS_S3_PREFIX}
       stack:
         auto: false
+
 
 #Spring doc 설정
 springdoc:
