@@ -184,7 +184,7 @@ public class SpaceService {
             //String fileName = "space-thumbnail/prefix/space_id.jpg";
             // S3 저장 시 파일 이름 고정 (덮어쓰기)
             String extension = StringUtils.getFilenameExtension(image.getOriginalFilename());
-            String fileName = "space-thumbnail/" + s3Prefix + "/space_" + spaceId + "." + extension;
+            String fileName = "space-thumbnail/" + s3Prefix + "space_" + spaceId + "." + extension;
             String baseImageUrl = s3Service.upload(image, fileName);
 
             // DB 용으로 현재 시간을 쿼리 파라미터에 추가 (캐시 무효화)

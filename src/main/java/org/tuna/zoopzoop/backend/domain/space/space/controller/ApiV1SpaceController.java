@@ -173,7 +173,7 @@ public class ApiV1SpaceController {
             return new SpaceInfo(
                     space.getId(),
                     space.getName(),
-                    space.getThumbnailUrl(),
+                    space.getThumbnailUrl() == null ? "" : space.getThumbnailUrl(),
                     membership.getAuthority(),
                     memberInfos
             );
