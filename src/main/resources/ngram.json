@@ -2,16 +2,14 @@
   "analysis": {
     "analyzer": {
       "ngram_analyzer": {
-        "tokenizer": "ngram_tokenizer",
-        "filter": ["lowercase"]
+        "tokenizer": "my_ngram_tokenizer"
       }
     },
     "tokenizer": {
-      "ngram_tokenizer": {
+      "my_ngram_tokenizer": {
         "type": "ngram",
-        "min_gram": 2,
-        "max_gram": 3,
-        "token_chars": ["letter", "digit"]
+        "min_gram": 1,
+        "max_gram": 2
       }
     }
   }

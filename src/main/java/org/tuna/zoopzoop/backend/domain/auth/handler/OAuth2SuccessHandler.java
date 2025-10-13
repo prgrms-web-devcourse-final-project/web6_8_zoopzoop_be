@@ -97,8 +97,34 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
         }
 
+        if ("dev".equalsIgnoreCase(activeProfile)) {
+            // 로컬 테스트용. profile이 dev인 경우.
+            ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
+                    .httpOnly(true)
+                    .path("/")
+                    .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
+                    .secure(false)
+                    .sameSite("Lax")
+                    .build();
+
+            ResponseCookie sessionCookie = ResponseCookie.from("sessionId", sessionId)
+                    .httpOnly(true)
+                    .path("/")
+                    .maxAge(jwtProperties.getRefreshTokenValidity() / 1000) // RefreshToken 유효기간과 동일하게
+                    .secure(false)
+                    .sameSite("Lax")
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, sessionCookie.toString());
+
+            response.sendRedirect("http://localhost:8080");
+            return;
+        }
+
         if ("http://localhost:3000".equals(redirect_domain)) {
             // server 환경일 때: URL 파라미터로 토큰 전달
+            // 프론트엔드 local 테스트용.
             String redirectUrl = redirect_domain + "/api/auth/callback"
                     + "?success=true"
                     + "&accessToken=" + URLEncoder.encode(accessToken, "UTF-8")

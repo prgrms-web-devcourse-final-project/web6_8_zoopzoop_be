@@ -16,8 +16,9 @@ public class MemberDocument {
     @Id
     private int id;
 
-    @Field(type = FieldType.Text, analyzer = "ngram_analyzer", searchAnalyzer = "standard")
-    private String name;
+    @Field(type = FieldType.Text, analyzer = "ngram_analyzer", searchAnalyzer = "ngram_analyzer")
+    private String nameOnly;
 
+    private String nameWithTag;
     private String profileImageUrl;
 }

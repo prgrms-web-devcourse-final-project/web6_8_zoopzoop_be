@@ -13,6 +13,6 @@ public record ResBodyForSearchMember(
         this.profileImageUrl = profileImageUrl;
     }
     public ResBodyForSearchMember(MemberDocument memberDocument){
-        this(memberDocument.getId(), memberDocument.getName(), memberDocument.getProfileImageUrl());
+        this(memberDocument.getId(), memberDocument.getNameWithTag(), memberDocument.getProfileImageUrl());
     }
 }

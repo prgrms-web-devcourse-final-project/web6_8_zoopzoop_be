@@ -90,12 +90,7 @@ public class MemberService {
         Member saved = memberRepository.save(member);
 
         // ElasticSearch용 document 생성.
-        MemberDocument doc = new MemberDocument();
-        doc.setId(saved.getId());
-        doc.setName(saved.getName());
-        doc.setProfileImageUrl(saved.getProfileImageUrl());
-        memberSearchRepository.save(doc);
-
+        createDocument(member);
         return saved;
     }
 
@@ -108,11 +103,8 @@ public class MemberService {
         member.updateName(generateUniqueUserNameTag(newName));
         memberRepository.save(member);
 
-        MemberDocument doc = new MemberDocument();
-        doc.setId(member.getId());
-        doc.setName(member.getName());
-        doc.setProfileImageUrl(member.getProfileImageUrl());
-        memberSearchRepository.save(doc);
+        // ElasticSearch용 document 생성.
+        createDocument(member);
     }
 
     @Transactional
@@ -123,6 +115,9 @@ public class MemberService {
             String newUrl = s3Service.upload(file, fileName);
             member.updateProfileUrl(newUrl);
             memberRepository.save(member);
+
+            // ElasticSearch용 document 생성.
+            createDocument(member);
         } catch (IOException e) {
             throw new IllegalArgumentException("잘못된 파일 입력입니다.");
         }
@@ -140,6 +135,9 @@ public class MemberService {
             String newUrl = s3Service.upload(file, fileName);
             member.updateProfileUrl(newUrl);
             memberRepository.save(member);
+
+            // ElasticSearch용 document 생성.
+            createDocument(member);
         } catch (IOException e) {
             throw new IllegalArgumentException("잘못된 파일 입력입니다.");
         }
@@ -151,9 +149,16 @@ public class MemberService {
     @Transactional
     public void hardDeleteMember(Member member){
         Integer memberId = member.getId();
+
+        // 관련 데이터 정리
         tagRepository.bulkDeleteTagsByMemberId(memberId);
         dataSourceRepository.bulkDeleteByMemberId(memberId);
+
+        // 회원 삭제
         memberRepository.delete(member);
+
+        // Elastic Search 인덱스에서 회원 삭제.
+        memberSearchRepository.deleteById(memberId);
     }
 
     //soft-delete한 회원 복구
@@ -167,5 +172,20 @@ public class MemberService {
             candidate = baseName + "#" + tag;
         } while(memberRepository.existsByName(candidate));
         return candidate;
+    }
+
+    // ElasticSearch용 document 생성 메소드.
+    private void createDocument(Member member){
+        MemberDocument doc = new MemberDocument();
+        doc.setId(member.getId());
+
+        String name = member.getName();
+        String nameOnly = name.contains("#") ? name.substring(0, name.indexOf("#")) : name;
+
+        doc.setNameOnly(nameOnly);
+        doc.setNameWithTag(name);
+        doc.setProfileImageUrl(member.getProfileImageUrl());
+
+        memberSearchRepository.save(doc);
     }
 }
