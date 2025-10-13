@@ -229,9 +229,60 @@ public class DataSourceService {
     }
 
     // search
-    @Transactional
-    public Page<DataSourceSearchItem> searchInArchive(Integer archiveId, DataSourceSearchCondition cond, Pageable pageable) {
+    /**
+     * Personal 검색: memberId 스코프
+     */
+    public Page<DataSourceSearchItem> searchByMember(int memberId,
+                                                     DataSourceSearchCondition cond,
+                                                     Pageable pageable) {
+        cond = normalizeFolder(memberId, null, cond);
+        return dataSourceQRepository.search(memberId, cond, pageable);
+    }
+
+    /**
+     * Space(공유) 검색: archiveId 스코프
+     */
+    public Page<DataSourceSearchItem> searchByArchive(int archiveId,
+                                                      DataSourceSearchCondition cond,
+                                                      Pageable pageable) {
+        cond = normalizeFolder(null, archiveId, cond);
         return dataSourceQRepository.searchInArchive(archiveId, cond, pageable);
+    }
+
+    /**
+     * folderId=0 -> 기본 폴더 치환
+     * memberId가 있으면 Personal, archiveId가 있으면 Shared로 판단
+     */
+    private DataSourceSearchCondition normalizeFolder(Integer memberId,
+                                                      Integer archiveId,
+                                                      DataSourceSearchCondition cond) {
+        if (cond == null) return null;
+
+        Integer resolvedFolderId = cond.getFolderId();
+        if (resolvedFolderId != null && resolvedFolderId == 0) {
+            if (memberId != null) {
+                resolvedFolderId = folderRepository.findDefaultFolderByMemberId(memberId)
+                        .orElseThrow(() -> new NoResultException("기본 폴더가 존재하지 않습니다."))
+                        .getId();
+            } else if (archiveId != null) {
+                resolvedFolderId = folderRepository.findByArchiveIdAndIsDefaultTrue(archiveId)
+                        .orElseThrow(() -> new NoResultException("공유 기본 폴더 없음"))
+                        .getId();
+            } else {
+                throw new IllegalStateException("memberId 또는 archiveId 중 하나는 필요합니다.");
+            }
+        }
+
+        // cond를 보존하되 folderId만 치환한 새 객체로 반환
+        return DataSourceSearchCondition.builder()
+                .title(cond.getTitle())
+                .summary(cond.getSummary())
+                .category(cond.getCategory())
+                .keyword(cond.getKeyword())
+                .folderName(cond.getFolderName())
+                .isActive(cond.getIsActive()) // controller default=true, repo에서도 방어
+                .folderId(resolvedFolderId)
+                .build();
     }
 
     // ===== update: 공통 유틸 =====

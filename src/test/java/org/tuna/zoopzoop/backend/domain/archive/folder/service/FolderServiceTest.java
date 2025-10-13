@@ -204,7 +204,7 @@ class FolderServiceTest {
 
         when(folderRepository.findByIdAndArchiveId(eq(400), eq(archive.getId())))
                 .thenReturn(Optional.of(folder));
-        when(dataSourceRepository.findAllByFolder(folder)).thenReturn(List.of(d1));
+        when(dataSourceRepository.findAllByFolderAndIsActiveTrue(folder)).thenReturn(List.of(d1));
 
         FolderFilesDto dto = folderService.getFilesInFolder(archive, 400);
 

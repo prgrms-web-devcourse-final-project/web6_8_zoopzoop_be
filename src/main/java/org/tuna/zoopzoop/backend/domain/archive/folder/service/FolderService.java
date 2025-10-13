@@ -119,7 +119,7 @@ public class FolderService {
         Folder folder = folderRepository.findByIdAndArchiveId(folderId, archive.getId())
                 .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
 
-        var files = dataSourceRepository.findAllByFolder(folder).stream()
+        var files = dataSourceRepository.findAllByFolderAndIsActiveTrue(folder).stream()
                 .map(ds -> new FileSummary(
                         ds.getId(),
                         ds.getTitle(),

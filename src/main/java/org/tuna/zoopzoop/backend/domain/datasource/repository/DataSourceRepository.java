@@ -72,7 +72,7 @@ public interface DataSourceRepository extends JpaRepository<DataSource, Integer>
            """)
     void deleteByArchiveId(@Param("archiveId") int archiveId);
 
-    List<DataSource> findAllByFolder(Folder folder);
+    List<DataSource> findAllByFolderAndIsActiveTrue(Folder folder);
 
     List<DataSource> findAllByFolderId(Integer folderId);
 

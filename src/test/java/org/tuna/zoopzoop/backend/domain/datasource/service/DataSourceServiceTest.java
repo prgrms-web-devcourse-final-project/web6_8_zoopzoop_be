@@ -4,9 +4,13 @@ import jakarta.persistence.NoResultException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
@@ -18,16 +22,17 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DataSourceServiceTest {
@@ -189,12 +194,110 @@ class DataSourceServiceTest {
 
     // ---------------------- Search In Archive ----------------------
     @Test
-    @DisplayName("searchInArchive: QRepo 위임")
-    void searchInArchive_delegate() {
-        when(dataSourceQRepository.searchInArchive(eq(100), any(DataSourceSearchCondition.class), any(Pageable.class)))
+    @DisplayName("searchByMember: folderId=0 → 개인 기본 폴더로 치환 + keyword/isActive 보존 + QRepo 위임")
+    void searchByMember_folderZero_normalizeAndDelegate() {
+        // given
+        int memberId = 10;
+        when(folderRepository.findDefaultFolderByMemberId(memberId))
+                .thenReturn(Optional.of(folder(111)));
+
+        var condIn = DataSourceSearchCondition.builder()
+                .folderId(0)                    // normalize 대상
+                .keyword("kw")                  // 보존되어야 함
+                .isActive(null)                 // null이면 repo단에서 true로 처리(방어 로직)
+                .build();
+
+        // capture
+        ArgumentCaptor<DataSourceSearchCondition> condCap = ArgumentCaptor.forClass(DataSourceSearchCondition.class);
+        when(dataSourceQRepository.search(eq(memberId), condCap.capture(), any(Pageable.class)))
                 .thenReturn(Page.empty());
-        Page<DataSourceSearchItem> page = service.searchInArchive(100,
-                DataSourceSearchCondition.builder().build(), Pageable.unpaged());
+
+        // when
+        Page<DataSourceSearchItem> page = service.searchByMember(memberId, condIn, Pageable.ofSize(8));
+
+        // then
         assertThat(page).isEmpty();
+        DataSourceSearchCondition passed = condCap.getValue();
+        assertThat(passed.getFolderId()).isEqualTo(111);   // 기본 폴더로 치환됨
+        assertThat(passed.getKeyword()).isEqualTo("kw");   // 보존됨
+        assertThat(passed.getIsActive()).isNull();         // 그대로 전달(Repo에서 true로 방어)
+        verify(dataSourceQRepository).search(eq(memberId), any(), any());
+    }
+
+    @Test
+    @DisplayName("searchByMember: folderId 지정 시 치환 없이 그대로 전달")
+    void searchByMember_folderGiven_noNormalize() {
+        int memberId = 10;
+
+        var condIn = DataSourceSearchCondition.builder()
+                .folderId(222)                  // 그대로 가야 함
+                .isActive(Boolean.FALSE)        // 비활성만
+                .build();
+
+        ArgumentCaptor<DataSourceSearchCondition> condCap = ArgumentCaptor.forClass(DataSourceSearchCondition.class);
+        when(dataSourceQRepository.search(eq(memberId), condCap.capture(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<DataSourceSearchItem> page = service.searchByMember(memberId, condIn, Pageable.ofSize(8));
+
+        assertThat(page.getContent()).isEmpty();
+        DataSourceSearchCondition passed = condCap.getValue();
+        assertThat(passed.getFolderId()).isEqualTo(222);   // 치환 없음
+        assertThat(passed.getIsActive()).isFalse();        // 보존
+    }
+
+    @Test
+    @DisplayName("searchByMember: 기본 폴더 없음 → NoResultException")
+    void searchByMember_defaultMissing_throws() {
+        int memberId = 10;
+        when(folderRepository.findDefaultFolderByMemberId(memberId))
+                .thenReturn(Optional.empty());
+
+        var condIn = DataSourceSearchCondition.builder().folderId(0).build();
+
+        assertThrows(NoResultException.class,
+                () -> service.searchByMember(memberId, condIn, Pageable.ofSize(8)));
+    }
+
+    // ---------------------- searchByArchive ----------------------
+
+    @Test
+    @DisplayName("searchByArchive: folderId=0 → 공유 기본 폴더로 치환 + 위임")
+    void searchByArchive_folderZero_normalizeAndDelegate() {
+        int archiveId = 999;
+        when(folderRepository.findByArchiveIdAndIsDefaultTrue(archiveId))
+                .thenReturn(Optional.of(folder(333)));
+
+        var condIn = DataSourceSearchCondition.builder()
+                .folderId(0)
+                .keyword("shared-kw")
+                .isActive(true)
+                .build();
+
+        ArgumentCaptor<DataSourceSearchCondition> condCap = ArgumentCaptor.forClass(DataSourceSearchCondition.class);
+        when(dataSourceQRepository.searchInArchive(eq(archiveId), condCap.capture(), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        Page<DataSourceSearchItem> page = service.searchByArchive(archiveId, condIn, Pageable.ofSize(8));
+
+        assertThat(page).isEmpty();
+        DataSourceSearchCondition passed = condCap.getValue();
+        assertThat(passed.getFolderId()).isEqualTo(333);       // 기본 폴더로 치환됨
+        assertThat(passed.getKeyword()).isEqualTo("shared-kw"); // 보존됨
+        assertThat(passed.getIsActive()).isTrue();             // 보존됨
+        verify(dataSourceQRepository).searchInArchive(eq(archiveId), any(), any());
+    }
+
+    @Test
+    @DisplayName("searchByArchive: 기본 폴더 없음 → NoResultException")
+    void searchByArchive_defaultMissing_throws() {
+        int archiveId = 999;
+        when(folderRepository.findByArchiveIdAndIsDefaultTrue(archiveId))
+                .thenReturn(Optional.empty());
+
+        var condIn = DataSourceSearchCondition.builder().folderId(0).build();
+
+        assertThrows(NoResultException.class,
+                () -> service.searchByArchive(archiveId, condIn, Pageable.ofSize(8)));
     }
 }

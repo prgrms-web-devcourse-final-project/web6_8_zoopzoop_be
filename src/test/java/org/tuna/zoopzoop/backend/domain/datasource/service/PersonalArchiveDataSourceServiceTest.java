@@ -12,8 +12,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.Archive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.entity.PersonalArchive;
-import org.tuna.zoopzoop.backend.domain.archive.archive.repository.PersonalArchiveRepository;
 import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.dataprocessor.service.DataProcessorService;
@@ -22,7 +20,6 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
-import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 
 import java.io.IOException;
@@ -40,10 +37,8 @@ class PersonalDataSourceServiceTest {
 
     @Mock private DataSourceService domain;
     @Mock private DataSourceRepository dataSourceRepository;
-    @Mock private DataSourceQRepository dataSourceQRepository;
     @Mock private FolderRepository folderRepository;
     @Mock private DataProcessorService dataProcessorService;
-    @Mock private PersonalArchiveRepository personalArchiveRepository;
 
     @InjectMocks private PersonalDataSourceService app;
 
@@ -52,7 +47,7 @@ class PersonalDataSourceServiceTest {
         Folder f = new Folder(); ReflectionTestUtils.setField(f, "id", id);
         f.setArchive(a); f.setDefault(def); return f;
     }
-    private PersonalArchive pa(Archive a) { PersonalArchive p = new PersonalArchive(); p.setArchive(a); return p; }
+//    private PersonalArchive pa(Archive a) { PersonalArchive p = new PersonalArchive(); p.setArchive(a); return p; }
 
     // ---------------------- Create ----------------------
     @Test
@@ -170,19 +165,25 @@ class PersonalDataSourceServiceTest {
     // ---------------------- Search ----------------------
     @Test
     @DisplayName("search: folderId=0 → default 치환 후 QRepo.search 호출")
-    void search_defaultFolderId() {
+//    @DisplayName("search: Personal 서비스는 도메인으로 위임한다")
+    void search_delegateToDomain() {
         int memberId = 7;
-        Archive a = archive(100);
-        Folder df = folder(55, a, true);
-        when(folderRepository.findDefaultFolderByMemberId(memberId)).thenReturn(Optional.of(df));
 
-        when(dataSourceQRepository.search(eq(memberId), any(DataSourceSearchCondition.class), any(Pageable.class)))
+        // given: 위임 결과를 미리 스텁
+        when(domain.searchByMember(eq(memberId), any(DataSourceSearchCondition.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        var cond = DataSourceSearchCondition.builder().folderId(0).build();
+        var cond = DataSourceSearchCondition.builder()
+                .folderId(0)
+                .keyword("kw")
+                .build();
+
+        // when
         Page<DataSourceSearchItem> page = app.search(memberId, cond, Pageable.unpaged());
 
+        // then
         assertThat(page).isEmpty();
-        verify(dataSourceQRepository).search(eq(memberId), argThat(c -> c.getFolderId() == 55), any(Pageable.class));
+        verify(domain).searchByMember(eq(memberId), any(DataSourceSearchCondition.class), any(Pageable.class));
     }
+
 }
