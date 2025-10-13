@@ -15,6 +15,9 @@ import org.tuna.zoopzoop.backend.domain.member.dto.req.ReqBodyForEditMemberName;
 import org.tuna.zoopzoop.backend.domain.member.dto.res.*;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
+import org.tuna.zoopzoop.backend.domain.space.membership.service.MembershipService;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+import org.tuna.zoopzoop.backend.domain.space.space.service.SpaceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
@@ -27,6 +30,8 @@ import java.util.List;
 public class ApiV1MemberController {
     private final MemberService memberService;
     private final RefreshTokenService refreshTokenService;
+    private final MembershipService membershipService;
+    private final SpaceService spaceService;
     /// api/v1/member/me : 사용자 정보 조회 (GET)
     /// api/v1/member/edit : 사용자 닉네임 수정 (PUT)
     /// api/v1/member : 사용자 탈퇴 (DELETE)
@@ -147,6 +152,13 @@ public class ApiV1MemberController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Member member = userDetails.getMember();
+
+        // 사용자가 유일한 어드민인 모든 스페이스 삭제
+        List<Space> deletableSpaces = membershipService.findByOnlyAdmin(member);
+        for (Space space : deletableSpaces) {
+            spaceService.deleteSpace(space.getId());
+        }
+
         refreshTokenService.deleteByMember(member);
         memberService.hardDeleteMember(member);
         return ResponseEntity
