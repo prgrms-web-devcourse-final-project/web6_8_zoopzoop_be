@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.*;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
 import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
 import org.tuna.zoopzoop.backend.domain.datasource.service.PersonalDataSourceService;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
@@ -212,8 +213,9 @@ public class DataSourceController {
             @PageableDefault(size = 8, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
+        Category categoryEnum = category != null ? Category.from(category) : null;
         var cond = DataSourceSearchCondition.builder()
-                .title(title).summary(summary).category(category).folderId(folderId)
+                .title(title).summary(summary).category(categoryEnum).folderId(folderId)
                 .folderName(folderName).isActive(isActive).keyword(keyword).build();
 
         Page<DataSourceSearchItem> page = personalApp.search(user.getMember().getId(), cond, pageable);
