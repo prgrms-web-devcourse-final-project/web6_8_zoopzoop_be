@@ -21,7 +21,7 @@ public class RefreshToken extends BaseEntity {
     @Column(name = "session_id", unique = true, nullable = false)
     private String sessionId;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 512)
     private String refreshToken;
 
     @Column(name = "created_at", nullable = false, updatable = false)
