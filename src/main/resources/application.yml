@@ -110,6 +110,7 @@ spring:
         bucket: ${AWS_S3_BUCKET_NAME}
       stack:
         auto: false
+      prefix: ${AWS_S3_PREFIX}
 
 #Spring doc 설정
 springdoc:
