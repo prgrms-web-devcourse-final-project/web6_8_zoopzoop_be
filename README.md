@@ -9,7 +9,7 @@
 3. [기술 스택](#기술-스택)
 4. [프로젝트 구조](#프로젝트-구조)
 5. [설치 및 실행](#설치-및-실행)
-6. [개발 컨벤션](#개발-컨벤션)
+6. [추가 자료](#추가-자료)
 
 ---
 
@@ -105,6 +105,8 @@ src/main/java/org/tuna/zoopzoop/backend
     └── webMvc                      # 공통 WebMVC 설정
 ```
 
+---
+
 ## 🔌설치 및 실행
 
 ```
@@ -126,3 +128,7 @@ java -jar build/libs/backend-0.0.1-SNAPSHOT.jar
 # API 문서: http://localhost:8080/swagger-ui.html
 ```
 
+---
+
+## 📑추가 자료
+[**백엔드 개발 컨벤션**](./DEV_GUIDE.md)
