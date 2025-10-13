@@ -23,7 +23,8 @@ public class LiveblocksClient {
     @Value("${liveblocks.secret-key}")
     private String secretKey;
 
-    private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms?idempotent";
+    private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms";
+    private static final String LIVEBLOCKS_QUERY_STRING = "?idempotent";
     private static final String AUTH_API_URL = "https://api.liveblocks.io/v2/authorize-user";
 
     /**
@@ -46,7 +47,7 @@ public class LiveblocksClient {
 
         try {
             // 4. Liveblocks API에 POST 요청 전송
-            ResponseEntity<String> response = restTemplate.postForEntity(LIVEBLOCKS_API_URL, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(LIVEBLOCKS_API_URL + LIVEBLOCKS_QUERY_STRING, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Liveblocks room created successfully. roomId: {}", roomId);
@@ -66,7 +67,7 @@ public class LiveblocksClient {
      * @param roomId 삭제할 방의 고유 ID
      */
     public void deleteRoom(String roomId) {
-        String deleteUrl = LIVEBLOCKS_API_URL + "/" + roomId;
+        String deleteUrl = LIVEBLOCKS_API_URL + "/" + roomId + LIVEBLOCKS_QUERY_STRING;
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(secretKey);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
