@@ -20,7 +20,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +139,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
             switch (o.getProperty()) {
                 case "title" -> specs.add(new OrderSpecifier<>(dir, root.getString("title")));
                 case "createdAt" -> specs.add(
-                        new OrderSpecifier<>(dir, root.getDateTime("createDate", LocalDateTime.class))
+                        new OrderSpecifier<>(dir, root.getDate("dataCreatedDate", LocalDate.class))
                 );
                 default -> { /* 무시 */ }
             }

@@ -17,9 +17,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.UpdateOutcome;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
-import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceQRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
-import org.tuna.zoopzoop.backend.global.aws.S3Service;
 
 import java.io.IOException;
 import java.util.*;
@@ -30,12 +28,9 @@ public class PersonalDataSourceService {
 
     private final DataSourceService domain;
     private final DataSourceRepository dataSourceRepository;
-    private final DataSourceQRepository dataSourceQRepository;
     private final FolderRepository folderRepository;
     private final PersonalArchiveRepository personalArchiveRepository;
     private final DataProcessorService dataProcessorService;
-
-    private final S3Service s3Service;
 
     private int getPersonalArchiveId(int memberId) {
         PersonalArchive pa = personalArchiveRepository.findByMemberId(memberId)
@@ -191,20 +186,9 @@ public class PersonalDataSourceService {
     }
 
     // search
-    public Page<DataSourceSearchItem> search(int memberId, DataSourceSearchCondition cond, Pageable pageable) {
-        if (cond.getFolderId() != null && cond.getFolderId() == 0) {
-            int defaultFolderId = folderRepository.findDefaultFolderByMemberId(memberId)
-                    .orElseThrow(() -> new NoResultException("기본 폴더가 존재하지 않습니다."))
-                    .getId();
-            cond = DataSourceSearchCondition.builder()
-                    .title(cond.getTitle())
-                    .summary(cond.getSummary())
-                    .category(cond.getCategory())
-                    .folderName(cond.getFolderName())
-                    .isActive(cond.getIsActive())
-                    .folderId(defaultFolderId)
-                    .build();
-        }
-        return dataSourceQRepository.search(memberId, cond, pageable);
+    public Page<DataSourceSearchItem> search(int memberId,
+                                             DataSourceSearchCondition cond,
+                                             Pageable pageable) {
+        return domain.searchByMember(memberId, cond, pageable);
     }
 }

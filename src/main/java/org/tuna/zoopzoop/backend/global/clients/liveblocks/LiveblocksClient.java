@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.tuna.zoopzoop.backend.domain.dashboard.dto.ReqBodyForLiveblocksAuth;
-import org.tuna.zoopzoop.backend.domain.dashboard.dto.ResBodyForAuthToken;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,7 +23,7 @@ public class LiveblocksClient {
     @Value("${liveblocks.secret-key}")
     private String secretKey;
 
-    private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms";
+    private static final String LIVEBLOCKS_API_URL = "https://api.liveblocks.io/v2/rooms?idempotent";
     private static final String AUTH_API_URL = "https://api.liveblocks.io/v2/authorize-user";
 
     /**
