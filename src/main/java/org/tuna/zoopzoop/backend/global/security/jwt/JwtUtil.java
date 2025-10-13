@@ -28,12 +28,12 @@ public class JwtUtil {
         String subject = member.getProvider() + ":" + member.getProviderKey();
 
         return Jwts.builder()
-                .setSubject(subject)
+                .subject(subject)
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey())
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey(), Jwts.SIG.HS384)
                 .compact();
     }
 
@@ -107,13 +107,13 @@ public class JwtUtil {
         String subject = member.getProvider() + ":" + member.getProviderKey();
 
         return Jwts.builder()
-                .setSubject(subject)
+                .subject(subject)
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
                 .claim("tokenType", "refresh")
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey())
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey(), Jwts.SIG.HS384)
                 .compact();
     }
 
