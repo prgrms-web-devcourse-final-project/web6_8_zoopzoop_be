@@ -94,6 +94,33 @@ public class MembershipService {
     }
 
     /**
+     * 멤버가 ADMIN 권한을 가진 스페이스 목록 조회
+     * @param member 조회할 멤버
+     * @return 멤버가 유일한 ADMIN 권한을 가진 스페이스 목록
+     */
+    public List<Space> findByAdmin(Member member) {
+        return membershipRepository.findAllByMemberAndAuthorityOrderById(member, Authority.ADMIN)
+                .stream()
+                .map(Membership::getSpace)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 멤버가 유일한 ADMIN 권한을 가진 스페이스 목록 조회
+     * @param member 조회할 멤버
+     * @return 멤버가 유일한 ADMIN 권한을 가진 스페이스 목록
+     */
+    public List<Space> findByOnlyAdmin(Member member) {
+        // 1. 멤버가 ADMIN 권한을 가진 모든 스페이스 조회
+        List<Space> adminSpaces = findByAdmin(member);
+
+        // 2. 각 스페이스에서 ADMIN 멤버 수가 1명인 스페이스만 필터링
+        return adminSpaces.stream()
+                .filter(space -> membershipRepository.countBySpaceAndAuthority(space, Authority.ADMIN) == 1)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 스페이스에 속한 멤버 중 초대 상태(PENDING)인 멤버십 목록 조회
      * @param space 조회할 스페이스
      * @return 해당 스페이스에 속한 초대 상태(PENDING)인 멤버십 목록
