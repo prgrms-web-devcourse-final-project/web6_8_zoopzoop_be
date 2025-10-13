@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.tuna.zoopzoop.backend.domain.SSE.service.EmitterService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.member.service.MemberService;
+import org.tuna.zoopzoop.backend.domain.space.membership.dto.etc.SpaceMemberInfo;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.JoinState;
@@ -21,8 +22,11 @@ import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 
 import java.nio.file.AccessDeniedException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +109,36 @@ public class MembershipService {
      */
     public List<Membership> findMembersBySpace(Space space) {
         return membershipRepository.findAllBySpaceAndAuthorityIsNotOrderById(space, Authority.PENDING);
+    }
+
+    /**
+     * 여러 스페이스에 속한 멤버 목록을 한 번의 쿼리로 조회 (N+1 문제 해결용)
+     * @param spaces 조회할 스페이스 목록
+     * @return 스페이스 ID를 key로, 해당 스페이스의 멤버 정보 리스트를 value로 갖는 Map
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, List<SpaceMemberInfo>> findMembersBySpaces(List<Space> spaces) {
+        if (spaces == null || spaces.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 1. 한 번의 쿼리로 모든 스페이스의 멤버십 정보를 가져옴
+        List<Membership> allMemberships = membershipRepository.findAllMembersInSpaces(spaces);
+
+        // 2. Space ID 별로 그룹핑하여 Map으로 변환
+        return allMemberships.stream()
+                .collect(Collectors.groupingBy(
+                        membership -> membership.getSpace().getId(), // Key: Space ID
+                        Collectors.mapping( // Value: List<SpaceMemberInfo> DTO로 변환
+                                membership -> new SpaceMemberInfo(
+                                        membership.getMember().getId(),
+                                        membership.getMember().getName(),
+                                        membership.getMember().getProfileImageUrl(),
+                                        membership.getAuthority()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
     }
 
     // ======================== 권한 조회 ======================== //

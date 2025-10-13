@@ -56,4 +56,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     @Query("SELECT m FROM Membership m JOIN FETCH m.space WHERE m.member = :member AND m.authority <> :authority ORDER BY m.id ASC")
     Page<Membership> findAllByMemberAndAuthorityIsNotWithSpace(@Param("member") Member member, @Param("authority") Authority authority, Pageable pageable);
 
+    // 여러 Space에 속한 Member 목록 한번에 조회 (JOIN FETCH로 Member 정보까지)
+    @Query("SELECT m FROM Membership m JOIN FETCH m.member WHERE m.space IN :spaces AND m.authority <> org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority.PENDING")
+    List<Membership> findAllMembersInSpaces(@Param("spaces") List<Space> spaces);
 }

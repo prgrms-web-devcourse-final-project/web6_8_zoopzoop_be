@@ -32,7 +32,9 @@ import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.CustomUserDetails;
 
 import java.nio.file.AccessDeniedException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -144,23 +146,28 @@ public class ApiV1SpaceController {
         String stateStr = (state == null) ? "ALL" : state.name();
         Page<Membership> membershipsPage = membershipService.findByMember(member, stateStr, pageable);
 
+        Map<Integer, List<SpaceMemberInfo>> membersBySpaceId = Collections.emptyMap();
+        if (includeMembers) {
+            // 현재 페이지에 포함된 Space 엔티티 목록 추출
+            List<Space> spacesOnPage = membershipsPage.getContent().stream()
+                    .map(Membership::getSpace)
+                    .distinct()
+                    .collect(Collectors.toList());
+            // 멤버 정보를 한 번의 쿼리로 조회
+            membersBySpaceId = membershipService.findMembersBySpaces(spacesOnPage);
+        }
+
         // Page<Membership>를 Page<SpaceMembershipInfo>로 변환
+        final Map<Integer, List<SpaceMemberInfo>> finalMembersMap = membersBySpaceId;
+
         Page<SpaceInfo> spaceInfosPage = membershipsPage.map(membership -> {
             Space space = membership.getSpace();
-            List<SpaceMemberInfo> memberInfos = null;
 
-            if (includeMembers) {
-                // 스페이스에 속한 멤버 목록 조회 (가입 상태만)
-                List<Membership> spaceMemberships = membershipService.findMembersBySpace(space);
-                // 멤버 목록을 DTO로 변환
-                memberInfos = spaceMemberships.stream()
-                        .map(spaceMembership -> new SpaceMemberInfo(
-                                spaceMembership.getMember().getId(),
-                                spaceMembership.getMember().getName(),
-                                spaceMembership.getMember().getProfileImageUrl(),
-                                spaceMembership.getAuthority()
-                        ))
-                        .collect(Collectors.toList());
+            // Map에서 spaceId로 멤버 목록을 O(1)에 조회 (기존 N+1 유발 코드 대체)
+            List<SpaceMemberInfo> memberInfos = finalMembersMap.get(space.getId());
+
+            if (includeMembers && memberInfos == null) {
+                memberInfos = Collections.emptyList();
             }
 
             return new SpaceInfo(
@@ -168,11 +175,10 @@ public class ApiV1SpaceController {
                     space.getName(),
                     space.getThumbnailUrl(),
                     membership.getAuthority(),
-                    memberInfos // 조회된 멤버 목록 (null일 수도 있음)
+                    memberInfos
             );
         });
 
-        // 새로운 응답 DTO 생성
         ResBodyForSpaceListPage resBody = new ResBodyForSpaceListPage(spaceInfosPage);
 
         return new RsData<>(
