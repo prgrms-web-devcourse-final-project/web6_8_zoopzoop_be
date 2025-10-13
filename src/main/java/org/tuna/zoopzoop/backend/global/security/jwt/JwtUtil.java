@@ -110,6 +110,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .claim("userId", member.getId())
                 .claim("name", member.getName())
+                .claim("tokenType", "refresh")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey())
