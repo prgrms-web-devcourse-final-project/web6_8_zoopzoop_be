@@ -1,0 +1,292 @@
+package org.tuna.zoopzoop.backend.domain.space.archive.service;
+
+import jakarta.persistence.NoResultException;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.tuna.zoopzoop.backend.domain.archive.archive.entity.SharingArchive;
+import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
+import org.tuna.zoopzoop.backend.domain.archive.folder.repository.FolderRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
+import org.tuna.zoopzoop.backend.domain.datasource.dto.UpdateOutcome;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
+import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
+import org.tuna.zoopzoop.backend.domain.datasource.service.DataSourceService;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
+import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
+import org.tuna.zoopzoop.backend.domain.space.membership.repository.MembershipRepository;
+import org.tuna.zoopzoop.backend.domain.space.space.entity.Space;
+import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
+
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+public class SpaceDataSourceService {
+
+    private final DataSourceService domain;
+    private final DataSourceRepository dataSourceRepository;
+    private final FolderRepository folderRepository;
+    private final SpaceRepository spaceRepository;
+    private final MembershipRepository membershipRepository;
+
+    // 불러오기(개인→공유)
+    @Transactional
+    public int importFromPersonal(int requesterMemberId, String spaceId, int sourceDataSourceId, Integer targetFolderIdOrZero) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        DataSource source = dataSourceRepository.findByIdAndMemberId(sourceDataSourceId, requesterMemberId)
+                .orElseThrow(() -> new NoResultException("개인 아카이브에서 자료를 찾을 수 없습니다."));
+
+        int targetFolderId = resolveTargetFolderIdByArchive(archiveId, targetFolderIdOrZero);
+
+        // 복제 생성 (도메인 서비스 이용)
+        var cmd = DataSourceService.CreateCmd.builder()
+                .title(source.getTitle())
+                .summary(source.getSummary())
+                .sourceUrl(source.getSourceUrl())
+                .imageUrl(source.getImageUrl())
+                .source(source.getSource())
+                .category(source.getCategory())
+                .dataCreatedDate(source.getDataCreatedDate())
+                .tags(source.getTags() == null ? null : source.getTags().stream().map(Tag::getTagName).toList())
+                .build();
+
+        return domain.create(targetFolderId, cmd);
+    }
+
+    // 불러오기(개인→공유) 다건
+    @Transactional
+    public List<Integer> importManyFromPersonal(int requesterMemberId, String spaceId, List<Integer> sourceIds, Integer targetFolderIdOrZero) {
+        if (sourceIds == null || sourceIds.isEmpty())
+            throw new IllegalArgumentException("불러올 자료 id 배열이 비어있습니다.");
+
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+        int targetFolderId = resolveTargetFolderIdByArchive(archiveId, targetFolderIdOrZero);
+
+        // 소유 검증
+        List<Integer> existing = dataSourceRepository.findExistingIdsInMember(requesterMemberId, sourceIds);
+        if (existing.size() != sourceIds.size()) {
+            Set<Integer> missing = new HashSet<>(sourceIds);
+            missing.removeAll(new HashSet<>(existing));
+            throw new NoResultException("존재하지 않거나 소유자가 다른 자료 ID 포함: " + missing);
+        }
+
+        List<DataSource> list = dataSourceRepository.findAllById(sourceIds);
+        if (list.size() != sourceIds.size())
+            throw new NoResultException("요청한 자료 중 존재하지 않는 항목이 있습니다.");
+
+        List<Integer> created = new ArrayList<>();
+        for (DataSource src : list) {
+            var cmd = DataSourceService.CreateCmd.builder()
+                    .title(src.getTitle())
+                    .summary(src.getSummary())
+                    .sourceUrl(src.getSourceUrl())
+                    .imageUrl(src.getImageUrl())
+                    .source(src.getSource())
+                    .category(src.getCategory())
+                    .dataCreatedDate(src.getDataCreatedDate())
+                    .tags(src.getTags() == null ? null : src.getTags().stream().map(Tag::getTagName).toList())
+                    .build();
+            created.add(domain.create(targetFolderId, cmd));
+        }
+        return created;
+    }
+
+    // 삭제
+    @Transactional
+    public int deleteOne(int requesterMemberId, String spaceId, int dataSourceId) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        dataSourceRepository.findByIdAndArchiveId(dataSourceId, archiveId)
+                .orElseThrow(() -> new NoResultException("해당 스페이스에 존재하지 않는 자료입니다."));
+
+        domain.hardDeleteOne(dataSourceId);
+        return dataSourceId;
+    }
+
+    // 다건 삭제
+    @Transactional
+    public void deleteMany(int requesterMemberId, String spaceId, List<Integer> ids) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        List<Integer> existing = dataSourceRepository.findExistingIdsInArchive(archiveId, ids);
+        if (existing.size() != ids.size())
+            throw new NoResultException("존재하지 않는 자료 포함");
+
+        domain.hardDeleteMany(ids);
+    }
+
+    // 임시 삭제
+    @Transactional
+    public int softDelete(int requesterMemberId, String spaceId, List<Integer> ids) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        List<Integer> existing = dataSourceRepository.findExistingIdsInArchive(archiveId, ids);
+        if (existing.size() != ids.size())
+            throw new NoResultException("존재하지 않는 자료 포함");
+
+        return domain.softDeleteMany(ids);
+    }
+
+    // 복원
+    @Transactional
+    public int restore(int requesterMemberId, String spaceId, List<Integer> ids) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        List<Integer> existing = dataSourceRepository.findExistingIdsInArchive(archiveId, ids);
+        if (existing.size() != ids.size())
+            throw new NoResultException("존재하지 않는 자료 포함");
+
+        return domain.restoreMany(ids);
+    }
+
+    // 이동
+    @Transactional
+    public DataSourceService.MoveResult moveOne(int requesterMemberId, String spaceId, int dataSourceId, Integer targetFolderIdOrZero) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        int folderId = resolveTargetFolderIdByArchive(archiveId, targetFolderIdOrZero);
+
+        dataSourceRepository.findByIdAndArchiveId(dataSourceId, archiveId)
+                .orElseThrow(() -> new NoResultException("해당 스페이스에 존재하지 않는 자료입니다."));
+
+        return domain.moveOne(dataSourceId, folderId);
+    }
+
+    // 다건 이동
+    @Transactional
+    public void moveMany(int requesterMemberId, String spaceId, Integer targetFolderIdOrZero, List<Integer> ids) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        int folderId = resolveTargetFolderIdByArchive(archiveId, targetFolderIdOrZero);
+
+        List<Integer> existing = dataSourceRepository.findExistingIdsInArchive(archiveId, ids);
+        if (existing.size() != ids.size())
+            throw new NoResultException("존재하지 않는 자료 포함");
+
+        domain.moveMany(ids, folderId);
+    }
+
+    // 수정
+    @Transactional
+    public int update(int requesterMemberId, String spaceId, int dataSourceId, DataSourceService.UpdateCmd cmd) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        dataSourceRepository.findByIdAndArchiveId(dataSourceId, archiveId)
+                .orElseThrow(() -> new NoResultException("해당 스페이스에 존재하지 않는 자료입니다."));
+
+        return domain.update(dataSourceId, cmd);
+    }
+
+    // 이미지 포함 수정
+    @Transactional
+    public UpdateOutcome updateWithImage(int requesterMemberId, String spaceId, int dataSourceId,
+                                         DataSourceService.UpdateCmd baseCmd,
+                                         MultipartFile image) {
+        Space space = getSpace(spaceId);
+        assertWritable(requesterMemberId, space);
+        Integer archiveId = getArchiveId(space);
+
+        dataSourceRepository.findByIdAndArchiveId(dataSourceId, archiveId)
+                .orElseThrow(() -> new NoResultException("해당 스페이스에 존재하지 않는 자료입니다."));
+
+        var cmd = baseCmd;
+        String finalUrl = null;
+
+        if (image != null && !image.isEmpty()) {
+            String key = domain.thumbnailKeyForSpace(space.getId(), dataSourceId);
+            finalUrl = domain.uploadThumbnailAndReturnFinalUrl(image, key);
+            cmd = DataSourceService.UpdateCmd.builderFrom(baseCmd)
+                    .imageUrl(JsonNullable.of(finalUrl))
+                    .build();
+        }
+
+        int updatedId = domain.update(dataSourceId, cmd);
+        return new UpdateOutcome(updatedId, finalUrl);
+    }
+
+
+    // 검색
+    public Page<DataSourceSearchItem> search(int requesterMemberId,
+                                             String spaceId,
+                                             DataSourceSearchCondition cond,
+                                             Pageable pageable) {
+        Space space = getSpace(spaceId);
+        assertReadable(requesterMemberId, space);
+        int archiveId = getArchiveId(space);
+        return domain.searchByArchive(archiveId, cond, pageable);
+    }
+
+    // ========== 내부 유틸리티 ==========
+    private Space getSpace(String raw) {
+        Integer spaceId;
+        try {
+            spaceId = Integer.valueOf(raw);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("유효하지 않은 spaceId 형식: " + raw);
+        }
+        return spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 스페이스입니다."));
+    }
+
+    // 권한 검사
+    private void assertReadable(int requesterMemberId, Space space) {
+        membershipRepository.findByMemberIdAndSpaceId(requesterMemberId, space.getId())
+                .orElseThrow(() -> new NoResultException("스페이스 멤버가 아닙니다."));
+    }
+
+    private void assertWritable(int requesterMemberId, Space space) {
+        Membership ms = membershipRepository.findByMemberIdAndSpaceId(requesterMemberId, space.getId())
+                .orElseThrow(() -> new NoResultException("스페이스 멤버가 아닙니다."));
+        if (ms.getAuthority() == Authority.READ_ONLY)
+            throw new SecurityException("쓰기 권한 없음");
+    }
+
+    // 스페이스의 공유 아카이브 ID 조회
+    private Integer getArchiveId(Space space) {
+        SharingArchive sa = space.getSharingArchive();
+        if (sa == null || sa.getArchive() == null)
+            throw new NoResultException("공유 아카이브 미준비");
+        return sa.getArchive().getId();
+    }
+
+    // 아카이브 내 폴더 ID 결정 (0 또는 null → 기본 폴더)
+    private int resolveTargetFolderIdByArchive(int archiveId, Integer folderIdOrZero) {
+        if (folderIdOrZero == null || Objects.equals(folderIdOrZero, 0)) {
+            return folderRepository.findByArchiveIdAndIsDefaultTrue(archiveId)
+                    .orElseThrow(() -> new NoResultException("공유 기본 폴더 없음"))
+                    .getId();
+        }
+        Folder f = folderRepository.findById(folderIdOrZero)
+                .orElseThrow(() -> new NoResultException("존재하지 않는 폴더입니다."));
+        if (!Objects.equals(f.getArchive().getId(), archiveId))
+            throw new IllegalArgumentException("해당 스페이스 아카이브 소속 폴더가 아닙니다.");
+        return f.getId();
+    }
+
+}

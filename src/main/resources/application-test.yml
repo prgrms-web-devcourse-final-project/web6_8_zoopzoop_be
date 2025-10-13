@@ -8,11 +8,44 @@ spring:
     password:
     driver-class-name: org.h2.Driver
 
+  data:
+    elasticsearch:
+      host: localhost
+      port: 9200
+
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+            kakao:
+                redirect-uri: http://localhost:3000/oauth/callback/kakao
+            google:
+                redirect-uri: http://localhost:3000/oauth/callback/google
+
+front:
+  redirect_domain: http://localhost:3000
+
+  app:
+    seed:
+      enabled: false
+
+  sentry:
+    send-default-pii: true
+    environment: local
+    traces-sample-rate: 0.0
+
   sql:
     init:
       mode: never
+
+app:
+  seed:
+    enabled: false
+
+liveblocks:
+  secret-key: test_dummy_liveblocks_secret_key

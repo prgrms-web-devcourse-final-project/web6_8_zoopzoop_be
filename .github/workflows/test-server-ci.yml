@@ -1,0 +1,143 @@
+# 워크플로우 이름
+name: Spring CI/CD Pipeline (Develop)
+
+# develop 브랜치 PR에서만 실행
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'src/**'
+      - 'build.gradle*'
+      - 'settings.gradle*'
+      - 'gradle/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+
+jobs:
+  # ==================================
+  # CI: Test and Build and Push Docker Image
+  # ==================================
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+    services:
+      # CI 작업이 실행되는 동안 RabbitMQ 서비스 컨테이너를 함께 실행
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+        # RabbitMQ가 완전히 준비될 때까지 기다리는 상태 확인 옵션
+        options: >-
+          --health-cmd "rabbitmq-diagnostics check_running"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # CI 작업이 실행되는 동안 ElasticSearch 서비스 컨테이너 함께 실행
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.5
+        ports:
+          - 9200:9200
+        options: >-
+          --env discovery.type=single-node
+          --env xpack.security.enabled=false
+          --env ES_JAVA_OPTS="-Xms512m -Xmx512m"
+
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. JDK 21 설치
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # 3. Gradle 캐시 설정
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # 5. Gradle 테스트 실행
+      - name: Test with Gradle
+        # 테스트 단계에서 RabbitMQ 연결을 위한 환경 변수 설정
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_RABBITMQ_HOST: localhost
+          SPRING_RABBITMQ_USERNAME: guest
+          SPRING_RABBITMQ_PASSWORD: guest
+          SPRING_DATA_ELASTICSEARCH_HOST: localhost
+          SPRING_DATA_ELASTICSEARCH_PORT: 9200
+          KAKAO_CLIENT_ID: ${{ secrets.OAUTH_KAKAO_CLIENT_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+          AWS_S3_PREFIX: test/
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          JWT_ACCESS_TOKEN_VALIDITY: ${{ secrets.JWT_ACCESS_TOKEN_VALIDITY }}
+          JWT_REFRESH_TOKEN_VALIDITY: ${{ secrets.JWT_REFRESH_TOKEN_VALIDITY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          LIVEBLOCKS_SECRET_KEY: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}
+        run: ./gradlew test --stacktrace
+
+      # 6. 테스트 결과 요약 출력
+      - name: Show test results
+        if: always()  # 테스트 실패 여부와 상관없이 항상 실행
+        run: |
+          echo "==== Test Results ===="
+          if compgen -G "build/test-results/test/TEST-*.xml" > /dev/null; then
+            total=$(grep '<testcase ' build/test-results/test/TEST-*.xml | wc -l)
+            failed=$(grep -h '<failure' build/test-results/test/TEST-*.xml | wc -l)
+            error=$(grep -h '<error' build/test-results/test/TEST-*.xml | wc -l)
+            passed=$((total - failed - error))
+            echo "Total tests: $total"
+            echo "Passed tests: $passed"
+            echo "Failed tests: $failed"
+            echo "Errored tests: $error"
+          else
+            echo "No test results found."
+          fi
+
+      # 7. Gradle 빌드 실행 (테스트 성공 시)
+      - name: Build with Gradle
+        run: ./gradlew build -x test
+
+      # 8. GHCR 로그인
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 9. Docker 이미지 빌드 & 푸시
+      - name: Build & Push Docker Image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}/zoopzoop
+          
+          docker build -t $IMAGE_NAME:${GITHUB_SHA} . 
+          docker tag $IMAGE_NAME:${GITHUB_SHA} $IMAGE_NAME:latest
+          
+          docker push $IMAGE_NAME:${GITHUB_SHA}
+          docker push $IMAGE_NAME:latest
+
