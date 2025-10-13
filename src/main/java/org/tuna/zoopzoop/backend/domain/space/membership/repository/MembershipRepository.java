@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
 import org.tuna.zoopzoop.backend.domain.space.membership.enums.Authority;
@@ -45,4 +46,14 @@ public interface MembershipRepository extends JpaRepository<Membership, Integer>
     where m.member.id = :memberId and m.space.id = :spaceId
 """)
     Optional<Membership> findByMemberIdAndSpaceId(Integer memberId, Integer spaceId);
+
+    @Query("SELECT m FROM Membership m JOIN FETCH m.space WHERE m.member = :member ORDER BY m.id ASC")
+    Page<Membership> findAllByMemberWithSpace(@Param("member") Member member, Pageable pageable);
+
+    @Query("SELECT m FROM Membership m JOIN FETCH m.space WHERE m.member = :member AND m.authority = :authority ORDER BY m.id ASC")
+    Page<Membership> findAllByMemberAndAuthorityWithSpace(@Param("member") Member member, @Param("authority") Authority authority, Pageable pageable);
+
+    @Query("SELECT m FROM Membership m JOIN FETCH m.space WHERE m.member = :member AND m.authority <> :authority ORDER BY m.id ASC")
+    Page<Membership> findAllByMemberAndAuthorityIsNotWithSpace(@Param("member") Member member, @Param("authority") Authority authority, Pageable pageable);
+
 }

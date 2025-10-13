@@ -64,11 +64,11 @@ public class MembershipService {
      */
     public Page<Membership> findByMember(Member member, String state, Pageable pageable) {
         if (state.equalsIgnoreCase("PENDING")) {
-            return membershipRepository.findAllByMemberAndAuthorityOrderById(member, Authority.PENDING, pageable);
+            return membershipRepository.findAllByMemberAndAuthorityWithSpace(member, Authority.PENDING, pageable);
         } else if (state.equalsIgnoreCase("JOINED")) {
-            return membershipRepository.findAllByMemberAndAuthorityIsNotOrderById(member, Authority.PENDING, pageable);
+            return membershipRepository.findAllByMemberAndAuthorityIsNotWithSpace(member, Authority.PENDING, pageable);
         } else {
-            return membershipRepository.findAllByMemberOrderById(member, pageable);
+            return membershipRepository.findAllByMemberWithSpace(member, pageable);
         }
     }
 
