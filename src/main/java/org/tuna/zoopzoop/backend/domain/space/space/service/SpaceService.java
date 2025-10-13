@@ -3,10 +3,12 @@ package org.tuna.zoopzoop.backend.domain.space.space.service;
 import jakarta.persistence.NoResultException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.TagRepository;
@@ -18,6 +20,7 @@ import org.tuna.zoopzoop.backend.domain.space.space.repository.SpaceRepository;
 import org.tuna.zoopzoop.backend.global.aws.S3Service;
 import org.tuna.zoopzoop.backend.global.clients.liveblocks.LiveblocksClient;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SpaceService {
@@ -174,9 +177,10 @@ public class SpaceService {
         }
 
         try {
-            //String fileName = "space/" + spaceId + "/thumbnail/" + System.currentTimeMillis() + "_" +
+            //String fileName = "space-thumbnail/space_" + System.currentTimeMillis() + "_" +
             // S3 저장 시 파일 이름 고정 (덮어쓰기)
-            String fileName = "space-thumbnail/space_" + spaceId ;
+            String extension = StringUtils.getFilenameExtension(image.getOriginalFilename());
+            String fileName = "space-thumbnail/space_" + spaceId + "." + extension;
             String baseImageUrl = s3Service.upload(image, fileName);
 
             // DB 용으로 현재 시간을 쿼리 파라미터에 추가 (캐시 무효화)
@@ -186,6 +190,7 @@ public class SpaceService {
             space.setThumbnailUrl(finalImageUrl);
             spaceRepository.save(space);
         } catch (Exception e) {
+            log.error("Space thumbnail upload failed: ", e);
             throw new RuntimeException("스페이스 썸네일 이미지 업로드에 실패했습니다.");
         }
     }
