@@ -1,0 +1,16 @@
+{
+  "analysis": {
+    "analyzer": {
+      "ngram_analyzer": {
+        "tokenizer": "my_ngram_tokenizer"
+      }
+    },
+    "tokenizer": {
+      "my_ngram_tokenizer": {
+        "type": "ngram",
+        "min_gram": 1,
+        "max_gram": 2
+      }
+    }
+  }
+}
