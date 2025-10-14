@@ -154,3 +154,6 @@ naver:
 
 liveblocks:
   secret-key: ${LIVEBLOCKS_SECRET_KEY}
+
+front:
+  main_domain: ${FRONT_MAIN_DOMAIN}
