@@ -81,9 +81,10 @@ public class SecurityConfig {
         @Override
         public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("/api/v1/**")
-                    .allowedOrigins("*") // 실제 배포시엔 chrome-extension://<EXTENSION_ID> 로 제한 권장
+                    .allowedOrigins("https://www.zoopzoop.kro.kr")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .allowedHeaders("*");
+                    .allowedHeaders("*")
+                    .allowCredentials(true);
         }
     }
 }
