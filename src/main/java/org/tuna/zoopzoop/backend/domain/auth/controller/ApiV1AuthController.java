@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -15,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.auth.entity.AuthResult;
 import org.tuna.zoopzoop.backend.domain.auth.entity.RefreshToken;
 import org.tuna.zoopzoop.backend.domain.auth.service.refresh.RefreshTokenService;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
+import org.tuna.zoopzoop.backend.global.config.jwt.JwtProperties;
 import org.tuna.zoopzoop.backend.global.rsData.RsData;
 import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;
 
@@ -23,9 +25,13 @@ import org.tuna.zoopzoop.backend.global.security.jwt.JwtUtil;
 @RequestMapping("api/v1/auth")
 @Tag(name = "ApiV1AuthController", description = "인증/인가 REST API 컨트롤러")
 public class ApiV1AuthController {
+    private final JwtProperties jwtProperties;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final AuthResult authResult;
+
+    @Value("${front.main_domain}")
+    private String main_domain;
 
     /**
      * 사용자 로그아웃 API
@@ -46,14 +52,18 @@ public class ApiV1AuthController {
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)
-                .sameSite("Lax")
+                .domain(main_domain)
+                .secure(true)
+                .sameSite("None")
                 .build();
 
         ResponseCookie sessionCookie = ResponseCookie.from("sessionId", "")
                 .httpOnly(true)
                 .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
+                .maxAge(0) // RefreshToken 유효기간과 동일하게
+                .domain(main_domain)
+                .secure(true)
+                .sameSite("None")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -113,8 +123,10 @@ public class ApiV1AuthController {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)
                 .httpOnly(true)
                 .path("/")
-                .maxAge(jwtUtil.getAccessTokenValiditySeconds())
-                .sameSite("Lax")
+                .maxAge(jwtProperties.getAccessTokenValidity() / 1000)
+                .domain(main_domain)
+                .secure(true)
+                .sameSite("None")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
