@@ -98,7 +98,7 @@ jobs:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           LIVEBLOCKS_SECRET_KEY: ${{ secrets.LIVEBLOCKS_SECRET_KEY }}
-          FRONT_MAIN_DOMAIN: "${{secrets.MAIN_DOMAIN}}" \
+          FRONT_MAIN_DOMAIN: ${{secrets.MAIN_DOMAIN}}
         run: ./gradlew test --stacktrace
 
       # 6. 테스트 결과 요약 출력
