@@ -1,10 +1,9 @@
 package org.tuna.zoopzoop.backend.global.rsData;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record RsData<T>(
-        @JsonProperty("status") String resultCode,
+        String resultCode,
         @JsonIgnore
         int statusCode,
         String msg,

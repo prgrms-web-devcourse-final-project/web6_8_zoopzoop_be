@@ -1,11 +1,13 @@
 package org.tuna.zoopzoop.backend.domain.archive.archive.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.enums.ArchiveType;
-import org.tuna.zoopzoop.backend.domain.archive.folder.entity.Folder;
 import org.tuna.zoopzoop.backend.domain.member.entity.Member;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
@@ -13,35 +15,17 @@ import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 @Setter
 @Entity
 @NoArgsConstructor
-@Table(
-        uniqueConstraints = {
-                // Archive가 하나의 PersonalArchive에 연결됨
-                @UniqueConstraint(
-                        name = "uk_personal_archive__archive_id",
-                        columnNames = "archive_id"
-                ),
-                // Member가 하나의 PersonalArchive만 가짐
-                @UniqueConstraint(
-                        name = "uk_personal_archive__member_id",
-                        columnNames = "member_id"
-                )
-        }
-)
 public class PersonalArchive extends BaseEntity {
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
-    @JoinColumn(name = "archive_id")
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "archive_id", nullable = false)
     public Archive archive;
 
-    @OneToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
+    @OneToOne
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
     public PersonalArchive(Member member) {
         this.member = member;
         this.archive = new Archive(ArchiveType.PERSONAL);
-
-        // default 폴더 자동 생성 및 연결
-        Folder defaultFolder = new Folder("default");
-        archive.addFolder(defaultFolder);
     }
 }

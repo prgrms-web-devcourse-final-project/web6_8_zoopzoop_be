@@ -5,8 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.tuna.zoopzoop.backend.domain.archive.archive.entity.SharingArchive;
-import org.tuna.zoopzoop.backend.domain.dashboard.entity.Dashboard;
-import org.tuna.zoopzoop.backend.domain.space.membership.entity.Membership;
+import org.tuna.zoopzoop.backend.domain.space.membership.entity.MemberShip;
 import org.tuna.zoopzoop.backend.global.jpa.entity.BaseEntity;
 
 import java.util.List;
@@ -27,41 +26,19 @@ public class Space extends BaseEntity {
     @OneToOne(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
     private SharingArchive sharingArchive;
 
-    @Column(nullable = true)
-    private String thumbnailUrl;
-
     //연결된 MemberShip
     //Space 삭제시 cascade.all
     @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Membership> memberShips;
-
-    // 연결된 Dashboard
-    @OneToOne(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Dashboard dashboard;
-
-
-    // ================ 생성 메서드 ================
+    private List<MemberShip> memberShips;
 
     public Space() {
         this.sharingArchive = new SharingArchive(this);
-        this.dashboard = Dashboard.create(this.name + "의 대시보드", this);
     }
 
     @Builder
-    public Space(String name, Boolean active, String thumbnailUrl, String dashboardName) {
+    public Space(String name, Boolean active) {
         this.name = name;
-        if (active != null)
-            this.active = active;
-        if( thumbnailUrl != null)
-            this.thumbnailUrl = thumbnailUrl;
-
+        this.active = active;
         this.sharingArchive = new SharingArchive(this);
-
-        if (dashboardName == null || dashboardName.isBlank()) {
-            dashboardName = name + "의 대시보드";
-        }
-        Dashboard dashboard = Dashboard.create(dashboardName, this);
-
-        this.dashboard = dashboard;
     }
 }
