@@ -81,7 +81,10 @@ public class SecurityConfig {
         @Override
         public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("/api/v1/**")
-                    .allowedOrigins("https://www.zoopzoop.kro.kr")
+                    .allowedOrigins(
+                            "https://www.zoopzoop.kro.kr",
+                            "chrome-extension://bclpnjdlipliejojdffdklebfomkmngj"
+                    )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .allowCredentials(true);
