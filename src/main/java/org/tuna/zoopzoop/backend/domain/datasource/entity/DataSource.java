@@ -22,11 +22,11 @@ public class DataSource extends BaseEntity {
     private Folder folder;
 
     //제목
-    @Column
+    @Column(length = 1000)
     private String title;
 
     //요약
-    @Column
+    @Column(length = 1000)
     private String summary;
 
     //소스 데이터의 작성일자
@@ -35,11 +35,11 @@ public class DataSource extends BaseEntity {
     private LocalDate dataCreatedDate;
 
     //소스 데이터 URL
-    @Column
+    @Column(length = 2048)
     private String sourceUrl;
 
     //썸네일 이미지 URL
-    @Column
+    @Column(length = 2048)
     private String imageUrl;
 
     // 자료 출처 (동아일보, Tstory 등등)
