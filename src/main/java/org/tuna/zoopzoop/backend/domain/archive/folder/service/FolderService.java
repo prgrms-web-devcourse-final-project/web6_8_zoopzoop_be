@@ -127,7 +127,10 @@ public class FolderService {
                         ds.getSummary(),
                         ds.getSourceUrl(),
                         ds.getImageUrl(),
-                        ds.getTags() == null ? List.of() : ds.getTags().stream().map(Tag::getTagName).toList(),
+                        ds.getTags() == null ? List.of() : ds.getTags().stream()
+                                .map(Tag::getTagName)
+                                .filter(java.util.Objects::nonNull)
+                                .toList(),
                         ds.getCategory() == null ? null : ds.getCategory().name()
                 ))
                 .toList();

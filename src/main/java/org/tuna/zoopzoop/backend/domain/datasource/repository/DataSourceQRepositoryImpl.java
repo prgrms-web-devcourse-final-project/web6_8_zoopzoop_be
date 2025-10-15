@@ -22,6 +22,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,23 +116,30 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .where(ds.id.in(ids))
                 .fetch()
                 .stream()
+                .filter(row -> row.get(tag.tagName) != null)
                 .collect(Collectors.groupingBy(
                         row -> row.get(ds.id),
                         Collectors.mapping(row -> row.get(tag.tagName), Collectors.toList())
                 ));
 
         List<DataSourceSearchItem> content = tuples.stream()
-                .map(row -> new DataSourceSearchItem(
-                        row.get(ds.id),
-                        row.get(ds.title),
-                        row.get(ds.createDate).toLocalDate(),
-                        row.get(ds.summary),
-                        row.get(ds.source),
-                        row.get(ds.sourceUrl),
-                        row.get(ds.imageUrl),
-                        tagsById.getOrDefault(row.get(ds.id), List.of()),
-                        row.get(ds.category).name()
-                ))
+                .map(row -> {
+                    Category cat = row.get(ds.category);
+                    String categoryCode = (cat != null ? cat.name() : null);
+                    LocalDateTime createdAt = row.get(ds.createDate);
+                    LocalDate createdDate = (createdAt != null ? createdAt.toLocalDate() : null);
+                    return new DataSourceSearchItem(
+                            row.get(ds.id),
+                            row.get(ds.title),
+                            createdDate,
+                            row.get(ds.summary),
+                            row.get(ds.source),
+                            row.get(ds.sourceUrl),
+                            row.get(ds.imageUrl),
+                            tagsById.getOrDefault(row.get(ds.id), List.of()),
+                            categoryCode
+                    );
+                })
                 .toList();
 
         return new PageImpl<>(content, pageable, total);
@@ -230,24 +238,30 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .where(ds.id.in(tuples.stream().map(t -> t.get(ds.id)).toList()))
                 .fetch()
                 .stream()
+                .filter(row -> row.get(tag.tagName) != null)
                 .collect(Collectors.groupingBy(
                         row -> row.get(ds.id),
                         Collectors.mapping(row -> row.get(tag.tagName), Collectors.toList())
                 ));
 
         List<DataSourceSearchItem> content = tuples.stream()
-                .map(row -> new DataSourceSearchItem(
-                        row.get(ds.id),
-                        row.get(ds.title),
-                        // LocalDateTime(createDate) → LocalDate
-                        row.get(ds.createDate).toLocalDate(),
-                        row.get(ds.summary),
-                        row.get(ds.source),
-                        row.get(ds.sourceUrl),
-                        row.get(ds.imageUrl),
-                        tagsById.getOrDefault(row.get(ds.id), List.of()),
-                        row.get(ds.category).name() // 응답은 영문 코드 유지
-                ))
+                .map(row -> {
+                    Category category = row.get(ds.category);
+                    String categoryCode = (category != null ? category.name() : null); // null 허용
+                    LocalDateTime createdAt = row.get(ds.createDate);
+                    LocalDate createdDate = (createdAt != null ? createdAt.toLocalDate() : null);
+                    return new DataSourceSearchItem(
+                            row.get(ds.id),
+                            row.get(ds.title),
+                            createdDate,
+                            row.get(ds.summary),
+                            row.get(ds.source),
+                            row.get(ds.sourceUrl),
+                            row.get(ds.imageUrl),
+                            tagsById.getOrDefault(row.get(ds.id), List.of()),
+                            categoryCode
+                    );
+                })
                 .toList();
 
         return new PageImpl<>(content, pageable, total);
