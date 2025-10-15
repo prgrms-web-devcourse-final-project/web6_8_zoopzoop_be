@@ -16,6 +16,7 @@ import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceDto;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.UpdateOutcome;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Tag;
 import org.tuna.zoopzoop.backend.domain.datasource.repository.DataSourceRepository;
 
@@ -79,8 +80,12 @@ public class PersonalDataSourceService {
     // hard delete
     @Transactional
     public int deleteOne(int memberId, int dataSourceId) {
-        dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
+        DataSource ds = dataSourceRepository.findByIdAndMemberId(dataSourceId, memberId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
+
+        // S3 삭제
+        String expectedKey = domain.thumbnailKeyForPersonal(memberId, dataSourceId);
+        domain.deleteIfOwnedByExactKey(ds.getImageUrl(), expectedKey);
 
         domain.hardDeleteOne(dataSourceId);
         return dataSourceId;
@@ -98,6 +103,13 @@ public class PersonalDataSourceService {
             missing.removeAll(new HashSet<>(existing));
             throw new NoResultException("존재하지 않거나 소유자가 다른 자료 ID 포함: " + missing);
         }
+        // S3 삭제
+        List<DataSource> list = dataSourceRepository.findAllById(ids);
+        for (DataSource ds : list) {
+            String expectedKey = domain.thumbnailKeyForPersonal(memberId, ds.getId());
+            domain.deleteIfOwnedByExactKey(ds.getImageUrl(), expectedKey);
+        }
+
         domain.hardDeleteMany(ids);
     }
 
