@@ -181,7 +181,7 @@ public class DataSourceService {
     public void hardDeleteOne(int dataSourceId) {
         DataSource ds = dataSourceRepository.findById(dataSourceId)
                 .orElseThrow(() -> new NoResultException("존재하지 않는 자료입니다."));
-        deleteOwnedImageIfAny(ds);
+//        deleteOwnedImageIfAny(ds);
         dataSourceRepository.delete(ds);
     }
 
@@ -190,7 +190,7 @@ public class DataSourceService {
         if (ids == null || ids.isEmpty()) return;
         List<DataSource> list = dataSourceRepository.findAllById(ids);
         if (list.size() != ids.size()) throw new NoResultException("존재하지 않는 자료 포함");
-        for (DataSource ds : list) deleteOwnedImageIfAny(ds);
+//        for (DataSource ds : list) deleteOwnedImageIfAny(ds);
         dataSourceRepository.deleteAll(list);
     }
 
@@ -321,19 +321,15 @@ public class DataSourceService {
 
     // ===== S3 삭제 관련 유틸 =====
     // 소유한 이미지가 있으면 S3에서 삭제
-    private void deleteOwnedImageIfAny(DataSource ds) {
-        String url = ds.getImageUrl();
-        if (url == null || url.isBlank()) return;
-        if (!isOurS3Url(url)) return;
-
-        String key = extractKeyFromUrl(url);
-        if (key == null || key.isBlank()) return;
-
-        try {
-            s3Service.delete(key);
-        } catch (Exception ignore) {
-            // 파일 삭제 실패로 전체 삭제를 롤백하지 않음
-            // 필요하면 warn 로그 추가
+    public void deleteIfOwnedByExactKey(String imageUrl, String expectedKey) {
+        if (imageUrl == null || imageUrl.isBlank() || expectedKey == null || expectedKey.isBlank()) return;
+        String key = extractKeyFromUrl(imageUrl);
+        if (expectedKey.equals(key)) {
+            try {
+                s3Service.delete(key);
+            } catch (Exception ignore) {
+                // S3 삭제 실패가 전체 트랜잭션을 막지 않도록 무시
+            }
         }
     }
 
