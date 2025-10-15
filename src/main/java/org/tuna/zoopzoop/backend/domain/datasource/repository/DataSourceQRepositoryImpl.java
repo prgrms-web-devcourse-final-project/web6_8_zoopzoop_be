@@ -18,10 +18,11 @@ import org.tuna.zoopzoop.backend.domain.archive.folder.entity.QFolder;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchCondition;
 import org.tuna.zoopzoop.backend.domain.datasource.dto.DataSourceSearchItem;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.Category;
+import org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QDataSource;
 import org.tuna.zoopzoop.backend.domain.datasource.entity.QTag;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
         // content
         JPAQuery<Tuple> contentQuery = queryFactory
-                .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
+                .select(ds.id, ds.title, ds.createDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
                 .from(ds)
                 .join(ds.folder, folder)
                 .join(pa).on(pa.archive.eq(folder.archive))
@@ -97,7 +98,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
         List<OrderSpecifier<?>> orderSpecifiers = toOrderSpecifiers(pageable.getSort());
         if (!orderSpecifiers.isEmpty()) contentQuery.orderBy(orderSpecifiers.toArray(new OrderSpecifier<?>[0]));
-        else contentQuery.orderBy(ds.createDate.desc());
+        else contentQuery.orderBy(ds.createDate.desc()); // 기본 정렬: 생성일시 내림차순
 
         List<Tuple> tuples = contentQuery.offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
         Long totalCount = countQuery.fetchOne();
@@ -123,7 +124,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .map(row -> new DataSourceSearchItem(
                         row.get(ds.id),
                         row.get(ds.title),
-                        row.get(ds.dataCreatedDate),
+                        row.get(ds.createDate).toLocalDate(),
                         row.get(ds.summary),
                         row.get(ds.source),
                         row.get(ds.sourceUrl),
@@ -140,8 +141,8 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
     private List<OrderSpecifier<?>> toOrderSpecifiers(Sort sort) {
         if (sort == null || sort.isEmpty()) return List.of();
 
-        PathBuilder<org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource> root =
-                new PathBuilder<>(org.tuna.zoopzoop.backend.domain.datasource.entity.DataSource.class, "dataSource");
+        PathBuilder<DataSource> root =
+                new PathBuilder<>(DataSource.class, "dataSource");
 
         List<OrderSpecifier<?>> specs = new ArrayList<>();
         for (Sort.Order o : sort) {
@@ -149,7 +150,7 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
             switch (o.getProperty()) {
                 case "title" -> specs.add(new OrderSpecifier<>(dir, root.getString("title")));
                 case "createdAt" -> specs.add(
-                        new OrderSpecifier<>(dir, root.getDate("dataCreatedDate", LocalDate.class))
+                        new OrderSpecifier<>(dir, root.getDateTime("createDate", LocalDateTime.class))
                 );
                 default -> { /* 무시 */ }
             }
@@ -207,7 +208,8 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
 
         // content
         JPAQuery<Tuple> contentQuery = queryFactory
-                .select(ds.id, ds.title, ds.dataCreatedDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
+                // 이미 공유 쪽은 createDate 사용 중
+                .select(ds.id, ds.title, ds.createDate, ds.summary, ds.source, ds.sourceUrl, ds.imageUrl, ds.category)
                 .from(ds)
                 .join(ds.folder, folder)
                 .where(where.and(scope));
@@ -237,7 +239,8 @@ public class DataSourceQRepositoryImpl implements DataSourceQRepository {
                 .map(row -> new DataSourceSearchItem(
                         row.get(ds.id),
                         row.get(ds.title),
-                        row.get(ds.dataCreatedDate),
+                        // LocalDateTime(createDate) → LocalDate
+                        row.get(ds.createDate).toLocalDate(),
                         row.get(ds.summary),
                         row.get(ds.source),
                         row.get(ds.sourceUrl),
