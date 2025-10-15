@@ -11,7 +11,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MemberSearchService {
     private final MemberSearchRepository memberSearchRepository;
-
     public List<MemberDocument> searchByName(String name) {
         return memberSearchRepository.findByNameOnly(name);
     }
