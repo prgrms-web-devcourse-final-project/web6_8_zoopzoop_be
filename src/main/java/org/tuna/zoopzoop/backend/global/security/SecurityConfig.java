@@ -89,7 +89,8 @@ public class SecurityConfig {
                             "chrome-extension://bcclninhkdhmimllcpelikgdcfojfhgk", // [강사] 심신범
                             // 백엔드
                             "chrome-extension://eodkiigbmnldjonpcdhipekpchkohodc", // [FT] 김한얼
-                            "chrome-extension://pjldaiifgfncglllbbinancecgdkfiak" // [멘토] 김동기
+                            "chrome-extension://pjldaiifgfncglllbbinancecgdkfiak", // [멘토] 김동기
+                            "chrome-extension://ibhhkdodbkplajjnoiahbcoplaemdfda" // [강사] 장희성
                     )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
