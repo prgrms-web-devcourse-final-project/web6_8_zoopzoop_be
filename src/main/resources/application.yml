@@ -1,26 +1,119 @@
 spring:
   application:
     name: back
+
   profiles:
     active: dev
+
   output:
     ansi:
       enabled: always
+
   datasource:
     hikari:
       auto-commit: false
+
   jackson:
     serialization:
       fail-on-empty-beans: false
+
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: create-drop
+
     properties:
       hibernate:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+
+  config:
+    import: optional:classpath:application-secrets.yml
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # Spring AI 설정
+  ai:
+    openai:
+      base-url: https://api.groq.com/openai # 내부 서버를 groq으로
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: meta-llama/llama-4-scout-17b-16e-instruct
+          temperature: 0
+
+  # RabbitMQ 설정
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 2000
+          max-attempts: 3
+
+  data: #RedisTemplate 등을 사용하기 위한 직접 연결용
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 6000
+
+  cache: #Spring Cache를 사용하기 위한 Redis
+    type: redis
+    redis:
+      time-to-live: 300000
+      cache-null-values: false
+      key-prefix:
+
+  #OAuth2 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            scope:
+              - profile_nickname
+              - profile_image
+            authorization-grant-type: authorization_code
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - profile
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+
+  #S3 설정
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+      s3:
+        bucket: ${AWS_S3_BUCKET_NAME}
+        prefix: ${AWS_S3_PREFIX}
+      stack:
+        auto: false
+
+
+#Spring doc 설정
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 logging:
@@ -29,5 +122,38 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG
+    org.springframework.retry: DEBUG
+
 server:
   port: 8080
+
+app:
+  seed:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+sentry: #Sentry 모니터렁 기본 설정.
+  dsn: ${SENTRY_DSN}
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY}
+  refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY}
+
+naver:
+  client_id: ${NAVER_CLIENT_ID}
+  client_secret: ${NAVER_CLIENT_SECRET}
+
+liveblocks:
+  secret-key: ${LIVEBLOCKS_SECRET_KEY}
+
+front:
+  main_domain: ${FRONT_MAIN_DOMAIN}

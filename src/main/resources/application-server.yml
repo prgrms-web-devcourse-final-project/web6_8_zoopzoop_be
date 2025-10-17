@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  data: #RedisTemplate 등을 사용하기 위한 직접 연결용
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      timeout: 6000
+      password: ${REDIS_PASSWORD}
+    elasticsearch:
+      host: ${ELASTIC_HOST}
+      port: 9200
+
+  cache: #Spring Cache를 사용하기 위한 Redis
+    type: redis
+    redis:
+      time-to-live: 300000
+      cache-null-values: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+          google:
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+front:
+  redirect_domain: ${FRONT_REDIRECT_DOMAIN}
+
+sentry:
+  # Add data like request headers and IP for users,
+  # see https://docs.sentry.io/platforms/java/guides/spring-boot/data-management/data-collected/ for more info
+  send-default-pii: true
+  environment: prod
+  traces-sample-rate: 0.2
+
+cloud:
+  aws:
+    s3:
+      prefix: ${AWS_S3_PREFIX}
