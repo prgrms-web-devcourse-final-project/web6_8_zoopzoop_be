@@ -83,7 +83,14 @@ public class SecurityConfig {
             registry.addMapping("/api/v1/**")
                     .allowedOrigins(
                             "https://www.zoopzoop.kro.kr",
-                            "chrome-extension://bclpnjdlipliejojdffdklebfomkmngj"
+                            "chrome-extension://bclpnjdlipliejojdffdklebfomkmngj",
+                            // 프론트엔드
+                            "chrome-extension://bpgfjkpjbcbdnfllmabphlcjbjijppcc", // [FT] 정주연
+                            "chrome-extension://bcclninhkdhmimllcpelikgdcfojfhgk", // [강사] 심신범
+                            // 백엔드
+                            "chrome-extension://eodkiigbmnldjonpcdhipekpchkohodc", // [FT] 김한얼
+                            "chrome-extension://pjldaiifgfncglllbbinancecgdkfiak", // [멘토] 김동기
+                            "chrome-extension://ibhhkdodbkplajjnoiahbcoplaemdfda" // [강사] 장희성
                     )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
